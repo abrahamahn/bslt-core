@@ -61,6 +61,10 @@ require a licensing API to start. The source inventory is an integrity check, no
 
 ## Contributions
 
+Core is distributed under the [MIT license](https://github.com/abrahamahn/bslt-core/blob/main/LICENSE)
+included in the public Core repository. Paid access and any commercial terms for Pro are handled
+separately by the distributor.
+
 Core users can report issues and propose changes in the public Core repository. Releases are generated
 from the maintained source repository. Maintainers bring accepted fixes back into that source before
 publishing another release so contributions survive future updates.

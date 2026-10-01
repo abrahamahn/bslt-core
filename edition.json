@@ -5,7 +5,8 @@
   "files": {
     ".github/workflows/core-ci.yml": "b9259f4e310892be762abd2ce735d43102d6e8eb7cf0de8c6a928b6aee591adc",
     ".gitignore": "9b904959070903514c7aa5cf10c20e14e60df8ba393d3e6178811ff5d47baa52",
-    "README.md": "0ad3fdd093f46f5d8522b2cf8776e66d524260973a5a00562dde92f409a5e571",
+    "LICENSE": "88cdbd247b1515741e9f859211d40771b5b76e0103d24a0579ae043f3890d49d",
+    "README.md": "fa101565c4d154d9640222909a45b70bfc6d978dc397dd4189effa1c3925a764",
     "config/.editorconfig": "4e19bf63f8587d360d6af54488e1e1a7020fbef2836a3e9dfec882b1b30e3138",
     "config/.prettierrc": "08bce7ee66c2299c8bc4e7d8623d2fb0d333800eeb20dfee30439b8ceda1d8b9",
     "config/README.md": "8832f467e2bc48b75ca5fb6a43ce2cd11221670f066761972cf179fcaa7e3b3d",
