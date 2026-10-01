@@ -1,0 +1,113 @@
+// main/shared/src/constants/system/index.ts
+/**
+ * System Constants Manifest
+ *
+ * This directory contains low-level system enums, limits, and error definitions
+ * used by both server and shared modules.
+ *
+ * @module Constants/System
+ */
+
+export {
+  AGGREGATION_TYPES,
+  DEFAULT_PAGE_LIMIT,
+  DEFAULT_PAGINATION,
+  DEFAULT_SORT_BY,
+  DEFAULT_SORT_ORDER,
+  FILTER_OPERATOR_VALUES,
+  DEFAULT_WEBHOOK_DELIVERY_TIMEOUT_MS,
+  FILTER_OPERATORS,
+  LIMITS,
+  LOGICAL_OPERATOR_VALUES,
+  LOGICAL_OPERATORS,
+  MAX_CHUNK_SIZE,
+  MAX_DELIVERY_ATTEMPTS,
+  MAX_FILENAME_LENGTH,
+  MAX_UPLOAD_FILE_SIZE,
+  MAX_UPLOAD_TIMEOUT_MS,
+  NOTIFICATION_PAYLOAD_MAX_SIZE,
+  PAGINATION_ERROR_TYPES,
+  QUOTAS,
+  RETRY_DELAYS_MINUTES,
+  SEARCH_DEFAULTS,
+  SEARCH_ERROR_TYPES,
+  SMS_LIMITS,
+  SORT_ORDER,
+} from './limits';
+
+export { HTTP_STATUS, type HttpStatusCode } from './http';
+
+export { CONSOLE_LOG_LEVELS } from './log';
+export { ANSI, LOG_LEVELS } from './logger';
+
+export {
+  AUTH_ERROR_MESSAGES,
+  AUTH_ERROR_NAMES,
+  AUTH_SUCCESS_MESSAGES,
+  ERROR_CODES,
+  ERROR_MESSAGES,
+  HTTP_ERROR_MESSAGES,
+} from './errors';
+
+export {
+  ACCESS_TOKEN_COOKIE_NAME,
+  API_PREFIX,
+  API_VERSIONS,
+  AUTH_CONSTANTS,
+  CACHE_TTL,
+  CORS_CONFIG,
+  CRYPTO,
+  CSRF_COOKIE_NAME,
+  CSRF_EXEMPT_PATHS,
+  DEVICE_TYPES,
+  HEALTH_STATUS,
+  PLATFORM_TYPES,
+  RATE_LIMIT_WINDOWS,
+  REFRESH_TOKEN_COOKIE_NAME,
+  SAFE_METHODS,
+  STANDARD_HEADERS,
+  SUDO_TOKEN_HEADER,
+  WEBSOCKET_PATH,
+  WS_CLOSE_POLICY_VIOLATION,
+} from './platform';
+
+export {
+  EMAIL_PROVIDERS,
+  EMAIL_STATUSES,
+  SUBSCRIBABLE_EVENT_TYPES,
+  TERMINAL_DELIVERY_STATUSES,
+  WEBHOOK_DELIVERY_STATUSES,
+  WEBHOOK_EVENT_TYPES,
+} from './comms';
+
+export {
+  JOB_PRIORITIES,
+  JOB_PRIORITY_VALUES,
+  JOB_STATUS_CONFIG,
+  JOB_STATUSES,
+  TERMINAL_STATUSES,
+} from './jobs';
+
+export { SENSITIVE_KEYS } from './security';
+
+export { TENANCY_MODES, type TenancyMode } from './tenancy';
+
+export { AUDIT_CATEGORIES, AUDIT_SEVERITIES } from './audit';
+
+export {
+  COUNTRIES,
+  COUNTRY_BY_CODE,
+  US_STATE_BY_CODE,
+  US_STATES,
+  type Country,
+  type UsState,
+} from './geo';
+
+export {
+  CURRENCIES,
+  DEFAULT_LOCALE,
+  LOCALES,
+  SUPPORTED_LOCALES,
+  type Currency,
+  type Locale,
+} from './i18n';

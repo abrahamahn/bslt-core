@@ -1,0 +1,13 @@
+packages:
+  - main/shared
+  - main/client/api
+  - main/client/engine
+  - main/client/react
+  - main/client/ui
+  - main/server/core
+  - main/server/system
+  - main/server/db
+  - main/server/comms
+  - main/server/storage
+  - main/apps/server
+  - main/apps/web

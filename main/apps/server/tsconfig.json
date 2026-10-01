@@ -1,0 +1,106 @@
+{
+  "extends": "../../../config/tsconfig.node.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "outDir": "./dist",
+    "rootDir": "./",
+    "composite": true,
+    "noEmit": false,
+    "tsBuildInfoFile": "./node_modules/.cache/typescript/tsconfig.server.tsbuildinfo",
+    "baseUrl": ".",
+    "paths": {
+      "@bslt/shared": [
+        "../../shared/src/index.ts"
+      ],
+      "@bslt/shared/*": [
+        "../../shared/src/modules/*",
+        "../../shared/src/*"
+      ],
+      "@bslt/shared/config": [
+        "../../shared/src/modules/system/config/index.ts"
+      ],
+      "@bslt/shared/config/*": [
+        "../../shared/src/modules/system/config/*"
+      ],
+      "@bslt/shared/system": [
+        "../../shared/src/modules/system/index.ts"
+      ],
+      "@bslt/shared/system/*": [
+        "../../shared/src/modules/system/*"
+      ],
+      "@bslt/shared/system/constants": [
+        "../../shared/src/constants/system/index.ts"
+      ],
+      "@bslt/shared/system/constants/*": [
+        "../../shared/src/constants/system/*"
+      ],
+      "@bslt/server-system": [
+        "../../server/system/src/index.ts"
+      ],
+      "@bslt/server-system/*": [
+        "../../server/system/src/*"
+      ],
+      "@bslt/db": [
+        "../../server/db/src/index.ts"
+      ],
+      "@bslt/db/*": [
+        "../../server/db/src/*"
+      ],
+      "@bslt/core": [
+        "../../server/core/src/index.ts"
+      ],
+      "@bslt/core/*": [
+        "../../server/core/src/*"
+      ],
+      "@bslt/storage": [
+        "../../server/storage/src/index.ts"
+      ],
+      "@bslt/storage/*": [
+        "../../server/storage/src/*"
+      ],
+      "@bslt/comms": [
+        "../../server/comms/src/index.ts"
+      ],
+      "@bslt/comms/*": [
+        "../../server/comms/src/*"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "src/plugin/errors",
+    "routes"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "vitest.config.ts",
+    "eslint.config.ts",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/__tests__/**"
+  ],
+  "references": [
+    {
+      "path": "../../server/core"
+    },
+    {
+      "path": "../../server/system"
+    },
+    {
+      "path": "../../shared"
+    },
+    {
+      "path": "../../server/db"
+    },
+    {
+      "path": "../../server/comms"
+    },
+    {
+      "path": "../../server/storage"
+    }
+  ]
+}

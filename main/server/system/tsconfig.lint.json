@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "../..",
+    "composite": false,
+    "noEmit": true,
+    "paths": {
+      "@bslt/shared": ["../../shared/src/index.ts"],
+      "@bslt/shared/*": ["../../shared/src/modules/*", "../../shared/src/*"],
+      "@bslt/shared/config": ["../../shared/src/modules/system/config/index.ts"],
+      "@bslt/shared/config/*": ["../../shared/src/modules/system/config/*"],
+      "@bslt/shared/system/config": ["../../shared/src/modules/system/config/index.ts"],
+      "@bslt/shared/system/config/*": ["../../shared/src/modules/system/config/*"],
+      "@bslt/shared/system": ["../../shared/src/modules/system/index.ts"],
+      "@bslt/shared/system/*": ["../../shared/src/modules/system/*"],
+      "@bslt/shared/system/constants": ["../../shared/src/constants/system/index.ts"],
+      "@bslt/shared/system/constants/*": ["../../shared/src/constants/system/*"],
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "tsconfig*.json"],
+  "exclude": ["node_modules", "dist"],
+  "references": []
+}

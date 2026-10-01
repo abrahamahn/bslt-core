@@ -1,0 +1,93 @@
+{
+  "name": "@bslt/db",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Raw Postgres Database client and migrations",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "source": "./src/client.ts",
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
+    },
+    "./schema": {
+      "source": "./src/schema/index.ts",
+      "types": "./dist/schema/index.d.ts",
+      "default": "./dist/schema/index.js"
+    },
+    "./repositories": {
+      "source": "./src/repositories/index.ts",
+      "types": "./dist/repositories/index.d.ts",
+      "default": "./dist/repositories/index.js"
+    },
+    "./factory": {
+      "source": "./src/factory.ts",
+      "types": "./dist/factory.d.ts",
+      "default": "./dist/factory.js"
+    },
+    "./migrations": {
+      "source": "./src/migrations.ts",
+      "types": "./dist/migrations.d.ts",
+      "default": "./dist/migrations.js"
+    },
+    "./builder": {
+      "source": "./src/builder/index.ts",
+      "types": "./dist/builder/index.d.ts",
+      "default": "./dist/builder/index.js"
+    },
+    "./utils": {
+      "source": "./src/utils/index.ts",
+      "types": "./dist/utils/index.d.ts",
+      "default": "./dist/utils/index.js"
+    },
+    "./queue": {
+      "source": "./src/queue/index.ts",
+      "types": "./dist/queue/index.d.ts",
+      "default": "./dist/queue/index.js"
+    },
+    "./testing": {
+      "source": "./src/testing/index.ts",
+      "types": "./dist/testing/index.d.ts",
+      "default": "./dist/testing/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo && tsc -p tsconfig.json && node --import tsx ../../tools/scripts/build/ensure-js-extensions.ts dist",
+    "clean": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo",
+    "type-check": "tsc -p tsconfig.lint.json"
+  },
+  "keywords": [
+    "postgres",
+    "database",
+    "raw",
+    "sql"
+  ],
+  "dependencies": {
+    "@bslt/shared": "workspace:*",
+    "ioredis": "^5.9.2",
+    "postgres": "^3.4.4"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.9",
+    "tsx": "^4.15.0",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "vitest": "^4.1.8"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    }
+  },
+  "private": true
+}

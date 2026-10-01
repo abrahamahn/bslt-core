@@ -1,0 +1,69 @@
+// main/apps/web/src/features/settings/hooks/usePasswordChange.ts
+/**
+ * Password Change Hook
+ *
+ * Hook for changing user password.
+ */
+
+import { getAccessToken } from '@app/authToken';
+import { createSettingsClient as createSettingsApi } from '@bslt/api';
+import { useMutation } from '@bslt/react';
+import { clientConfig } from '@config';
+
+import type { ChangePasswordRequest, ChangePasswordResponse } from '@bslt/shared/core/users';
+
+// ============================================================================
+// Settings API Instance
+// ============================================================================
+
+let settingsApi: ReturnType<typeof createSettingsApi> | null = null;
+
+function getSettingsApi(): ReturnType<typeof createSettingsApi> {
+  settingsApi ??= createSettingsApi({
+    baseUrl: clientConfig.apiUrl,
+    getToken: getAccessToken,
+  });
+  return settingsApi;
+}
+
+// ============================================================================
+// Password Change Hook
+// ============================================================================
+
+export interface UsePasswordChangeOptions {
+  onSuccess?: (response: ChangePasswordResponse) => void;
+  onError?: (error: Error) => void;
+}
+
+export interface UsePasswordChangeResult {
+  changePassword: (data: ChangePasswordRequest) => void;
+  isLoading: boolean;
+  isSuccess: boolean;
+  isError: boolean;
+  error: Error | null;
+  reset: () => void;
+}
+
+export function usePasswordChange(options?: UsePasswordChangeOptions): UsePasswordChangeResult {
+  const mutation = useMutation<ChangePasswordResponse, Error, ChangePasswordRequest>({
+    mutationFn: async (data): Promise<ChangePasswordResponse> => {
+      const api = getSettingsApi();
+      return api.changePassword(data);
+    },
+    onSuccess: (data: ChangePasswordResponse): void => {
+      options?.onSuccess?.(data);
+    },
+    onError: (error: Error): void => {
+      options?.onError?.(error);
+    },
+  });
+
+  return {
+    changePassword: mutation.mutate,
+    isLoading: mutation.status === 'pending',
+    isSuccess: mutation.status === 'success',
+    isError: mutation.status === 'error',
+    error: mutation.error,
+    reset: mutation.reset,
+  };
+}

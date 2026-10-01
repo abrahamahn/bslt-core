@@ -1,0 +1,381 @@
+/* main/client/ui/src/styles/layouts.css */
+@import './theme.css';
+
+/* ============================================
+   AppShell - Main app container with slots
+   ============================================ */
+.app-shell {
+  display: grid;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  /* Keep the shell clear of notches/punch-holes/home indicators */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+  grid-template-areas:
+    'header header header'
+    'sidebar main aside'
+    'footer footer footer';
+  grid-template-columns: var(--app-shell-sidebar-width, auto) 1fr var(--app-shell-aside-width, auto);
+  grid-template-rows: var(--app-shell-header-height, auto) 1fr var(--app-shell-footer-height, auto);
+}
+
+.app-shell--resizable {
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell-header {
+  z-index: 50;
+  background: var(--ui-color-bg);
+  flex-shrink: 0;
+}
+
+.app-shell-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-shell-sidebar {
+  z-index: 40;
+  background: var(--ui-color-bg);
+  overflow-y: auto;
+  flex-shrink: 0;
+  width: var(--app-shell-sidebar-width, auto);
+}
+
+.app-shell-main {
+  overflow-y: auto;
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.app-shell-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell-aside {
+  z-index: 40;
+  background: var(--ui-color-bg);
+  overflow-y: auto;
+  flex-shrink: 0;
+  width: var(--app-shell-aside-width, auto);
+}
+
+.app-shell-footer {
+  z-index: 50;
+  background: var(--ui-color-bg);
+  flex-shrink: 0;
+}
+
+/* ============================================
+   TopbarLayout - Top navigation bar
+   ============================================ */
+.topbar {
+  height: var(--topbar-height, 3rem);
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--ui-gap-sm) var(--ui-gap-lg);
+  gap: var(--ui-gap-md);
+  background: var(--ui-color-bg);
+  flex-shrink: 0;
+}
+
+.topbar--bordered {
+  border-bottom: var(--ui-border-width) solid var(--ui-color-border);
+}
+
+.topbar-section {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-gap-sm);
+}
+
+.topbar-section--left {
+  justify-content: flex-start;
+  min-width: 5.5rem;
+}
+
+.topbar-section--center {
+  flex: 1;
+  justify-content: center;
+}
+
+.topbar-section--right {
+  justify-content: flex-end;
+  min-width: 5.5rem;
+}
+
+@media (max-width: 48rem) {
+  .topbar {
+    padding: var(--ui-gap-sm) var(--ui-gap-md);
+  }
+}
+
+/* ============================================
+   BottombarLayout - Bottom status/action bar
+   ============================================ */
+.bottombar {
+  height: var(--bottombar-height, 2.5rem);
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--ui-gap-xs) var(--ui-gap-lg);
+  gap: var(--ui-gap-md);
+  background: var(--ui-color-bg);
+  font-size: var(--ui-font-size-xs);
+  flex-shrink: 0;
+}
+
+.bottombar--bordered {
+  border-top: var(--ui-border-width) solid var(--ui-color-border);
+}
+
+.bottombar-section {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-gap-xs);
+}
+
+.bottombar-section--left {
+  justify-content: flex-start;
+}
+
+.bottombar-section--center {
+  flex: 1;
+  justify-content: center;
+  gap: var(--ui-gap-xl);
+}
+
+.bottombar-section--right {
+  justify-content: flex-end;
+}
+
+@media (max-width: 48rem) {
+  .bottombar {
+    padding: var(--ui-gap-xs) var(--ui-gap-md);
+  }
+
+  .bottombar-section--center {
+    display: none;
+  }
+}
+
+/* ============================================
+   LeftSidebarLayout - Left navigation sidebar
+   ============================================ */
+.left-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-xs);
+  padding: var(--ui-gap-sm);
+  flex-shrink: 0;
+  background: var(--ui-color-bg);
+  width: var(--left-sidebar-width, 3.125rem);
+  height: 100%;
+  overflow: hidden;
+}
+
+.left-sidebar--bordered {
+  border-inline-end: var(--ui-border-width) solid var(--ui-color-border);
+}
+
+.left-sidebar-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-xs);
+  flex-shrink: 0;
+}
+
+.left-sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-xs);
+}
+
+.left-sidebar-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-xs);
+  padding-top: var(--ui-gap-sm);
+  flex-shrink: 0;
+}
+
+@media (max-width: 48rem) {
+  .left-sidebar {
+    width: var(--left-sidebar-width-mobile, 2.625rem);
+    padding: var(--ui-gap-xs);
+  }
+}
+
+/* ============================================
+   RightSidebarLayout - Right panel/sidebar
+   ============================================ */
+.right-sidebar {
+  display: flex;
+  flex-direction: column;
+  background: var(--ui-color-bg);
+  width: var(--right-sidebar-width, 20rem);
+  height: 100%;
+  overflow: hidden;
+}
+
+.right-sidebar--bordered {
+  border-inline-start: var(--ui-border-width) solid var(--ui-color-border);
+}
+
+.right-sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--ui-gap-lg);
+  flex-shrink: 0;
+}
+
+.right-sidebar-content {
+  padding: var(--ui-gap-lg);
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-lg);
+}
+
+/* ============================================
+   Container - Content width wrapper
+   ============================================ */
+.container {
+  margin: 0 auto;
+  padding: 0 var(--ui-gap-lg);
+}
+
+.container--sm {
+  max-width: 40rem;
+}
+
+.container--md {
+  max-width: 60rem;
+}
+
+.container--lg {
+  max-width: 75rem;
+}
+
+/* ============================================
+   PageContainer - Full page content wrapper
+   ============================================ */
+.page-container {
+  width: 100%;
+  min-width: 0;
+  max-width: var(--ui-page-max-width, 60rem);
+  margin: 0 auto;
+  padding: var(
+    --ui-page-padding,
+    calc(var(--ui-gap-lg) * 2) var(--ui-gap-xl) calc(var(--ui-gap-xl) + var(--ui-gap-lg))
+  );
+  display: grid;
+  gap: var(--ui-page-gap, var(--ui-gap-lg));
+}
+
+.page-container > * {
+  min-width: 0;
+}
+
+/* ============================================
+   StackedLayout - Vertical stacked sections
+   ============================================ */
+.stacked-layout {
+  padding: calc(var(--ui-gap-xl) * 2) 0;
+}
+
+.stacked-layout-hero {
+  margin-bottom: calc(var(--ui-gap-lg) * 2);
+}
+
+/*
+ * Contains its children's margins. Without a formatting context the first
+ * child's top margin collapses through and eats into the hero's spacing above,
+ * so the gap varied with whatever the caller happened to render first.
+ */
+.stacked-layout-body {
+  display: flow-root;
+}
+
+/* ============================================
+   AuthLayout - Centered auth card
+   ============================================ */
+.auth-layout {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: max(var(--ui-gap-lg), env(safe-area-inset-top))
+    max(var(--ui-gap-lg), env(safe-area-inset-right))
+    max(var(--ui-gap-lg), env(safe-area-inset-bottom))
+    max(var(--ui-gap-lg), env(safe-area-inset-left));
+  box-sizing: border-box;
+}
+
+.auth-layout > .container {
+  width: 100%;
+  max-width: 26rem;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* When auth pages are rendered inside AppLayout's center panel,
+   fill the available panel height instead of forcing viewport height. */
+.app-main-content .auth-layout {
+  min-height: 100%;
+  padding: 0;
+}
+
+.app-main-content:has(> .auth-layout) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-main-content > .auth-layout {
+  width: 100%;
+}
+
+.auth-layout-card {
+  width: 100%;
+  padding: var(--ui-gap-xl);
+  border-radius: var(--ui-radius-md);
+  border: 1px solid var(--ui-color-border);
+  box-shadow: var(--ui-color-shadow);
+  background: var(--ui-color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-md);
+}
+
+.auth-layout-title {
+  margin: 0;
+  font-size: var(--ui-font-size-lg);
+  font-weight: var(--ui-font-weight-semibold);
+  line-height: var(--ui-line-height-tight);
+}
+
+.auth-layout-description {
+  margin: 0;
+  font-size: var(--ui-font-size-sm);
+  color: var(--ui-color-text-muted);
+  line-height: var(--ui-line-height-normal);
+}

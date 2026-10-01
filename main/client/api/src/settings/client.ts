@@ -1,0 +1,181 @@
+// main/client/api/src/settings/client.ts
+/**
+ * Settings API Client
+ *
+ * Type-safe client for user profile and account settings operations.
+ */
+
+import { createCsrfRequestClient } from '../utils';
+
+import type { BaseClientConfig } from '../utils';
+import type { SudoRequest, SudoResponse } from '@bslt/shared/core/auth';
+import type {
+  AccountLifecycleResponse,
+  AvatarDeleteResponse,
+  AvatarUploadResponse,
+  ChangePasswordRequest,
+  ChangePasswordResponse,
+  DeactivateAccountRequest,
+  DeleteAccountRequest,
+  ProfileCompletenessResponse,
+  RevokeAllSessionsResponse,
+  RevokeSessionResponse,
+  SessionsListResponse,
+  UpdateProfileRequest,
+  UpdateUsernameRequest,
+  UpdateUsernameResponse,
+  User,
+} from '@bslt/shared/core/users';
+
+export type SettingsClientConfig = BaseClientConfig;
+
+export interface SettingsClient {
+  updateProfile: (data: UpdateProfileRequest) => Promise<User>;
+  updateUsername: (data: UpdateUsernameRequest) => Promise<UpdateUsernameResponse>;
+  getProfileCompleteness: () => Promise<ProfileCompletenessResponse>;
+  changePassword: (data: ChangePasswordRequest) => Promise<ChangePasswordResponse>;
+  uploadAvatar: (file: File) => Promise<AvatarUploadResponse>;
+  deleteAvatar: () => Promise<AvatarDeleteResponse>;
+  listSessions: () => Promise<SessionsListResponse>;
+  revokeSession: (sessionId: string) => Promise<RevokeSessionResponse>;
+  revokeAllSessions: () => Promise<RevokeAllSessionsResponse>;
+  sudo: (data: SudoRequest) => Promise<SudoResponse>;
+  deactivateAccount: (
+    data: DeactivateAccountRequest,
+    sudoToken?: string,
+  ) => Promise<AccountLifecycleResponse>;
+  requestDeletion: (
+    data: DeleteAccountRequest,
+    sudoToken?: string,
+  ) => Promise<AccountLifecycleResponse>;
+  reactivateAccount: () => Promise<AccountLifecycleResponse>;
+}
+
+export function createSettingsClient(config: SettingsClientConfig): SettingsClient {
+  const { request } = createCsrfRequestClient(config);
+
+  return {
+    async updateProfile(data: UpdateProfileRequest): Promise<User> {
+      return request<User>('/users/me/update', {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
+    },
+
+    async changePassword(data: ChangePasswordRequest): Promise<ChangePasswordResponse> {
+      return request<ChangePasswordResponse>('/users/me/password', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    async uploadAvatar(file: File): Promise<AvatarUploadResponse> {
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      return request<AvatarUploadResponse>('/users/me/avatar', {
+        method: 'PUT',
+        body: formData,
+      });
+    },
+
+    async deleteAvatar(): Promise<AvatarDeleteResponse> {
+      return request<AvatarDeleteResponse>('/users/me/avatar/delete', {
+        method: 'POST',
+      });
+    },
+
+    async listSessions(): Promise<SessionsListResponse> {
+      return request<SessionsListResponse>('/users/me/sessions', {
+        method: 'GET',
+      });
+    },
+
+    async revokeSession(sessionId: string): Promise<RevokeSessionResponse> {
+      return request<RevokeSessionResponse>(`/users/me/sessions/${sessionId}`, {
+        method: 'DELETE',
+      });
+    },
+
+    async revokeAllSessions(): Promise<RevokeAllSessionsResponse> {
+      return request<RevokeAllSessionsResponse>('/users/me/sessions/revoke-all', {
+        method: 'POST',
+      });
+    },
+
+    async updateUsername(data: UpdateUsernameRequest): Promise<UpdateUsernameResponse> {
+      return request<UpdateUsernameResponse>('/users/me/username', {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
+    },
+
+    async getProfileCompleteness(): Promise<ProfileCompletenessResponse> {
+      return request<ProfileCompletenessResponse>('/users/me/profile-completeness', {
+        method: 'GET',
+      });
+    },
+
+    async sudo(data: SudoRequest): Promise<SudoResponse> {
+      return request<SudoResponse>('/auth/sudo', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    async deactivateAccount(
+      data: DeactivateAccountRequest,
+      sudoToken?: string,
+    ): Promise<AccountLifecycleResponse> {
+      const headers: Record<string, string> = {};
+      if (sudoToken !== undefined) {
+        headers['x-sudo-token'] = sudoToken;
+      }
+      return request<AccountLifecycleResponse>('/users/me/deactivate', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers,
+      });
+    },
+
+    async requestDeletion(
+      data: DeleteAccountRequest,
+      sudoToken?: string,
+    ): Promise<AccountLifecycleResponse> {
+      const headers: Record<string, string> = {};
+      if (sudoToken !== undefined) {
+        headers['x-sudo-token'] = sudoToken;
+      }
+      return request<AccountLifecycleResponse>('/users/me/delete', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers,
+      });
+    },
+
+    async reactivateAccount(): Promise<AccountLifecycleResponse> {
+      return request<AccountLifecycleResponse>('/users/me/reactivate', {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+    },
+  };
+}
+
+export type {
+  AccountLifecycleResponse,
+  AvatarDeleteResponse,
+  AvatarUploadResponse,
+  ChangePasswordRequest,
+  ChangePasswordResponse,
+  DeactivateAccountRequest,
+  DeleteAccountRequest,
+  ProfileCompletenessResponse,
+  RevokeAllSessionsResponse,
+  RevokeSessionResponse,
+  SessionsListResponse,
+  UpdateProfileRequest,
+  UpdateUsernameRequest,
+  UpdateUsernameResponse,
+  User,
+} from '@bslt/shared/core/users';

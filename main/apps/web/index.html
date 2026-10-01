@@ -1,0 +1,160 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!--ssr-head-->
+    <title data-default-title>BSLT</title>
+    <!--
+      Pre-paint theme: sets data-theme from the stored preference before the
+      first paint, so the critical CSS below picks the right side of every
+      light/dark pair. A FILE, never inline — production CSP is script-src 'self'
+      (main/shared/src/modules/system/security/csp.ts), which would silently
+      block an inline script in production only.
+    -->
+    <script src="/theme-init.js"></script>
+    <!--
+      Critical CSS: the only styling that exists before the bundle does.
+
+      It is written in literal values, not var(--ui-*), because the stylesheet that
+      defines those variables has not loaded yet — that is the whole point of this
+      block, and a token here would resolve to nothing. The colours below are the
+      `--ui-color-bg` / `--ui-color-primary` / `--ui-color-border` tokens of
+      main/client/ui/src/styles/theme.css, and the light/dark selectors mirror that
+      file exactly: `[data-theme]` when the user has chosen (theme-init.js writes it
+      onto <html> pre-paint; ThemeProvider re-asserts it on mount), the OS
+      preference when they have not. So the splash matches the app it hands off
+      to, in both themes, before and after React mounts.
+    -->
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      /* theme-init.js sets data-theme before first paint; these make every
+         light-dark() in this block obey it when it disagrees with the OS. */
+      :root[data-theme='light'] {
+        color-scheme: light;
+      }
+      :root[data-theme='dark'] {
+        color-scheme: dark;
+      }
+      html,
+      body,
+      #root {
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        background: light-dark(#ffffff, #0c0d10);
+      }
+
+      #app-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: grid;
+        place-items: center;
+        background: #ffffff;
+        /* Keep in sync with SPLASH_FADE_OUT_MS in src/bootstrap/splash.ts. */
+        transition: opacity 240ms ease-out;
+      }
+      /*
+        THE FAILSAFE OF LAST RESORT, and the only one that does not need JavaScript.
+
+        SPLASH_FAILSAFE_MS bounds how long the splash can outlast the bundle — but it
+        is armed BY the bundle, so it does nothing at all in the one case where the
+        splash is most harmful: the bundle never runs. A chunk 404 after a deploy, a
+        blocked/failed script, a throw before bootstrapClientApp reaches the splash,
+        JS switched off — and a prerendered page (real, readable prose in #root) sits
+        forever under an opaque spinner.
+
+        So the reveal also exists in CSS, which is already in this file and needs
+        nothing to load. It is far slower than the JS ceiling on purpose: it must
+        never win a normal boot, only a dead one. It is disabled the moment JS starts
+        its own teardown, so the transition above still owns the fade.
+      */
+      #app-splash:not([data-leaving]) {
+        animation: app-splash-failsafe 10s linear forwards;
+      }
+      @keyframes app-splash-failsafe {
+        0%,
+        99% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0;
+          /* Not just transparent: an invisible full-screen layer eats every click. */
+          visibility: hidden;
+        }
+      }
+      #app-splash[data-leaving='true'] {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .app-splash__mark {
+        width: 2rem;
+        height: 2rem;
+        border: 0.125rem solid #e6e7eb;
+        border-top-color: #4f46e5;
+        border-radius: 50%;
+        animation: app-splash-spin 700ms linear infinite;
+      }
+      @keyframes app-splash-spin {
+        to {
+          transform: rotate(1turn);
+        }
+      }
+
+      :root[data-theme='dark'] #app-splash {
+        background: #0c0d10;
+      }
+      :root[data-theme='dark'] .app-splash__mark {
+        border-color: #26282e;
+        border-top-color: #818cf8;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme]) #app-splash {
+          background: #0c0d10;
+        }
+        :root:not([data-theme]) .app-splash__mark {
+          border-color: #26282e;
+          border-top-color: #818cf8;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #app-splash {
+          transition: none;
+        }
+        .app-splash__mark {
+          animation: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!--
+      The build-time prerenderer (main/tools/scripts/build/prerender.ts) writes the
+      public pages into these two placeholders and marks the root data-prerendered,
+      so the client knows to drop the markup and mount fresh rather than hydrate it.
+      For every other route the file ships exactly as it is: an empty SPA shell.
+    -->
+    <div id="root"><!--ssr-outlet--></div>
+
+    <!--
+      The splash, which is what the user looks at until the app is actually on
+      screen. It is a SIBLING of #root and never a child: markup inside #root is
+      markup React reconciles against on mount, and a prerendered page already puts
+      a tree in there that the client does not render. It is removed from
+      src/bootstrap/splash.ts — never by React, which cannot own what it does not
+      render — and it is removed WHATEVER HAPPENS: see SPLASH_FAILSAFE_MS.
+
+      aria-hidden: it says nothing a screen reader needs. A prerendered page has its
+      real content underneath it, and the app announces its own loading states.
+    -->
+    <div id="app-splash" aria-hidden="true">
+      <div class="app-splash__mark"></div>
+    </div>
+
+    <script type="module" src="./src/main.tsx"></script>
+  </body>
+</html>

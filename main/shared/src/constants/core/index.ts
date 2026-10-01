@@ -1,0 +1,89 @@
+// main/shared/src/constants/core/index.ts
+
+/**
+ * @file Constants Barrel
+ * @description Re-exports all core constant modules.
+ * @module Core/Constants
+ */
+
+// --- auth ---
+export {
+  APP_ROLES,
+  AUTH_EXPIRY,
+  COMMON_PASSWORDS,
+  DEFAULT_PASSWORD_CONFIG,
+  KEYBOARD_PATTERNS,
+  LOGIN_FAILURE_REASON,
+  OAUTH_PROVIDERS,
+} from './auth';
+
+// --- billing ---
+export {
+  BILLING_EVENT_TYPES,
+  BILLING_PROVIDERS,
+  CENTS_PER_DOLLAR,
+  FEATURE_KEYS,
+  INVOICE_STATUSES,
+  LIMIT_FEATURE_KEYS,
+  PAYMENT_METHOD_TYPES,
+  PLAN_FEES,
+  PLAN_INTERVALS,
+  SUBSCRIPTION_STATUSES,
+  TOGGLE_FEATURE_KEYS,
+} from './billing';
+
+// --- compliance ---
+export {
+  ACCOUNT_DELETION_GRACE_PERIOD_DAYS,
+  CONSENT_RECORD_TYPES,
+  CONSENT_TYPES,
+  DATA_EXPORT_FORMATS,
+  DATA_EXPORT_STATUSES,
+  DATA_EXPORT_TYPES,
+  DEFAULT_GRACE_PERIOD_DAYS,
+  DELETION_STATES,
+  DOCUMENT_TYPE_LABELS,
+  DOCUMENT_TYPES,
+  PUBLISHABLE_DOCUMENT_TYPES,
+  RETENTION_PERIODS,
+  USERNAME_CHANGE_COOLDOWN_DAYS,
+} from './compliance';
+
+// --- geo ---
+export {
+  DEFAULT_BLOCKED_REGIONS,
+  DEFAULT_GEO_COUNTRY_HEADER,
+  DEFAULT_GEO_REGION_HEADERS,
+  GEO_EXEMPT_PATH_PREFIXES,
+  UNKNOWN_COUNTRY_CODES,
+} from './geo';
+
+// --- i18n ---
+export { CURRENCIES, LOCALES, type Currency, type Locale } from './i18n';
+
+// --- iam ---
+export {
+  ACTOR_TYPES,
+  INVITATION_STATUSES,
+  PERMISSIONS,
+  RESERVED_USERNAMES,
+  ROLE_LEVELS,
+  TENANT_ROLES,
+  USER_STATUSES,
+} from './iam';
+
+// --- notifications ---
+export {
+  NOTIFICATION_CHANNELS,
+  NOTIFICATION_ENV_PROVIDERS,
+  NOTIFICATION_LEVELS,
+  NOTIFICATION_PRIORITIES,
+  NOTIFICATION_SCHEMA_PROVIDERS,
+  NOTIFICATION_TYPES,
+} from './notifications';
+
+// --- policy ---
+export { PROTECTED_FIELDS } from './policy';
+
+// --- ui-defaults ---
+export { DEFAULT_CONTRAST_MODE, DEFAULT_DENSITY, DEFAULT_THEME } from './ui.defaults';

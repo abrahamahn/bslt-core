@@ -1,0 +1,49 @@
+.legal-document-page {
+  display: grid;
+  gap: var(--ui-gap-lg);
+  max-width: 56rem;
+}
+
+.legal-document-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ui-gap-md);
+}
+
+.legal-document-page__title {
+  margin-bottom: var(--ui-gap-xs);
+}
+
+.legal-document-page__action {
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.legal-document-page__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-gap-sm);
+  margin-bottom: var(--ui-gap-lg);
+}
+
+/*
+ * The rendered document. Legal copy is long-form prose, so it gets a measure
+ * cap and a looser line height than the app default — the surrounding Card
+ * would otherwise run headings and paragraphs the full width of the page.
+ */
+.legal-document-page__body {
+  max-width: 70ch;
+  line-height: 1.7;
+}
+
+.legal-document-page__skeleton {
+  display: grid;
+  gap: var(--ui-gap-md);
+}
+
+@media (max-width: 30rem) {
+  .legal-document-page__header {
+    flex-direction: column;
+  }
+}

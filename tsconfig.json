@@ -1,0 +1,47 @@
+{
+  "extends": "./config/tsconfig.base.json",
+  "compilerOptions": {
+    "customConditions": [
+      "source"
+    ]
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "./main/shared"
+    },
+    {
+      "path": "./main/client/api"
+    },
+    {
+      "path": "./main/client/engine"
+    },
+    {
+      "path": "./main/client/react"
+    },
+    {
+      "path": "./main/client/ui"
+    },
+    {
+      "path": "./main/server/core"
+    },
+    {
+      "path": "./main/server/system"
+    },
+    {
+      "path": "./main/server/db"
+    },
+    {
+      "path": "./main/server/comms"
+    },
+    {
+      "path": "./main/server/storage"
+    },
+    {
+      "path": "./main/apps/server"
+    },
+    {
+      "path": "./main/apps/web"
+    }
+  ]
+}

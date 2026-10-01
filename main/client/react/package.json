@@ -1,0 +1,53 @@
+{
+  "name": "@bslt/react",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "React interface for bslt client",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./hooks": {
+      "source": "./src/hooks/index.ts",
+      "types": "./dist/hooks/index.d.ts",
+      "import": "./dist/hooks/index.js"
+    },
+    "./router": {
+      "source": "./src/router/index.ts",
+      "types": "./dist/router/index.d.ts",
+      "import": "./dist/router/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo && tsc -p tsconfig.json && node --import tsx ../../tools/scripts/build/ensure-js-extensions.ts dist",
+    "type-check": "tsc -p tsconfig.lint.json",
+    "clean": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo"
+  },
+  "dependencies": {
+    "@bslt/api": "workspace:*",
+    "@bslt/client-engine": "workspace:*",
+    "@bslt/shared": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.3",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.4.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abrahamahn/bslt.git",
+    "directory": "client/react"
+  },
+  "private": true
+}

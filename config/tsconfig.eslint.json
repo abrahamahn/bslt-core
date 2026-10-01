@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "outDir": "dist",
+    "rootDir": "..",
+    "allowImportingTsExtensions": true,
+    "typeRoots": ["../node_modules/@types"],
+    "types": ["node"]
+  },
+  "include": [
+    "../eslint.config.ts",
+    "../main/apps/**/eslint.config.ts",
+    "../main/client/**/eslint.config.ts"
+  ]
+}

@@ -1,0 +1,71 @@
+// main/server/core/src/users/index.ts
+/**
+ * Users Package
+ *
+ * Provides user profile, session management, and avatar functionality.
+ * Extracted from the app layer for reuse across applications.
+ * Canonical source lives in main/server/core/src/users/.
+ *
+ * @module @bslt/users
+ */
+
+// Routes (for auto-registration)
+export { userRoutes } from './routes';
+
+// Handlers
+export { handleMe } from './handlers';
+
+// Session management
+export { listUserSessions, revokeAllSessions, revokeSession, type UserSession } from './handlers';
+
+// Profile & avatar service functions
+export {
+  cacheBustAvatarUrl,
+  changePassword,
+  deleteAvatar,
+  getAvatarFallbackUrl,
+  getAvatarUrl,
+  getGravatarUrl,
+  getInitialsAvatarUrl,
+  updateProfile,
+  uploadAvatar,
+  type ProfileUser,
+  type StorageProvider,
+  type UpdateProfileData,
+} from './handlers';
+
+// Service (business logic)
+export { getUserById, type User } from './service';
+
+// Types (module dependency types)
+export type {
+  UsersArgon2Config,
+  UsersAuthConfig,
+  UsersModuleDeps,
+  UsersRequest,
+  UsersRequestInfo,
+} from './types';
+
+export { ERROR_MESSAGES } from './types';
+
+// Data hygiene (soft-delete enforcement + hard-delete + Sprint 3.16)
+export {
+  ANONYMIZED_EMAIL_PATTERN,
+  anonymizeUserPII,
+  cleanupUserFiles,
+  ensureForeignKeySafety,
+  filterDeletedUsers,
+  filterSoftDeletedFromResults,
+  getAnonymizedActorLabel,
+  hardDeleteAnonymizedUsers,
+  isUserDeleted,
+  type AnonymizeUserResult,
+  type FileCleanupResult,
+  type ForeignKeySafetyResult,
+  type HardDeleteResult,
+  type PaginatedUsersResult,
+} from './data-hygiene';
+
+// Background crons
+export { anonymizeExpiredUsers, type AnonymizeResult } from './pii-anonymization';
+export { cleanupUnverifiedUsers, type CleanupResult } from './unverified-cleanup';

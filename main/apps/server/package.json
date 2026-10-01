@@ -1,0 +1,35 @@
+{
+  "name": "@bslt/server",
+  "version": "1.0.0",
+  "description": "Minimal Fastify server for bslt",
+  "main": "dist/src/main.js",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "tsx --conditions=source src/main.ts",
+    "migrate": "node dist/src/migrate.js",
+    "start": "node --env-file=../../../config/env/.env.production dist/src/main.js",
+    "build": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo && tsc -p tsconfig.json && node --import tsx ../../tools/scripts/build/ensure-js-extensions.ts dist",
+    "clean": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo",
+    "type-check": "tsc -p tsconfig.lint.json"
+  },
+  "dependencies": {
+    "@bslt/core": "workspace:*",
+    "@bslt/db": "workspace:*",
+    "@bslt/comms": "workspace:*",
+    "@bslt/server-system": "workspace:*",
+    "@bslt/shared": "workspace:*",
+    "@bslt/storage": "workspace:*",
+    "@fastify/compress": "^8.3.1",
+    "@fastify/swagger": "^9.7.0",
+    "@fastify/swagger-ui": "^5.2.5",
+    "fastify": "^5.12.1",
+    "fastify-plugin": "^5.1.0"
+  },
+  "devDependencies": {
+    "vite-tsconfig-paths": "^6.0.5"
+  },
+  "private": true
+}

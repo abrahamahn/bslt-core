@@ -1,0 +1,217 @@
+{
+  "name": "@bslt/shared",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Shared environment-agnostic code for BSLT",
+  "keywords": [
+    "shared",
+    "types",
+    "schemas",
+    "errors",
+    "utils",
+    "constants",
+    "environment-agnostic"
+  ],
+  "author": "Abraham Joongwhan Ahn",
+  "sideEffects": false,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bslt/bslt.git",
+    "directory": "main/shared"
+  },
+  "bugs": {
+    "url": "https://github.com/bslt/bslt/issues"
+  },
+  "homepage": "https://github.com/bslt/bslt#readme",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./config": {
+      "source": "./src/modules/system/config/index.ts",
+      "types": "./dist/modules/system/config/index.d.ts",
+      "default": "./dist/modules/system/config/index.js"
+    },
+    "./config/*": {
+      "source": "./src/modules/system/config/*.ts",
+      "types": "./dist/modules/system/config/*.d.ts",
+      "default": "./dist/modules/system/config/*.js"
+    },
+    "./constants": {
+      "source": "./src/constants/index.ts",
+      "types": "./dist/constants/index.d.ts",
+      "default": "./dist/constants/index.js"
+    },
+    "./constants/core": {
+      "source": "./src/constants/core/index.ts",
+      "types": "./dist/constants/core/index.d.ts",
+      "default": "./dist/constants/core/index.js"
+    },
+    "./constants/system": {
+      "source": "./src/constants/system/index.ts",
+      "types": "./dist/constants/system/index.d.ts",
+      "default": "./dist/constants/system/index.js"
+    },
+    "./constants/*": {
+      "source": "./src/constants/*.ts",
+      "types": "./dist/constants/*.d.ts",
+      "default": "./dist/constants/*.js"
+    },
+    "./helpers": {
+      "source": "./src/helpers/index.ts",
+      "types": "./dist/helpers/index.d.ts",
+      "default": "./dist/helpers/index.js"
+    },
+    "./helpers/*": {
+      "source": "./src/helpers/*.ts",
+      "types": "./dist/helpers/*.d.ts",
+      "default": "./dist/helpers/*.js"
+    },
+    "./schema": {
+      "source": "./src/schema/index.ts",
+      "types": "./dist/schema/index.d.ts",
+      "default": "./dist/schema/index.js"
+    },
+    "./schema/*": {
+      "source": "./src/schema/*.ts",
+      "types": "./dist/schema/*.d.ts",
+      "default": "./dist/schema/*.js"
+    },
+    "./contracts": {
+      "source": "./src/contracts/index.ts",
+      "types": "./dist/contracts/index.d.ts",
+      "default": "./dist/contracts/index.js"
+    },
+    "./contracts/*": {
+      "source": "./src/contracts/*.ts",
+      "types": "./dist/contracts/*.d.ts",
+      "default": "./dist/contracts/*.js"
+    },
+    "./system": {
+      "source": "./src/modules/system/index.ts",
+      "types": "./dist/modules/system/index.d.ts",
+      "default": "./dist/modules/system/index.js"
+    },
+    "./system/config": {
+      "source": "./src/modules/system/config/index.ts",
+      "types": "./dist/modules/system/config/index.d.ts",
+      "default": "./dist/modules/system/config/index.js"
+    },
+    "./system/config/*": {
+      "source": "./src/modules/system/config/*.ts",
+      "types": "./dist/modules/system/config/*.d.ts",
+      "default": "./dist/modules/system/config/*.js"
+    },
+    "./system/errors": {
+      "source": "./src/modules/system/errors/index.ts",
+      "types": "./dist/modules/system/errors/index.d.ts",
+      "default": "./dist/modules/system/errors/index.js"
+    },
+    "./system/runtime": {
+      "source": "./src/modules/system/runtime/index.ts",
+      "types": "./dist/modules/system/runtime/index.d.ts",
+      "default": "./dist/modules/system/runtime/index.js"
+    },
+    "./system/http": {
+      "source": "./src/modules/system/http/index.ts",
+      "types": "./dist/modules/system/http/index.d.ts",
+      "default": "./dist/modules/system/http/index.js"
+    },
+    "./system/security": {
+      "source": "./src/modules/system/security/index.ts",
+      "types": "./dist/modules/system/security/index.d.ts",
+      "default": "./dist/modules/system/security/index.js"
+    },
+    "./system/security/*": {
+      "source": "./src/modules/system/security/*.ts",
+      "types": "./dist/modules/system/security/*.d.ts",
+      "default": "./dist/modules/system/security/*.js"
+    },
+    "./system/observability": {
+      "source": "./src/modules/system/observability/index.ts",
+      "types": "./dist/modules/system/observability/index.d.ts",
+      "default": "./dist/modules/system/observability/index.js"
+    },
+    "./system/constants": {
+      "source": "./src/constants/system/index.ts",
+      "types": "./dist/constants/system/index.d.ts",
+      "default": "./dist/constants/system/index.js"
+    },
+    "./system/constants/*": {
+      "source": "./src/constants/system/*.ts",
+      "types": "./dist/constants/system/*.d.ts",
+      "default": "./dist/constants/system/*.js"
+    },
+    "./db": {
+      "source": "./src/modules/db/index.ts",
+      "types": "./dist/modules/db/index.d.ts",
+      "default": "./dist/modules/db/index.js"
+    },
+    "./db/*": {
+      "source": "./src/modules/db/*/index.ts",
+      "types": "./dist/modules/db/*/index.d.ts",
+      "default": "./dist/modules/db/*/index.js"
+    },
+    "./core": {
+      "source": "./src/modules/core/index.ts",
+      "types": "./dist/modules/core/index.d.ts",
+      "default": "./dist/modules/core/index.js"
+    },
+    "./core/*": {
+      "source": "./src/modules/core/*/index.ts",
+      "types": "./dist/modules/core/*/index.d.ts",
+      "default": "./dist/modules/core/*/index.js"
+    },
+    "./comms": {
+      "source": "./src/modules/comms/index.ts",
+      "types": "./dist/modules/comms/index.d.ts",
+      "default": "./dist/modules/comms/index.js"
+    },
+    "./comms/*": {
+      "source": "./src/modules/comms/*/index.ts",
+      "types": "./dist/modules/comms/*/index.d.ts",
+      "default": "./dist/modules/comms/*/index.js"
+    },
+    "./realtime": {
+      "source": "./src/modules/realtime/index.ts",
+      "types": "./dist/modules/realtime/index.d.ts",
+      "default": "./dist/modules/realtime/index.js"
+    },
+    "./media": {
+      "source": "./src/modules/media/index.ts",
+      "types": "./dist/modules/media/index.d.ts",
+      "default": "./dist/modules/media/index.js"
+    },
+    "./storage": {
+      "source": "./src/modules/storage/index.ts",
+      "types": "./dist/modules/storage/index.d.ts",
+      "default": "./dist/modules/storage/index.js"
+    },
+    "./storage/*": {
+      "source": "./src/modules/storage/*/index.ts",
+      "types": "./dist/modules/storage/*/index.d.ts",
+      "default": "./dist/modules/storage/*/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo && tsc -p tsconfig.json && node --import tsx ../tools/scripts/build/ensure-js-extensions.ts dist",
+    "type-check": "tsc -p tsconfig.lint.json",
+    "verify-exports": "node --import tsx ../tools/scripts/refactor/shared/verify-shared-exports.ts",
+    "clean": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo",
+    "prepack": "npm run build && npm run verify-exports && npm run test"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^25.0.9"
+  },
+  "private": true
+}

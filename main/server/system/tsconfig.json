@@ -1,0 +1,75 @@
+{
+  "extends": "../../../config/tsconfig.node.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@bslt/shared": [
+        "../../shared/src/index.ts"
+      ],
+      "@bslt/shared/*": [
+        "../../shared/src/modules/*",
+        "../../shared/src/*"
+      ],
+      "@bslt/shared/config": [
+        "../../shared/src/modules/system/config/index.ts"
+      ],
+      "@bslt/shared/config/*": [
+        "../../shared/src/modules/system/config/*"
+      ],
+      "@bslt/shared/system/config": [
+        "../../shared/src/modules/system/config/index.ts"
+      ],
+      "@bslt/shared/system/config/*": [
+        "../../shared/src/modules/system/config/*"
+      ],
+      "@bslt/shared/system": [
+        "../../shared/src/modules/system/index.ts"
+      ],
+      "@bslt/shared/system/*": [
+        "../../shared/src/modules/system/*"
+      ],
+      "@bslt/shared/system/constants": [
+        "../../shared/src/constants/system/index.ts"
+      ],
+      "@bslt/shared/system/constants/*": [
+        "../../shared/src/constants/system/*"
+      ],
+      "@bslt/server-system": [
+        "./src/index.ts"
+      ],
+      "@bslt/server-system/*": [
+        "./src/*"
+      ]
+    },
+    "tsBuildInfoFile": "./node_modules/.cache/typescript/tsconfig.system.tsbuildinfo",
+    "typeRoots": [
+      "./node_modules/@types",
+      "../../../node_modules/@types"
+    ]
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "vitest.config.ts",
+    "eslint.config.ts",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.ts",
+    "src/**/*.spec.tsx",
+    "src/**/__tests__/**"
+  ],
+  "references": [
+    {
+      "path": "../../shared"
+    }
+  ]
+}

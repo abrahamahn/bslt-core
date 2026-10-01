@@ -1,0 +1,1725 @@
+/* main/client/ui/src/styles/utilities.css */
+/**
+ * Utility Classes
+ * Tailwind-inspired layout and styling utilities
+ * Uses design tokens from theme.css for consistency
+ */
+
+@import './theme.css';
+
+/* ===== DISPLAY ===== */
+.flex {
+  display: flex;
+}
+
+.grid {
+  display: grid;
+}
+
+.block {
+  display: block;
+}
+
+.inline-block {
+  display: inline-block;
+}
+
+.hidden {
+  display: none;
+}
+
+/* ===== FLEX DIRECTION ===== */
+.flex-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-row-reverse {
+  flex-direction: row-reverse;
+}
+
+.flex-col-reverse {
+  flex-direction: column-reverse;
+}
+
+/* ===== FLEX ALIGNMENT ===== */
+.items-start {
+  align-items: flex-start;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.items-end {
+  align-items: flex-end;
+}
+
+.items-stretch {
+  align-items: stretch;
+}
+
+.self-start {
+  align-self: flex-start;
+}
+
+.self-center {
+  align-self: center;
+}
+
+.self-end {
+  align-self: flex-end;
+}
+
+.justify-start {
+  justify-content: flex-start;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-end {
+  justify-content: flex-end;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.content-start {
+  align-content: start;
+}
+
+.content-center {
+  align-content: center;
+}
+
+/* ===== FLEX UTILITIES ===== */
+.flex-1 {
+  flex: 1;
+}
+
+.flex-auto {
+  flex: auto;
+}
+
+.flex-none {
+  flex: none;
+}
+
+.flex-shrink-0 {
+  flex-shrink: 0;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+/* ===== GAP ===== */
+.gap-0 {
+  gap: 0;
+}
+
+.gap-1 {
+  gap: var(--ui-gap-xs);
+}
+
+.gap-2 {
+  gap: var(--ui-gap-sm);
+}
+
+.gap-3 {
+  gap: var(--ui-gap-md);
+}
+
+.gap-4 {
+  gap: var(--ui-gap-lg);
+}
+
+.gap-5 {
+  gap: var(--ui-gap-xl);
+}
+
+.gap-6 {
+  gap: var(--ui-gap-2xl);
+}
+
+.gap-8 {
+  gap: var(--ui-gap-3xl);
+}
+
+/* ===== PADDING ===== */
+.p-0 {
+  padding: 0;
+}
+
+.p-1 {
+  padding: var(--ui-gap-xs);
+}
+
+.p-2 {
+  padding: var(--ui-gap-sm);
+}
+
+.p-3 {
+  padding: var(--ui-gap-md);
+}
+
+.p-4 {
+  padding: var(--ui-gap-lg);
+}
+
+.p-5 {
+  padding: var(--ui-gap-xl);
+}
+
+.p-6 {
+  padding: var(--ui-gap-2xl);
+}
+
+.p-12 {
+  padding: var(--ui-gap-3xl);
+}
+
+.px-2 {
+  padding-inline: var(--ui-gap-sm);
+}
+
+.px-3 {
+  padding-inline: var(--ui-gap-md);
+}
+
+.px-4 {
+  padding-inline: var(--ui-gap-lg);
+}
+
+.py-2 {
+  padding-top: var(--ui-gap-sm);
+  padding-bottom: var(--ui-gap-sm);
+}
+
+.py-3 {
+  padding-top: var(--ui-gap-md);
+  padding-bottom: var(--ui-gap-md);
+}
+
+.py-4 {
+  padding-top: var(--ui-gap-lg);
+  padding-bottom: var(--ui-gap-lg);
+}
+
+.px-1 {
+  padding-inline: var(--ui-gap-xs);
+}
+
+.py-1 {
+  padding-top: var(--ui-gap-xs);
+  padding-bottom: var(--ui-gap-xs);
+}
+
+.py-12 {
+  padding-top: var(--ui-gap-3xl);
+  padding-bottom: var(--ui-gap-3xl);
+}
+
+.pt-1 {
+  padding-top: var(--ui-gap-xs);
+}
+
+.pt-2 {
+  padding-top: var(--ui-gap-sm);
+}
+
+.pt-3 {
+  padding-top: var(--ui-gap-md);
+}
+
+.pt-4 {
+  padding-top: var(--ui-gap-lg);
+}
+
+.pt-6 {
+  padding-top: var(--ui-gap-2xl);
+}
+
+.pb-1 {
+  padding-bottom: var(--ui-gap-xs);
+}
+
+.pb-2 {
+  padding-bottom: var(--ui-gap-sm);
+}
+
+/* ===== MARGIN ===== */
+.m-0 {
+  margin: 0;
+}
+
+.m-auto {
+  margin: auto;
+}
+
+.mt-1 {
+  margin-top: var(--ui-gap-xs);
+}
+
+.mt-2 {
+  margin-top: var(--ui-gap-sm);
+}
+
+.mt-3 {
+  margin-top: var(--ui-gap-md);
+}
+
+.mt-4 {
+  margin-top: var(--ui-gap-lg);
+}
+
+.mt-auto {
+  margin-top: auto;
+}
+
+.mb-1 {
+  margin-bottom: var(--ui-gap-xs);
+}
+
+.mb-2 {
+  margin-bottom: var(--ui-gap-sm);
+}
+
+.mb-3 {
+  margin-bottom: var(--ui-gap-md);
+}
+
+.mb-4 {
+  margin-bottom: var(--ui-gap-lg);
+}
+
+.mb-6 {
+  margin-bottom: var(--ui-gap-xl);
+}
+
+.mt-6 {
+  margin-top: var(--ui-gap-xl);
+}
+
+.ml-auto {
+  margin-inline-start: auto;
+}
+
+.mr-auto {
+  margin-inline-end: auto;
+}
+
+/* ===== WIDTH ===== */
+.w-full {
+  width: 100%;
+}
+
+.w-screen {
+  width: 100vw;
+}
+
+.w-auto {
+  width: auto;
+}
+
+.min-w-0 {
+  min-width: 0;
+}
+
+/* ===== HEIGHT ===== */
+.h-full {
+  height: 100%;
+}
+
+.h-screen {
+  height: 100vh;
+}
+
+.h-auto {
+  height: auto;
+}
+
+.min-h-0 {
+  min-height: 0;
+}
+
+.min-h-full {
+  min-height: 100%;
+}
+
+/* ===== OVERFLOW ===== */
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.overflow-auto {
+  overflow: auto;
+}
+
+.overflow-x-auto {
+  overflow-x: auto;
+}
+
+.overflow-y-auto {
+  overflow-y: auto;
+}
+
+/* ===== TEXT ===== */
+.text-left {
+  text-align: start;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: end;
+}
+
+.text-xs {
+  font-size: var(--ui-font-size-xs);
+}
+
+.text-sm {
+  font-size: var(--ui-font-size-sm);
+}
+
+.text-base {
+  font-size: var(--ui-font-size-base);
+}
+
+.text-lg {
+  font-size: var(--ui-font-size-lg);
+}
+
+.text-2xs {
+  font-size: var(--ui-font-size-2xs);
+}
+
+.text-md {
+  font-size: var(--ui-font-size-md);
+}
+
+.text-xl {
+  font-size: var(--ui-font-size-xl);
+}
+
+.font-medium {
+  font-weight: var(--ui-font-weight-medium);
+}
+
+.font-semibold {
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+.font-bold {
+  font-weight: var(--ui-font-weight-bold);
+}
+
+.font-normal {
+  font-weight: var(--ui-font-weight-regular);
+}
+
+.font-mono {
+  font-family:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+.uppercase {
+  text-transform: uppercase;
+}
+
+.capitalize {
+  text-transform: capitalize;
+}
+
+.tracking-wide {
+  letter-spacing: 0.05em;
+}
+
+.underline {
+  text-decoration: underline;
+}
+
+.no-underline {
+  text-decoration: none;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.break-all {
+  word-break: break-all;
+}
+
+.select-all {
+  user-select: all;
+}
+
+.list-disc {
+  list-style-type: disc;
+}
+
+.list-inside {
+  list-style-position: inside;
+}
+
+/* ===== BORDER ===== */
+.border {
+  border: 1px solid var(--ui-color-border);
+}
+
+.border-t {
+  border-top: 1px solid var(--ui-color-border);
+}
+
+.border-b {
+  border-bottom: 1px solid var(--ui-color-border);
+}
+
+.border-l {
+  border-inline-start: 1px solid var(--ui-color-border);
+}
+
+.border-r {
+  border-inline-end: 1px solid var(--ui-color-border);
+}
+
+.border-dashed {
+  border-style: dashed;
+}
+
+.border-danger {
+  border: 1px solid var(--ui-color-danger);
+}
+
+/*
+ * Separators between siblings, without the "border on every row, then cancel
+ * the last one" pattern — which relied on a `last:` variant this repo does not
+ * implement, so the final row kept its border.
+ */
+.divide-y > * + * {
+  border-top: 1px solid var(--ui-color-border);
+}
+
+.border-none {
+  border: none;
+}
+
+.border-current {
+  border-color: currentColor;
+}
+
+/* ===== BORDER RADIUS ===== */
+.rounded {
+  border-radius: var(--ui-radius-sm);
+}
+
+.rounded-md {
+  border-radius: var(--ui-radius-md);
+}
+
+.rounded-lg {
+  border-radius: var(--ui-radius-lg);
+}
+
+.rounded-full {
+  border-radius: var(--ui-radius-full);
+}
+
+/* ===== BACKGROUND ===== */
+.bg-surface {
+  background: var(--ui-color-surface);
+}
+
+.bg-primary {
+  background: var(--ui-color-bg);
+}
+
+.bg-transparent {
+  background: transparent;
+}
+
+.bg-current {
+  background-color: currentColor;
+}
+
+/* ===== CODE / PRE BLOCKS ===== */
+.code-block {
+  background-color: var(--ui-color-surface);
+  color: var(--ui-color-text);
+  font-family: var(--ui-font-family-mono);
+}
+
+/* ===== CURSOR ===== */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.cursor-default {
+  cursor: default;
+}
+
+/* ===== POSITION ===== */
+.relative {
+  position: relative;
+}
+
+.absolute {
+  position: absolute;
+}
+
+.fixed {
+  position: fixed;
+}
+
+.sticky {
+  position: sticky;
+}
+
+/* ===== INSETS (offsets for positioned elements) ===== */
+.inset-0 {
+  inset: 0;
+}
+
+.inset-x-0 {
+  inset-inline: 0;
+}
+
+.inset-y-0 {
+  top: 0;
+  bottom: 0;
+}
+
+.top-0 {
+  top: 0;
+}
+
+.top-4 {
+  top: var(--ui-gap-lg);
+}
+
+.bottom-0 {
+  bottom: 0;
+}
+
+.left-0 {
+  left: 0;
+}
+
+.right-0 {
+  right: 0;
+}
+
+/* ===== Z-INDEX ===== */
+.z-10 {
+  z-index: 10;
+}
+
+.z-20 {
+  z-index: 20;
+}
+
+.z-50 {
+  z-index: 50;
+}
+
+/* ===== TRANSITIONS ===== */
+.transition {
+  transition: all var(--ui-motion-duration-base) var(--ui-motion-ease-standard);
+}
+
+.transition-bg {
+  transition: background var(--ui-motion-duration-base) var(--ui-motion-ease-standard);
+}
+
+/* ===== GRID ===== */
+.grid-cols-1 {
+  grid-template-columns: repeat(1, 1fr);
+}
+
+.grid-cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.grid-cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.grid-cols-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.grid-cols-5 {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.grid-cols-6 {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.col-span-1 {
+  grid-column: span 1;
+}
+
+.col-span-2 {
+  grid-column: span 2;
+}
+
+.col-span-3 {
+  grid-column: span 3;
+}
+
+.col-span-full {
+  grid-column: 1 / -1;
+}
+
+.order-1 {
+  order: 1;
+}
+
+.order-2 {
+  order: 2;
+}
+
+/* ===== COMMON COMBINATIONS ===== */
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-start {
+  display: flex;
+  align-items: flex-start;
+}
+
+.flex-end {
+  display: flex;
+  align-items: flex-end;
+}
+
+.flex-col-stretch {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.full-size {
+  width: 100%;
+  height: 100%;
+}
+
+/*
+ * NOTE: For screen-reader only content, use .visually-hidden from elements.css
+ * This is the single source of truth for accessibility hiding
+ */
+
+/* ===== LAYOUT COMPONENTS ===== */
+
+/* Panel container - base for sidebars and content panels */
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Panel header - consistent header styling */
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--ui-gap-lg);
+  flex-shrink: 0;
+}
+
+/* Panel content - scrollable content area */
+.panel-content {
+  padding: var(--ui-gap-lg);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-lg);
+}
+
+/* Scrollable flex child - for ScrollArea containers */
+.scroll-flex {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Sidebar panel with responsive width */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-xs);
+  padding: var(--ui-gap-sm);
+  flex-shrink: 0;
+  background: var(--ui-color-bg);
+  width: max-content;
+}
+
+@media (max-width: 48rem) {
+  .sidebar {
+    padding: var(--ui-gap-xs);
+  }
+}
+
+/* Toolbar/footer bar */
+.bar {
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--ui-gap-sm) var(--ui-gap-lg);
+  gap: var(--ui-gap-md);
+  background: var(--ui-color-bg);
+  font-size: var(--ui-font-size-xs);
+}
+
+@media (max-width: 48rem) {
+  .bar {
+    padding: var(--ui-gap-sm) var(--ui-gap-md);
+  }
+}
+
+/* Bar section - for grouping items within a bar */
+.bar-section {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-gap-xs);
+}
+
+/* Hide on mobile */
+.hide-mobile {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-gap-xl);
+}
+
+@media (max-width: 48rem) {
+  .hide-mobile {
+    display: none;
+  }
+}
+
+/* Empty state container */
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: var(--ui-gap-3xl);
+  text-align: center;
+}
+
+/* Responsive auto-fit grid */
+.grid-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: var(--ui-gap-xl);
+  padding: var(--ui-gap-xl);
+  align-content: start;
+}
+
+@media (max-width: 48rem) {
+  .grid-auto {
+    grid-template-columns: 1fr;
+    gap: var(--ui-gap-lg);
+    padding: var(--ui-gap-lg);
+  }
+}
+
+/* Variant card for preview */
+.variant-card {
+  border: var(--ui-border-width) solid currentColor;
+  border-radius: var(--ui-radius-lg);
+  padding: var(--ui-gap-lg);
+}
+
+/* Variant card header */
+.variant-card-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--ui-gap-lg);
+}
+
+/* Copy-code button in the variant header. The header is a space-between flex
+   row, so without this the button stretches to the title block's height and its
+   icon floats in the middle of it. */
+.demo-copy-button {
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+/* Preview box for component demos */
+.preview-box {
+  padding: var(--ui-gap-xl);
+  border: var(--ui-border-width) dashed currentColor;
+  border-radius: var(--ui-radius-sm);
+  margin-bottom: var(--ui-gap-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 5rem;
+  gap: var(--ui-gap-lg);
+  flex-wrap: wrap;
+}
+
+/* Code block container */
+.code-details {
+  margin-top: var(--ui-gap-lg);
+}
+
+.code-details summary {
+  cursor: pointer;
+  padding: var(--ui-gap-sm);
+}
+
+.code-details pre {
+  margin: var(--ui-gap-sm) 0 0;
+  padding: var(--ui-gap-md);
+  overflow-x: auto;
+}
+
+/* Spacer for flex layouts - pushes content to bottom */
+.spacer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-xs);
+  padding-top: var(--ui-gap-sm);
+}
+
+/* Min width for balanced toolbar items */
+.min-w-88 {
+  min-width: 5.5rem;
+}
+
+/* ===== ADDITIONAL UTILITIES ===== */
+
+/* Horizontal centering */
+.mx-auto {
+  margin-inline: auto;
+}
+
+/* Min height screen */
+.min-h-screen {
+  min-height: 100vh;
+}
+
+/* Inline-start padding variations (mirror under RTL) */
+.pl-4 {
+  padding-inline-start: var(--ui-gap-lg);
+}
+
+.pl-5 {
+  padding-inline-start: var(--ui-gap-xl);
+}
+
+/* Line height utilities */
+.leading-tight {
+  line-height: var(--ui-line-height-tight);
+}
+
+.leading-normal {
+  line-height: var(--ui-line-height-normal);
+}
+
+.leading-loose {
+  line-height: var(--ui-line-height-loose);
+}
+
+/* Interactive row hover */
+.hover-row {
+  cursor: pointer;
+}
+
+.hover-row:hover {
+  background-color: var(--ui-color-surface);
+}
+
+/* Semantic color utilities */
+.text-success {
+  color: var(--ui-color-success);
+}
+
+.text-danger {
+  color: var(--ui-color-danger);
+}
+
+.text-warning {
+  color: var(--ui-color-warning);
+}
+
+.text-muted {
+  color: var(--ui-color-muted);
+}
+
+.text-link {
+  color: var(--ui-color-primary);
+  text-decoration: underline;
+}
+
+.text-link:hover {
+  color: color-mix(in srgb, var(--ui-color-primary) 76%, var(--ui-color-bg) 24%);
+}
+
+.bg-success {
+  background-color: var(--ui-color-success);
+}
+
+.bg-danger {
+  background-color: var(--ui-color-danger);
+}
+
+.bg-warning {
+  background-color: var(--ui-color-warning);
+}
+
+.bg-success-muted {
+  background-color: color-mix(in srgb, var(--ui-color-success) 15%, transparent);
+}
+
+.bg-danger-muted {
+  background-color: color-mix(in srgb, var(--ui-color-danger) 15%, transparent);
+}
+
+.bg-warning-muted {
+  background-color: color-mix(in srgb, var(--ui-color-warning) 15%, transparent);
+}
+
+/* Icon sizes */
+.icon-sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+.icon-md {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.icon-lg {
+  width: 2rem;
+  height: 2rem;
+}
+
+/* Status icon container */
+.status-icon {
+  width: 4rem;
+  height: 4rem;
+  border-radius: var(--ui-radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Max width utilities */
+.max-w-xs {
+  max-width: 20rem;
+}
+
+.max-w-md {
+  max-width: 28rem;
+}
+
+.max-w-lg {
+  max-width: 32rem;
+}
+
+.max-w-3xl {
+  max-width: 48rem;
+}
+
+/* Space-y utility for vertical spacing between children */
+.space-y-1 > * + * {
+  margin-top: var(--ui-gap-xs);
+}
+
+.space-y-2 > * + * {
+  margin-top: var(--ui-gap-sm);
+}
+
+.space-y-3 > * + * {
+  margin-top: var(--ui-gap-md);
+}
+
+.space-y-4 > * + * {
+  margin-top: var(--ui-gap-lg);
+}
+
+.space-y-6 > * + * {
+  margin-top: var(--ui-gap-xl);
+}
+
+/* Layout label for demo page */
+.layout-label {
+  position: absolute;
+  top: var(--ui-gap-xs);
+  inset-inline-end: var(--ui-gap-xs);
+  font-size: var(--ui-font-size-2xs);
+  font-weight: var(--ui-font-weight-medium);
+  color: var(--ui-color-text-muted);
+  background: var(--ui-color-surface);
+  padding: 0.125rem var(--ui-gap-xs);
+  border-radius: var(--ui-radius-sm);
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0.5;
+}
+
+/* ===== RESPONSIVE VARIANTS ===== */
+/*
+ * Mobile-first breakpoint variants of the core layout utilities, mirroring
+ * the canonical scale in main/client/ui/src/theme/breakpoints.ts:
+ *   sm: 30rem | md: 48rem | lg: 64rem | xl: 80rem | 2xl: 96rem
+ *
+ * `bp:utility` applies at viewports >= that breakpoint (min-width), so author
+ * the phone layout with unprefixed utilities and layer wider layouts on top:
+ *   <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
+ *
+ * Defined last so variants win the cascade over their unprefixed base.
+ * `pnpm lint:responsive` fails on any `bp:` class not defined here.
+ */
+
+@media (min-width: 30rem) {
+  .sm\:hidden {
+    display: none;
+  }
+
+  .sm\:block {
+    display: block;
+  }
+
+  .sm\:flex {
+    display: flex;
+  }
+
+  .sm\:grid {
+    display: grid;
+  }
+
+  .sm\:flex-row {
+    display: flex;
+    flex-direction: row;
+  }
+
+  .sm\:flex-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sm\:items-start {
+    align-items: flex-start;
+  }
+
+  .sm\:items-center {
+    align-items: center;
+  }
+
+  .sm\:items-end {
+    align-items: flex-end;
+  }
+
+  .sm\:justify-start {
+    justify-content: flex-start;
+  }
+
+  .sm\:justify-center {
+    justify-content: center;
+  }
+
+  .sm\:justify-end {
+    justify-content: flex-end;
+  }
+
+  .sm\:justify-between {
+    justify-content: space-between;
+  }
+
+  .sm\:self-start {
+    align-self: flex-start;
+  }
+
+  .sm\:self-center {
+    align-self: center;
+  }
+
+  .sm\:self-end {
+    align-self: flex-end;
+  }
+
+  .sm\:grid-cols-1 {
+    grid-template-columns: repeat(1, 1fr);
+  }
+
+  .sm\:grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .sm\:grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .sm\:grid-cols-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .sm\:grid-cols-5 {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .sm\:grid-cols-6 {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .sm\:col-span-1 {
+    grid-column: span 1;
+  }
+
+  .sm\:col-span-2 {
+    grid-column: span 2;
+  }
+
+  .sm\:col-span-3 {
+    grid-column: span 3;
+  }
+
+  .sm\:col-span-full {
+    grid-column: 1 / -1;
+  }
+
+  .sm\:order-1 {
+    order: 1;
+  }
+
+  .sm\:order-2 {
+    order: 2;
+  }
+
+  .sm\:sticky {
+    position: sticky;
+  }
+
+  .sm\:top-4 {
+    top: var(--ui-gap-lg);
+  }
+}
+
+@media (min-width: 48rem) {
+  .md\:hidden {
+    display: none;
+  }
+
+  .md\:block {
+    display: block;
+  }
+
+  .md\:flex {
+    display: flex;
+  }
+
+  .md\:grid {
+    display: grid;
+  }
+
+  .md\:flex-row {
+    display: flex;
+    flex-direction: row;
+  }
+
+  .md\:flex-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .md\:items-start {
+    align-items: flex-start;
+  }
+
+  .md\:items-center {
+    align-items: center;
+  }
+
+  .md\:items-end {
+    align-items: flex-end;
+  }
+
+  .md\:justify-start {
+    justify-content: flex-start;
+  }
+
+  .md\:justify-center {
+    justify-content: center;
+  }
+
+  .md\:justify-end {
+    justify-content: flex-end;
+  }
+
+  .md\:justify-between {
+    justify-content: space-between;
+  }
+
+  .md\:self-start {
+    align-self: flex-start;
+  }
+
+  .md\:self-center {
+    align-self: center;
+  }
+
+  .md\:self-end {
+    align-self: flex-end;
+  }
+
+  .md\:grid-cols-1 {
+    grid-template-columns: repeat(1, 1fr);
+  }
+
+  .md\:grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .md\:grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .md\:grid-cols-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .md\:grid-cols-5 {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .md\:grid-cols-6 {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .md\:col-span-1 {
+    grid-column: span 1;
+  }
+
+  .md\:col-span-2 {
+    grid-column: span 2;
+  }
+
+  .md\:col-span-3 {
+    grid-column: span 3;
+  }
+
+  .md\:col-span-full {
+    grid-column: 1 / -1;
+  }
+
+  .md\:order-1 {
+    order: 1;
+  }
+
+  .md\:order-2 {
+    order: 2;
+  }
+
+  .md\:sticky {
+    position: sticky;
+  }
+
+  .md\:top-4 {
+    top: var(--ui-gap-lg);
+  }
+}
+
+@media (min-width: 64rem) {
+  .lg\:hidden {
+    display: none;
+  }
+
+  .lg\:block {
+    display: block;
+  }
+
+  .lg\:flex {
+    display: flex;
+  }
+
+  .lg\:grid {
+    display: grid;
+  }
+
+  .lg\:flex-row {
+    display: flex;
+    flex-direction: row;
+  }
+
+  .lg\:flex-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .lg\:items-start {
+    align-items: flex-start;
+  }
+
+  .lg\:items-center {
+    align-items: center;
+  }
+
+  .lg\:items-end {
+    align-items: flex-end;
+  }
+
+  .lg\:justify-start {
+    justify-content: flex-start;
+  }
+
+  .lg\:justify-center {
+    justify-content: center;
+  }
+
+  .lg\:justify-end {
+    justify-content: flex-end;
+  }
+
+  .lg\:justify-between {
+    justify-content: space-between;
+  }
+
+  .lg\:self-start {
+    align-self: flex-start;
+  }
+
+  .lg\:self-center {
+    align-self: center;
+  }
+
+  .lg\:self-end {
+    align-self: flex-end;
+  }
+
+  .lg\:grid-cols-1 {
+    grid-template-columns: repeat(1, 1fr);
+  }
+
+  .lg\:grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .lg\:grid-cols-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .lg\:grid-cols-5 {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .lg\:grid-cols-6 {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .lg\:col-span-1 {
+    grid-column: span 1;
+  }
+
+  .lg\:col-span-2 {
+    grid-column: span 2;
+  }
+
+  .lg\:col-span-3 {
+    grid-column: span 3;
+  }
+
+  .lg\:col-span-full {
+    grid-column: 1 / -1;
+  }
+
+  .lg\:order-1 {
+    order: 1;
+  }
+
+  .lg\:order-2 {
+    order: 2;
+  }
+
+  .lg\:sticky {
+    position: sticky;
+  }
+
+  .lg\:top-4 {
+    top: var(--ui-gap-lg);
+  }
+}
+
+@media (min-width: 80rem) {
+  .xl\:hidden {
+    display: none;
+  }
+
+  .xl\:block {
+    display: block;
+  }
+
+  .xl\:flex {
+    display: flex;
+  }
+
+  .xl\:grid {
+    display: grid;
+  }
+
+  .xl\:flex-row {
+    display: flex;
+    flex-direction: row;
+  }
+
+  .xl\:flex-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .xl\:items-start {
+    align-items: flex-start;
+  }
+
+  .xl\:items-center {
+    align-items: center;
+  }
+
+  .xl\:items-end {
+    align-items: flex-end;
+  }
+
+  .xl\:justify-start {
+    justify-content: flex-start;
+  }
+
+  .xl\:justify-center {
+    justify-content: center;
+  }
+
+  .xl\:justify-end {
+    justify-content: flex-end;
+  }
+
+  .xl\:justify-between {
+    justify-content: space-between;
+  }
+
+  .xl\:self-start {
+    align-self: flex-start;
+  }
+
+  .xl\:self-center {
+    align-self: center;
+  }
+
+  .xl\:self-end {
+    align-self: flex-end;
+  }
+
+  .xl\:grid-cols-1 {
+    grid-template-columns: repeat(1, 1fr);
+  }
+
+  .xl\:grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .xl\:grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .xl\:grid-cols-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .xl\:grid-cols-5 {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .xl\:grid-cols-6 {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .xl\:col-span-1 {
+    grid-column: span 1;
+  }
+
+  .xl\:col-span-2 {
+    grid-column: span 2;
+  }
+
+  .xl\:col-span-3 {
+    grid-column: span 3;
+  }
+
+  .xl\:col-span-full {
+    grid-column: 1 / -1;
+  }
+
+  .xl\:order-1 {
+    order: 1;
+  }
+
+  .xl\:order-2 {
+    order: 2;
+  }
+
+  .xl\:sticky {
+    position: sticky;
+  }
+
+  .xl\:top-4 {
+    top: var(--ui-gap-lg);
+  }
+}
+
+@media (min-width: 96rem) {
+  .\32xl\:hidden {
+    display: none;
+  }
+
+  .\32xl\:block {
+    display: block;
+  }
+
+  .\32xl\:flex {
+    display: flex;
+  }
+
+  .\32xl\:grid {
+    display: grid;
+  }
+
+  .\32xl\:flex-row {
+    display: flex;
+    flex-direction: row;
+  }
+
+  .\32xl\:flex-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .\32xl\:items-start {
+    align-items: flex-start;
+  }
+
+  .\32xl\:items-center {
+    align-items: center;
+  }
+
+  .\32xl\:items-end {
+    align-items: flex-end;
+  }
+
+  .\32xl\:justify-start {
+    justify-content: flex-start;
+  }
+
+  .\32xl\:justify-center {
+    justify-content: center;
+  }
+
+  .\32xl\:justify-end {
+    justify-content: flex-end;
+  }
+
+  .\32xl\:justify-between {
+    justify-content: space-between;
+  }
+
+  .\32xl\:self-start {
+    align-self: flex-start;
+  }
+
+  .\32xl\:self-center {
+    align-self: center;
+  }
+
+  .\32xl\:self-end {
+    align-self: flex-end;
+  }
+
+  .\32xl\:grid-cols-1 {
+    grid-template-columns: repeat(1, 1fr);
+  }
+
+  .\32xl\:grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .\32xl\:grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .\32xl\:grid-cols-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .\32xl\:grid-cols-5 {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .\32xl\:grid-cols-6 {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .\32xl\:col-span-1 {
+    grid-column: span 1;
+  }
+
+  .\32xl\:col-span-2 {
+    grid-column: span 2;
+  }
+
+  .\32xl\:col-span-3 {
+    grid-column: span 3;
+  }
+
+  .\32xl\:col-span-full {
+    grid-column: 1 / -1;
+  }
+
+  .\32xl\:order-1 {
+    order: 1;
+  }
+
+  .\32xl\:order-2 {
+    order: 2;
+  }
+
+  .\32xl\:sticky {
+    position: sticky;
+  }
+
+  .\32xl\:top-4 {
+    top: var(--ui-gap-lg);
+  }
+}

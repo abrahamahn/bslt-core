@@ -1,0 +1,54 @@
+{
+  "name": "@bslt/storage",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Storage adapters/providers/signing for bslt (server-only)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./providers": {
+      "source": "./src/providers/index.ts",
+      "types": "./dist/providers/index.d.ts",
+      "default": "./dist/providers/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1063.0",
+    "@aws-sdk/credential-providers": "^3.1063.0",
+    "@aws-sdk/s3-request-presigner": "^3.1063.0",
+    "@bslt/shared": "workspace:*"
+  },
+  "scripts": {
+    "build": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo && tsc -p tsconfig.json && node --import tsx ../../tools/scripts/build/ensure-js-extensions.ts dist",
+    "clean": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo",
+    "type-check": "tsc -p tsconfig.lint.json"
+  },
+  "keywords": [
+    "bslt",
+    "storage",
+    "s3",
+    "file-storage"
+  ],
+  "author": "",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abrahamahn/bslt.git",
+    "directory": "main/server/storage"
+  },
+  "bugs": {
+    "url": "https://github.com/abrahamahn/bslt/issues"
+  },
+  "homepage": "https://github.com/abrahamahn/bslt#readme",
+  "sideEffects": false,
+  "private": true
+}

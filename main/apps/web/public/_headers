@@ -1,0 +1,12 @@
+# main/apps/web/public/_headers
+# Cloudflare static hosting (wrangler.jsonc serves dist/client; Vite copies this
+# file there verbatim). Caddy and nginx set these headers themselves — this file
+# is for the path that has no proxy in front of it.
+# The CSP is a verbatim copy of EDGE_CSP in
+# main/shared/src/modules/system/security/csp.ts (the canonical policy);
+# `pnpm audit:csp` fails on any drift. Edit csp.ts first, then paste here.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://js.stripe.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' wss: https://api.stripe.com https://*.sentry.io; frame-src https://js.stripe.com https://hooks.stripe.com https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; frame-ancestors 'self';
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin

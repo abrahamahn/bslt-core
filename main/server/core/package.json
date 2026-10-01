@@ -1,0 +1,89 @@
+{
+  "name": "@bslt/core",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Business modules for bslt — auth, admin, billing, notifications, users",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./auth": {
+      "source": "./src/auth/index.ts",
+      "types": "./dist/auth/index.d.ts",
+      "default": "./dist/auth/index.js"
+    },
+    "./notifications": {
+      "source": "./src/notifications/index.ts",
+      "types": "./dist/notifications/index.d.ts",
+      "default": "./dist/notifications/index.js"
+    },
+    "./users": {
+      "source": "./src/users/index.ts",
+      "types": "./dist/users/index.d.ts",
+      "default": "./dist/users/index.js"
+    },
+    "./audit": {
+      "source": "./src/audit/index.ts",
+      "types": "./dist/audit/index.d.ts",
+      "default": "./dist/audit/index.js"
+    },
+    "./legal": {
+      "source": "./src/compliance/legal/index.ts",
+      "types": "./dist/compliance/legal/index.d.ts",
+      "default": "./dist/compliance/legal/index.js"
+    },
+    "./consent": {
+      "source": "./src/consent/index.ts",
+      "types": "./dist/consent/index.d.ts",
+      "default": "./dist/consent/index.js"
+    },
+    "./data-export": {
+      "source": "./src/compliance/data-export/index.ts",
+      "types": "./dist/compliance/data-export/index.d.ts",
+      "default": "./dist/compliance/data-export/index.js"
+    },
+    "./permissions": {
+      "source": "./src/permissions/index.ts",
+      "types": "./dist/permissions/index.d.ts",
+      "default": "./dist/permissions/index.js"
+    },
+    "./route-modules": {
+      "source": "./src/route-modules.ts",
+      "types": "./dist/route-modules.d.ts",
+      "default": "./dist/route-modules.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo && tsc -p tsconfig.json && node --import tsx ../../tools/scripts/build/ensure-js-extensions.ts dist",
+    "clean": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo",
+    "type-check": "tsc -p tsconfig.lint.json"
+  },
+  "dependencies": {
+    "@bslt/server-system": "workspace:*",
+    "@bslt/db": "workspace:*",
+    "@bslt/shared": "workspace:*",
+    "@simplewebauthn/server": "^13.3.2",
+    "argon2": "^0.41.1",
+    "otpauth": "^9.4.1"
+  },
+  "peerDependencies": {
+    "fastify": "^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "fastify": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "fastify": "^5.12.1",
+    "typescript": "^5.7.2"
+  }
+}

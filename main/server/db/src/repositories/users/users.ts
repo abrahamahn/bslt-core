@@ -1,0 +1,448 @@
+// main/server/db/src/repositories/users/users.ts
+/**
+ * Users Repository (Functional)
+ *
+ * Data access layer for the users table.
+ * Follows the functional factory pattern used by billing repositories.
+ *
+ * @module
+ */
+
+import { type UserStatus } from '@bslt/shared/core/admin';
+import {
+  calculateOffsetPaginationMetadata,
+  type PaginatedResult,
+} from '@bslt/shared/db/pagination';
+import { canonicalizeEmail } from '@bslt/shared/helpers/string';
+
+import {
+  and,
+  eq,
+  escapeLikePattern,
+  exists,
+  gt,
+  gte,
+  ilike,
+  inArray,
+  insert,
+  isNotNull,
+  isNull,
+  lt,
+  notLike,
+  or,
+  rawCondition,
+  select,
+  selectCount,
+  update,
+} from '../../builder/index';
+import {
+  SUBSCRIPTIONS_TABLE,
+  USER_COLUMNS,
+  USERS_TABLE,
+  type NewUser,
+  type UpdateUser,
+  type User,
+  type UserRole,
+} from '../../schema/index';
+import { toCamelCase, toSnakeCase } from '../../utils';
+
+import type { SqlFragment } from '../../builder/index';
+import type { RawDb } from '../../client';
+
+// ============================================================================
+// Admin User List Types
+// ============================================================================
+
+// UserStatus imported from @bslt/shared (re-exported for consumers)
+export type { UserStatus };
+
+/**
+ * Database-level filter options for listing users with pagination.
+ * The sortBy field uses snake_case column names matching the database schema.
+ */
+export interface AdminUserListFilters {
+  /** Full-text search across email, username, first_name, last_name (case-insensitive) */
+  search?: string | undefined;
+  /** Filter by user role */
+  role?: UserRole | undefined;
+  /** Filter by computed user status (active, locked, unverified) */
+  status?: UserStatus | undefined;
+  /** Filter to users holding a current subscription on this plan id */
+  plan?: string | undefined;
+  /** Column to sort by (snake_case database column names) */
+  sortBy?:
+    | 'email'
+    | 'username'
+    | 'first_name'
+    | 'last_name'
+    | 'created_at'
+    | 'updated_at'
+    | undefined;
+  /** Sort direction */
+  sortOrder?: 'asc' | 'desc' | undefined;
+  /** Page number (1-indexed, defaults to 1) */
+  page?: number | undefined;
+  /** Number of results per page (defaults to 20) */
+  limit?: number | undefined;
+}
+
+// ============================================================================
+// User Repository Interface
+// ============================================================================
+
+/**
+ * Functional repository for user CRUD and admin listing operations
+ */
+export interface UserRepository {
+  /**
+   * Find a user by email address
+   * @param email - The email to search for
+   * @returns The user or null if not found
+   */
+  findByEmail(email: string): Promise<User | null>;
+
+  /**
+   * Find a user by username (case-insensitive).
+   * Usernames are stored lowercase, so the input is lowercased before lookup.
+   *
+   * @param username - The username to search for
+   * @returns The user or null if not found
+   */
+  findByUsername(username: string): Promise<User | null>;
+
+  /**
+   * Find a user by ID
+   * @param id - The user ID
+   * @returns The user or null if not found
+   */
+  findById(id: string): Promise<User | null>;
+
+  /**
+   * Create a new user
+   * @param data - The user data to insert
+   * @returns The created user
+   * @throws Error if insert fails
+   */
+  create(data: NewUser): Promise<User>;
+
+  /**
+   * Update a user by ID
+   * @param id - The user ID to update
+   * @param data - The fields to update
+   * @returns The updated user or null if not found
+   */
+  update(id: string, data: UpdateUser): Promise<User | null>;
+
+  /**
+   * List users with filtering, sorting, and pagination
+   * @param filters - Optional filter, sort, and pagination parameters
+   * @returns Paginated result containing matching users and metadata
+   * @complexity O(n) where n is the number of matching records (database-level)
+   */
+  listWithFilters(filters: AdminUserListFilters): Promise<PaginatedResult<User>>;
+
+  /**
+   * List active users holding any of the given roles.
+   * Active means not soft-deleted and not deactivated. Used to resolve
+   * privileged recipients (e.g. admins and moderators) for activity alerts.
+   *
+   * @param roles - Roles to match (any-of)
+   * @returns Matching active users (empty array if roles is empty)
+   * @complexity O(n) where n is the number of matching users
+   */
+  findActiveByRoles(roles: readonly UserRole[]): Promise<User[]>;
+
+  /**
+   * List soft-deleted users eligible for PII anonymization.
+   * Filters at the database level: deleted before the cutoff, not yet
+   * anonymized, and optionally locked at/after a threshold (hard bans).
+   *
+   * @param options - Candidate selection criteria
+   * @returns Matching users ordered by deleted_at ascending
+   * @complexity O(limit) - database-level filtering and limiting
+   */
+  listAnonymizationCandidates(options: {
+    /** Only users soft-deleted before this date */
+    deletedBefore: Date;
+    /** Only users locked until at/after this date (hard-ban marker) */
+    lockedAtOrAfter?: Date;
+    /** Maximum number of users to return */
+    limit: number;
+  }): Promise<User[]>;
+
+  /**
+   * Lock a user account until a specified date
+   * @param userId - The user ID to lock
+   * @param lockedUntil - The date/time when the lock expires
+   * @param reason - The reason for locking the account
+   * @returns void (use findById to retrieve updated user)
+   */
+  lockAccount(userId: string, lockedUntil: Date, reason: string): Promise<void>;
+
+  /**
+   * Unlock a user account by clearing locked_until and resetting failed_login_attempts
+   * @param userId - The user ID to unlock
+   * @returns void (use findById to retrieve updated user)
+   */
+  unlockAccount(userId: string): Promise<void>;
+
+  /**
+   * Increment a user's token_version, invalidating all existing tokens.
+   * @param userId - The user ID whose token version to increment
+   * @returns The new token version value
+   */
+  incrementTokenVersion(userId: string): Promise<number>;
+}
+
+// ============================================================================
+// User Repository Implementation
+// ============================================================================
+
+/**
+ * Transform raw database row to User type
+ * @param row - Raw database row with snake_case keys
+ * @returns Typed User object with camelCase keys
+ * @complexity O(n) where n is number of columns
+ */
+function transformUser(row: Record<string, unknown>): User {
+  return toCamelCase<User>(row, USER_COLUMNS);
+}
+
+function withCanonicalEmail<T extends NewUser | UpdateUser>(data: T): T {
+  if (data.email === undefined || data.email === '') {
+    return data;
+  }
+  if (data.canonicalEmail !== undefined && data.canonicalEmail !== '') {
+    return data;
+  }
+
+  return { ...data, canonicalEmail: canonicalizeEmail(data.email) };
+}
+
+/**
+ * Build a WHERE clause fragment array from AdminUserListFilters.
+ * Only non-empty, defined filter fields produce conditions.
+ *
+ * @param filters - The admin user list filters
+ * @returns Array of SqlFragment conditions to combine with AND
+ * @complexity O(1) - constant number of filter fields
+ */
+function buildFilterConditions(filters: AdminUserListFilters): SqlFragment[] {
+  const conditions: SqlFragment[] = [isNull('deleted_at')];
+
+  // Search: case-insensitive match on email, username, first_name, or last_name
+  if (filters.search !== undefined && filters.search !== '') {
+    const escapedSearch = escapeLikePattern(filters.search);
+    const pattern = `%${escapedSearch}%`;
+    conditions.push(
+      or(
+        ilike('email', pattern),
+        ilike('username', pattern),
+        ilike('first_name', pattern),
+        ilike('last_name', pattern),
+      ),
+    );
+  }
+
+  // Role filter
+  if (filters.role !== undefined) {
+    conditions.push(eq('role', filters.role));
+  }
+
+  // Plan filter: users with a current (active/trialing/past_due) subscription on this plan.
+  if (filters.plan !== undefined && filters.plan !== '') {
+    conditions.push(
+      exists(
+        `SELECT 1 FROM ${SUBSCRIPTIONS_TABLE} s ` +
+          `WHERE s.user_id = ${USERS_TABLE}.id ` +
+          `AND s.plan_id = $1 ` +
+          `AND s.status IN ('active', 'trialing', 'past_due')`,
+        [filters.plan],
+      ),
+    );
+  }
+
+  // Status filter: maps to database column conditions
+  if (filters.status !== undefined) {
+    switch (filters.status) {
+      case 'locked':
+        conditions.push(and(isNotNull('locked_until'), gt('locked_until', new Date())));
+        break;
+      case 'unverified':
+        conditions.push(eq('email_verified', false));
+        break;
+      case 'active':
+        conditions.push(
+          and(
+            eq('email_verified', true),
+            or(isNull('locked_until'), rawCondition('"locked_until" <= NOW()')),
+          ),
+        );
+        break;
+    }
+  }
+
+  return conditions;
+}
+
+/**
+ * Create a user repository bound to a database connection
+ * @param db - The raw database client
+ * @returns UserRepository implementation
+ */
+export function createUserRepository(db: RawDb): UserRepository {
+  return {
+    async findByEmail(email: string): Promise<User | null> {
+      const canonicalEmail = canonicalizeEmail(email);
+      const result = await db.queryOne(
+        select(USERS_TABLE).where(eq('canonical_email', canonicalEmail)).toSql(),
+      );
+      return result !== null ? transformUser(result) : null;
+    },
+
+    async findByUsername(username: string): Promise<User | null> {
+      const result = await db.queryOne(
+        select(USERS_TABLE).where(eq('username', username.toLowerCase())).toSql(),
+      );
+      return result !== null ? transformUser(result) : null;
+    },
+
+    async findById(id: string): Promise<User | null> {
+      const result = await db.queryOne(select(USERS_TABLE).where(eq('id', id)).toSql());
+      return result !== null ? transformUser(result) : null;
+    },
+
+    async create(data: NewUser): Promise<User> {
+      const snakeData = toSnakeCase(withCanonicalEmail(data), USER_COLUMNS);
+      const result = await db.queryOne(
+        insert(USERS_TABLE).values(snakeData).returningAll().toSql(),
+      );
+      if (result === null) {
+        throw new Error('Failed to create user');
+      }
+      return transformUser(result);
+    },
+
+    async update(id: string, data: UpdateUser): Promise<User | null> {
+      const snakeData = toSnakeCase(withCanonicalEmail(data), USER_COLUMNS);
+      const result = await db.queryOne(
+        update(USERS_TABLE).set(snakeData).where(eq('id', id)).returningAll().toSql(),
+      );
+      return result !== null ? transformUser(result) : null;
+    },
+
+    async listWithFilters(filters: AdminUserListFilters): Promise<PaginatedResult<User>> {
+      const page = filters.page ?? 1;
+      const limit = filters.limit ?? 20;
+      const sortBy = filters.sortBy ?? 'created_at';
+      const sortOrder = filters.sortOrder ?? 'desc';
+      const offset = (page - 1) * limit;
+
+      // Build WHERE conditions from filters
+      const conditions = buildFilterConditions(filters);
+
+      // Build data query
+      let dataQuery = select(USERS_TABLE);
+      if (conditions.length > 0) {
+        dataQuery = dataQuery.where(and(...conditions));
+      }
+      dataQuery = dataQuery.orderBy(sortBy, sortOrder).limit(limit).offset(offset);
+
+      // Build count query
+      let countQuery = selectCount(USERS_TABLE);
+      if (conditions.length > 0) {
+        countQuery = countQuery.where(and(...conditions));
+      }
+
+      // Execute both queries
+      const rows = await db.query(dataQuery.toSql());
+      const countRow = await db.queryOne(countQuery.toSql());
+
+      const total = countRow !== null ? Number(countRow['count']) : 0;
+      const { totalPages, hasNext, hasPrev } = calculateOffsetPaginationMetadata({
+        page,
+        limit,
+        total,
+      });
+
+      return {
+        data: rows.map(transformUser),
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNext,
+        hasPrev,
+      };
+    },
+
+    async findActiveByRoles(roles: readonly UserRole[]): Promise<User[]> {
+      if (roles.length === 0) {
+        return [];
+      }
+      const rows = await db.query(
+        select(USERS_TABLE)
+          .where(and(inArray('role', roles), isNull('deleted_at'), isNull('deactivated_at')))
+          .toSql(),
+      );
+      return rows.map(transformUser);
+    },
+
+    async listAnonymizationCandidates(options: {
+      deletedBefore: Date;
+      lockedAtOrAfter?: Date;
+      limit: number;
+    }): Promise<User[]> {
+      const conditions = [
+        isNotNull('deleted_at'),
+        lt('deleted_at', options.deletedBefore),
+        notLike('email', 'deleted-%'),
+      ];
+      if (options.lockedAtOrAfter !== undefined) {
+        conditions.push(gte('locked_until', options.lockedAtOrAfter));
+      }
+
+      const rows = await db.query(
+        select(USERS_TABLE)
+          .where(and(...conditions))
+          .orderBy('deleted_at', 'asc')
+          .limit(options.limit)
+          .toSql(),
+      );
+      return rows.map(transformUser);
+    },
+
+    async lockAccount(userId: string, lockedUntil: Date, reason: string): Promise<void> {
+      await db.execute(
+        update(USERS_TABLE)
+          .set({ ['locked_until']: lockedUntil, ['lock_reason']: reason })
+          .where(eq('id', userId))
+          .toSql(),
+      );
+    },
+
+    async unlockAccount(userId: string): Promise<void> {
+      await db.execute(
+        update(USERS_TABLE)
+          .set({ ['locked_until']: null, ['lock_reason']: null, ['failed_login_attempts']: 0 })
+          .where(eq('id', userId))
+          .toSql(),
+      );
+    },
+
+    async incrementTokenVersion(userId: string): Promise<number> {
+      const result = await db.queryOne(
+        update(USERS_TABLE)
+          .increment('token_version', 1)
+          .where(eq('id', userId))
+          .returningAll()
+          .toSql(),
+      );
+      if (result === null) {
+        throw new Error('User not found');
+      }
+      const transformed = transformUser(result);
+      return transformed.tokenVersion;
+    },
+  };
+}

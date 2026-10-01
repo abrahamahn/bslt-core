@@ -1,0 +1,32 @@
+{
+  "name": "@bslt/web",
+  "version": "1.0.0",
+  "description": "React web application for bslt",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && pnpm build:server && node --import tsx scripts/prerender.ts",
+    "build:server": "VITE_SSR=true vite build",
+    "start": "vite preview --port 4173",
+    "type-check": "tsc -p tsconfig.lint.json",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@bslt/api": "workspace:*",
+    "@bslt/client-engine": "workspace:*",
+    "@bslt/react": "workspace:*",
+    "@bslt/shared": "workspace:*",
+    "@bslt/ui": "workspace:*",
+    "@simplewebauthn/browser": "^13.2.2",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.3",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.2",
+    "vite": "^6.4.3",
+    "vite-tsconfig-paths": "^6.0.5"
+  },
+  "private": true
+}

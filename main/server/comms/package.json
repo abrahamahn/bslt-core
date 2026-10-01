@@ -1,0 +1,63 @@
+{
+  "name": "@bslt/comms",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Communication infrastructure adapters (email, sms, notifications) for bslt",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./email": {
+      "source": "./src/email/index.ts",
+      "types": "./dist/email/index.d.ts",
+      "default": "./dist/email/index.js"
+    },
+    "./email/errors": {
+      "source": "./src/email/errors.ts",
+      "types": "./dist/email/errors.d.ts",
+      "default": "./dist/email/errors.js"
+    },
+    "./email/console": {
+      "source": "./src/email/console.ts",
+      "types": "./dist/email/console.d.ts",
+      "default": "./dist/email/console.js"
+    },
+    "./email/smtp": {
+      "source": "./src/email/smtp.ts",
+      "types": "./dist/email/smtp.d.ts",
+      "default": "./dist/email/smtp.js"
+    },
+    "./sms": {
+      "source": "./src/sms/index.ts",
+      "types": "./dist/sms/index.d.ts",
+      "default": "./dist/sms/index.js"
+    },
+    "./notifications/providers": {
+      "source": "./src/notifications/providers/index.ts",
+      "types": "./dist/notifications/providers/index.d.ts",
+      "default": "./dist/notifications/providers/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@bslt/shared": "workspace:*",
+    "web-push": "^3.6.7"
+  },
+  "scripts": {
+    "build": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo && tsc -p tsconfig.json && node --import tsx ../../tools/scripts/build/ensure-js-extensions.ts dist",
+    "clean": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo",
+    "type-check": "tsc -p tsconfig.lint.json"
+  },
+  "sideEffects": false,
+  "devDependencies": {
+    "@types/web-push": "^3.6.4"
+  },
+  "private": true
+}

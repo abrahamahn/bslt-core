@@ -1,0 +1,49 @@
+{
+  "extends": "../../../config/tsconfig.node.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@bslt/shared": [
+        "../../shared/src/index.ts"
+      ],
+      "@bslt/shared/*": [
+        "../../shared/src/modules/*",
+        "../../shared/src/*"
+      ],
+      "@bslt/comms": [
+        "./src/index.ts"
+      ],
+      "@bslt/comms/*": [
+        "./src/*"
+      ]
+    },
+    "typeRoots": [
+      "../../../node_modules/@types"
+    ],
+    "tsBuildInfoFile": "./node_modules/.cache/typescript/tsconfig.comms.tsbuildinfo"
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "vitest.config.ts",
+    "eslint.config.ts",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.ts",
+    "src/**/*.spec.tsx",
+    "src/**/__tests__/**"
+  ],
+  "references": [
+    {
+      "path": "../../shared"
+    }
+  ]
+}

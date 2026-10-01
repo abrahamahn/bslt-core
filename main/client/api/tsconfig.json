@@ -1,0 +1,47 @@
+{
+  "extends": "../../../config/tsconfig.react.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": "./",
+    "composite": true,
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "@bslt/shared": [
+        "../../shared/src/index.ts"
+      ],
+      "@bslt/shared/*": [
+        "../../shared/src/modules/*",
+        "../../shared/src/*"
+      ],
+      "@hooks": [
+        "../../client/react/src/hooks"
+      ],
+      "@hooks/*": [
+        "../../client/react/src/hooks/*"
+      ]
+    },
+    "tsBuildInfoFile": "./node_modules/.cache/typescript/tsconfig.api.tsbuildinfo"
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "vitest.config.ts",
+    "eslint.config.ts",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.ts",
+    "src/**/*.spec.tsx",
+    "src/**/__tests__/**"
+  ],
+  "references": [
+    {
+      "path": "../../shared"
+    }
+  ]
+}

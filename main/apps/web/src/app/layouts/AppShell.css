@@ -1,0 +1,326 @@
+/* The phone IS the desktop's minimum window, only narrower (responsive.md).
+ *
+ * The mobile view is authored in a desktop browser at its minimum width
+ * (~500px); real phones (375-430px) render the same CSS on a canvas up to a
+ * quarter narrower, so identical sizes read proportionally larger on device.
+ * Rather than re-tuning sizes per device, the ROOT scales below the reference
+ * width: 3.2vw is exactly 1rem there (continuous at the boundary), and
+ * everything rem-sized — the whole design system, spacing included — shrinks
+ * in proportion. The 0.75rem floor (a 0.75 scale, reached at 375px) keeps the
+ * narrowest devices legible; below it layouts fold rather than shrink.
+ * On the ROOT's own font-size, rem resolves against the INITIAL value, never
+ * against itself — so this clamp is 12px..16px for a reader on the usual 16px
+ * default, while staying token-legal.
+ * The gate is 31.25rem, NOT the equivalent 500px: rem in @media also resolves
+ * against the initial font size, so gate and clamp track the reader's own font
+ * preference together. Pinned at 500px they diverge — a reader on a 20px
+ * default would cross the gate and watch the root drop 20px to 16px in one
+ * pixel of resize. REFERENCE_WIDTHS.rootRamp in shared/constants/breakpoints.ts
+ * declares this width and is what lets it past the canonical-scale lint.
+ * Ported from ganbate, where it closed the "looks right at min-width,
+ * oversized on the phone" gap. */
+@media (max-width: 31.25rem) {
+  html {
+    font-size: clamp(0.75rem, 3.2vw, 1rem);
+  }
+}
+
+/* Text fields must NOT follow the ramp (or the tokens) below 16 REAL pixels:
+   iOS Safari zooms the whole page onto any focused field smaller than that.
+   App-wide on purpose — ganbate's first sweep caught a scoped version of this
+   rule missing an input. 12pt ≡ exactly 16px: an ABSOLUTE unit on purpose,
+   because this floor is a platform constant that must not follow the ramped
+   root (1rem here would ramp with it), and raw px is rightly banned. */
+@media (max-width: 48rem) {
+  .input,
+  .textarea,
+  .select {
+    font-size: max(12pt, var(--ui-font-size-sm));
+  }
+}
+
+.app-shell-viewport {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text);
+  /* Keep the shell clear of notches/punch-holes/home indicators
+     (requires viewport-fit=cover in the viewport meta) */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+.app-shell-top-panel {
+  background: var(--ui-color-bg);
+  /* Percentage-sized panel must never clip its controls
+     (e.g. 2.75rem touch targets on coarse pointers) */
+  min-height: max-content;
+}
+
+.app-topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--ui-gap-md);
+  height: 100%;
+  min-height: 0;
+  padding: var(--ui-gap-xs) var(--ui-gap-lg);
+  background: var(--ui-color-bg);
+}
+
+.app-topbar__left,
+.app-topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-gap-sm);
+  min-width: 0;
+}
+
+.app-topbar__left {
+  justify-content: flex-start;
+}
+
+.app-topbar__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.app-topbar__title {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-topbar__actions {
+  justify-content: flex-end;
+}
+
+.app-topbar__actions .btn {
+  white-space: nowrap;
+}
+
+.app-topbar__nav-toggle {
+  display: none;
+}
+
+/* Account menu — circular avatar trigger at the far top right */
+.app-topbar__account .trigger-reset {
+  border-radius: var(--ui-radius-full);
+}
+
+/* Right-align the menu so it never overflows the viewport edge */
+.app-topbar__account .dropdown-menu {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+  min-width: 16rem;
+}
+
+.app-topbar__account-menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-xs);
+}
+
+/* Deliberately larger, heavier menu typography than default .menu-item */
+.app-topbar__account-menu .menu-item {
+  justify-content: center;
+  min-height: var(--ui-touch-target);
+  padding: var(--ui-gap-sm) var(--ui-gap-md);
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+.app-topbar__account-menu .divider {
+  margin: var(--ui-gap-xs) 0;
+}
+
+.app-topbar__account-menu-identity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-xs);
+  padding: var(--ui-gap-md) var(--ui-gap-md) var(--ui-gap-sm);
+}
+
+.app-topbar__account-menu-name {
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+.app-shell-main-frame {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.app-shell-layout-rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-xs);
+  width: 3.25rem;
+  height: 100%;
+  padding: var(--ui-gap-xs);
+  flex-shrink: 0;
+  background: var(--ui-color-bg);
+}
+
+.app-shell-side-panel {
+  background: var(--ui-color-bg);
+}
+
+.app-shell-left-layout .panel-content,
+.app-shell-right-layout .panel-content {
+  padding: var(--ui-gap-md);
+}
+
+.app-main-content {
+  min-height: 100%;
+  width: 100%;
+  /* Cap line lengths / dashboard sprawl on ultrawide displays */
+  max-width: var(--ui-content-max);
+  margin-inline: auto;
+  padding: clamp(var(--ui-gap-lg), 2vw, var(--ui-gap-2xl));
+}
+
+.app-route-loading {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: max(18rem, calc(100dvh - 10rem));
+}
+
+.app-route-loading__indicator {
+  padding: 0;
+}
+
+.app-left-menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-xs);
+  padding: var(--ui-gap-md);
+}
+
+.app-left-menu__loading {
+  display: grid;
+  gap: var(--ui-gap-md);
+  padding: var(--ui-gap-sm) var(--ui-gap-md);
+}
+
+.app-left-menu__link {
+  display: block;
+  color: inherit;
+}
+
+.app-left-menu__item {
+  min-height: 2.5rem;
+  justify-content: center;
+  padding: var(--ui-gap-sm) var(--ui-gap-md);
+  border-radius: var(--ui-radius-md);
+}
+
+.app-left-menu__item[data-selected='true'] {
+  /* `surface` is one step off the page (#0a0a0a on #000), so the selected item was
+     effectively invisible in the dark theme. `active` is the interaction-state
+     token, tuned to be perceptible against the page in both themes. */
+  background: var(--ui-color-active);
+  color: var(--ui-color-text);
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+@media (max-width: 48rem) {
+  .app-topbar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: var(--ui-gap-sm);
+    padding-inline: var(--ui-gap-md);
+  }
+
+  .app-topbar__left {
+    min-width: 0;
+  }
+
+  .app-topbar__nav-toggle {
+    display: inline-flex;
+  }
+
+  .app-topbar__brand {
+    justify-content: flex-start;
+  }
+
+  .app-topbar__title {
+    font-size: var(--ui-font-size-md);
+  }
+
+  .app-main-content {
+    padding: var(--ui-gap-md);
+  }
+
+  .app-route-loading {
+    min-height: max(16rem, calc(100dvh - 8rem));
+  }
+
+  .app-left-menu {
+    padding: var(--ui-gap-sm);
+  }
+}
+
+/* Small phones: tighten the top bar so its buttons fit on one row */
+@media (max-width: 30rem) {
+  .app-topbar {
+    gap: var(--ui-gap-xs);
+    padding-inline: var(--ui-gap-sm);
+  }
+
+  .app-topbar .btn {
+    white-space: nowrap;
+  }
+
+  .app-topbar__brand {
+    display: none;
+  }
+}
+
+/* Touch devices: navigation rows get the full 2.75rem (44px) hit area */
+@media (pointer: coarse) {
+  .app-left-menu__item,
+  .control-center-sidebar__button {
+    min-height: var(--ui-touch-target);
+  }
+}
+
+/*
+ * Control Center sidebar — shared right-rail navigation used by the Settings
+ * and Admin surfaces so their section menus stay visually consistent.
+ */
+.control-center-sidebar {
+  display: flex;
+  height: 100%;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.control-center-sidebar__header {
+  padding-bottom: var(--ui-gap-lg);
+  border-bottom: 1px solid var(--ui-color-border);
+}
+
+.control-center-sidebar__nav {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--ui-gap-xs);
+  padding-block: var(--ui-gap-md);
+}
+
+.control-center-sidebar__button {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.control-center-sidebar__button[data-active='true'] {
+  font-weight: var(--ui-font-weight-semibold);
+}

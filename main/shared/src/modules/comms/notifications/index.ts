@@ -1,0 +1,98 @@
+// main/shared/src/modules/comms/notifications/index.ts
+
+/**
+ * @file Notification Module Barrel
+ * @description Public API for notification types, schemas, errors, and logic.
+ * @module Core/Notifications
+ */
+
+// --- notifications.display ---
+export { getNotificationLevelTone } from './notifications.display';
+
+// --- notifications.logic ---
+export { shouldSendNotification } from './notifications.logic';
+
+// --- notifications.schemas (in-app) ---
+export {
+  baseMarkAsReadRequestSchema,
+  deleteNotificationResponseSchema,
+  markReadResponseSchema,
+  NOTIFICATION_LEVELS,
+  NOTIFICATION_LEVEL_MAP,
+  notificationDeleteRequestSchema,
+  notificationPreferencesSchema,
+  notificationSchema,
+  notificationsListRequestSchema,
+  notificationsListResponseSchema,
+  type BaseMarkAsReadRequest,
+  type DeleteNotificationResponse,
+  type MarkReadResponse,
+  type Notification,
+  type NotificationDeleteRequest,
+  type NotificationLevel,
+  type NotificationPreferencesConfig,
+  type NotificationsListRequest,
+  type NotificationsListResponse,
+} from './notifications.schemas';
+
+// --- notifications.push-schemas ---
+export {
+  NOTIFICATION_CHANNELS,
+  NOTIFICATION_PRIORITIES,
+  NOTIFICATION_TYPES,
+  notificationTargetUrlSchema,
+  preferencesResponseSchema,
+  sendNotificationRequestSchema,
+  sendNotificationResponseSchema,
+  subscribeRequestSchema,
+  subscribeResponseSchema,
+  unsubscribeRequestSchema,
+  unsubscribeResponseSchema,
+  updatePreferencesRequestSchema,
+  vapidKeyResponseSchema,
+} from './notifications.push.schemas';
+
+// --- notifications.errors ---
+export {
+  InvalidPreferencesError,
+  InvalidSubscriptionError,
+  NotificationRateLimitError,
+  NotificationsDisabledError,
+  NotificationSendError,
+  PayloadTooLargeError,
+  PreferencesNotFoundError,
+  ProviderError,
+  ProviderNotConfiguredError,
+  QuietHoursActiveError,
+  SubscriptionExistsError,
+  SubscriptionExpiredError,
+  SubscriptionNotFoundError,
+  VapidNotConfiguredError,
+} from './notifications.errors';
+
+// --- notifications.types (push) ---
+export {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  type BatchSendResult,
+  type NotificationAction,
+  type NotificationChannel,
+  type NotificationMessage,
+  type NotificationPayload,
+  type NotificationPreferences,
+  type NotificationPriority,
+  type NotificationType,
+  type NotificationTypePreference,
+  type PreferencesResponse,
+  type SendResult,
+  type PushSubscription,
+  type PushSubscriptionKeys,
+  type SendNotificationRequest,
+  type SendNotificationResponse,
+  type StoredPushSubscription,
+  type SubscribeRequest,
+  type SubscribeResponse,
+  type UnsubscribeRequest,
+  type UnsubscribeResponse,
+  type UpdatePreferencesRequest,
+  type VapidKeyResponse,
+} from './notifications.types';

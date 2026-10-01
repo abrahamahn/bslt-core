@@ -1,0 +1,45 @@
+{
+  "extends": "../../../config/tsconfig.node.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "jsx": "react-jsx",
+    "baseUrl": "./",
+    "paths": {
+      "@bslt/shared": [
+        "../../shared/src/index.ts"
+      ],
+      "@bslt/shared/*": [
+        "../../shared/src/modules/*",
+        "../../shared/src/*"
+      ]
+    },
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "tsBuildInfoFile": "./node_modules/.cache/typescript/tsconfig.engine.tsbuildinfo"
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "vitest.config.ts",
+    "eslint.config.ts",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.ts",
+    "src/**/*.spec.tsx",
+    "src/**/__tests__/**"
+  ],
+  "references": [
+    {
+      "path": "../../shared"
+    }
+  ]
+}

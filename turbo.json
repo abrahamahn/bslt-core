@@ -1,0 +1,82 @@
+{
+  "$schema": "https://v2-9-16.turborepo.dev/schema.json",
+  "ui": "stream",
+  "cacheDir": "node_modules/.cache/turbo",
+  "globalPassThroughEnv": ["NODE_ENV", "APP_ENV", "VERCEL_ENV", "BSLT_BOUNDARY_LEVEL"],
+  "tasks": {
+    "build:theme": {
+      "cache": true,
+      "inputs": ["main/tools/sync/sync-css-theme.ts", "main/client/ui/src/theme/**"],
+      "outputs": ["main/client/ui/src/generated/**"]
+    },
+    "build": {
+      "dependsOn": ["^build", "build:theme"],
+      "outputs": ["dist/**", "build/**", ".next/**", "!.cache/**"],
+      "cache": true,
+      "env": ["NODE_ENV", "DATABASE_URL", "NEXT_PUBLIC_*", "VITE_*", "PUBLIC_*", "SITE_URL"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "passThroughEnv": ["VITE_DEV_PORT", "VITE_PROXY_TARGET", "VITE_PROXY_WS_TARGET"]
+    },
+    "start": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "inputs": [
+        "**/*.{ts,tsx,js,jsx,cjs,mjs}",
+        "eslint.config.ts",
+        "tsconfig*.json",
+        "config/tsconfig.eslint.json"
+      ],
+      "cache": true
+    },
+    "lint:css": {
+      "inputs": [
+        "main/apps/**/*.css",
+        "main/client/**/*.css",
+        "main/apps/**/*.tsx",
+        "main/client/**/*.tsx",
+        "main/tools/scripts/lint/lint-css-tokens.ts",
+        "main/tools/scripts/lint/lint-responsive.ts",
+        "main/tools/scripts/lint/lint-dead-classes.ts",
+        "main/tools/scripts/lint/lint-undefined-tokens.ts",
+        "main/tools/scripts/lint/dead-classes-debt.json"
+      ],
+      "cache": true
+    },
+    "type-check": {
+      "dependsOn": ["^type-check"],
+      "inputs": ["**/*.ts", "**/*.tsx", "tsconfig.json", "tsconfig.*.json"],
+      "cache": true
+    },
+    "test": {
+      "inputs": ["**/*.{ts,tsx}", "vitest.config.ts"],
+      "cache": true,
+      "env": ["NODE_ENV", "DATABASE_URL", "TEST_*"]
+    },
+    "validate": {
+      "dependsOn": ["lint", "type-check", "test"],
+      "cache": true
+    },
+    "clean": {
+      "cache": false
+    }
+  },
+  "globalDependencies": [
+    "docs/legal/**",
+    "main/tools/scripts/build/ensure-js-extensions.ts",
+    "pnpm-lock.yaml",
+    "tsconfig.json",
+    "vitest.config.ts",
+    "config/*.{ts,js,mjs,cjs,json}",
+    "config/.prettierrc",
+    "config/tsconfig.eslint.json",
+    "eslint.config.ts",
+    ".editorconfig",
+    ".pnpmrc"
+  ]
+}

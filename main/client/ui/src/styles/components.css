@@ -1,0 +1,2109 @@
+/* main/client/ui/src/styles/components.css */
+/* Components - Composed multi-part component styles */
+@import './elements.css';
+
+/* Global focus-visible styles for component interactive elements */
+.accordion-header:focus-visible,
+.tab:focus-visible,
+.menu-item:focus-visible,
+.trigger-reset:focus-visible {
+  outline: var(--ui-outline-width) solid var(--ui-color-primary);
+  outline-offset: var(--ui-outline-offset);
+}
+
+/* Accordion */
+.accordion {
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-lg);
+  overflow: hidden;
+}
+
+.accordion-item + .accordion-item {
+  border-top: 1px solid var(--ui-color-border);
+}
+
+.accordion-heading {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.accordion-header {
+  width: 100%;
+  background: var(--ui-color-bg);
+  padding: var(--ui-gap-sm) var(--ui-gap-md);
+  border: none;
+  text-align: start;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  color: var(--ui-color-text);
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-line-height-normal);
+}
+
+.accordion-content {
+  padding: var(--ui-gap-sm) var(--ui-gap-md);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text);
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-line-height-normal);
+}
+
+/* ErrorBoundary Fallback */
+.error-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-gap-sm);
+  padding: var(--ui-gap-xl) var(--ui-gap-lg);
+  text-align: center;
+  min-height: 12rem;
+}
+
+.error-fallback-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: var(--ui-alert-danger-bg);
+  color: var(--ui-alert-danger-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--ui-font-weight-bold);
+  font-size: var(--ui-font-size-lg);
+}
+
+.error-fallback-title {
+  font-size: var(--ui-font-size-lg);
+  font-weight: var(--ui-font-weight-semibold);
+  color: var(--ui-color-text);
+  margin: 0;
+}
+
+.error-fallback-message {
+  font-size: var(--ui-font-size-sm);
+  color: var(--ui-color-text-muted);
+  max-width: 30rem;
+  margin: 0;
+}
+
+.error-fallback-retry {
+  margin-top: var(--ui-gap-sm);
+  padding: var(--ui-gap-xs) var(--ui-gap-md);
+  background: var(--ui-color-primary);
+  color: var(--ui-color-text-inverse);
+  border: none;
+  border-radius: var(--ui-radius-md);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  cursor: pointer;
+}
+
+.error-fallback-retry:hover {
+  opacity: 0.9;
+}
+
+.error-fallback-retry:focus-visible {
+  outline: var(--ui-outline-width) solid var(--ui-color-primary);
+  outline-offset: var(--ui-outline-offset);
+}
+
+/* Dialog */
+.dialog-title {
+  font-weight: var(--ui-font-weight-bold);
+  margin-bottom: var(--ui-gap-sm);
+}
+
+.dialog-close {
+  position: absolute;
+  top: var(--ui-gap-md);
+  inset-inline-end: var(--ui-gap-md);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: var(--ui-gap-xs);
+  color: var(--ui-color-text-muted);
+}
+
+.dialog-close:hover {
+  color: var(--ui-color-text);
+}
+
+/* Dropdown */
+.dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  line-height: 1;
+}
+.dropdown > * {
+  margin: 0;
+}
+
+.dropdown-menu {
+  position: absolute;
+  min-width: 12.5rem;
+  padding: var(--ui-gap-sm);
+  border-radius: var(--ui-radius-lg);
+  border: 1px solid var(--ui-color-border);
+  background: var(--ui-color-bg);
+  color: var(--ui-color-text);
+  box-shadow: var(--ui-color-shadow-overlay);
+  z-index: 1000;
+}
+
+.dropdown[data-placement='bottom'] .dropdown-menu {
+  top: calc(100% + var(--ui-gap-xs));
+  inset-inline-start: -1px;
+}
+
+.dropdown[data-placement='right'] .dropdown-menu {
+  top: 0;
+  left: calc(100% + var(--ui-gap-xs));
+}
+
+/* FocusTrap - Behavior-only component, no specific styles needed */
+
+/* FormField */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-sm);
+}
+
+.form-field-label {
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  color: var(--ui-color-text);
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.form-field-required {
+  color: var(--ui-color-danger);
+}
+
+.form-field-input {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-xs);
+}
+
+.form-field-error {
+  font-size: var(--ui-font-size-xs);
+  color: var(--ui-color-danger);
+}
+
+.form-field-helper {
+  font-size: var(--ui-font-size-xs);
+  color: var(--ui-color-text-muted);
+}
+
+/* LoadingContainer */
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-gap-md);
+  padding: var(--ui-gap-xl);
+}
+
+/* PaymentMethodCard */
+.payment-method-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ui-gap-md);
+  padding: var(--ui-gap-md);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-color-bg);
+  color: var(--ui-color-text);
+}
+
+.payment-method-card--default {
+  border-color: color-mix(in srgb, var(--ui-color-primary) 38%, var(--ui-color-border));
+  background: color-mix(in srgb, var(--ui-color-primary) 4%, var(--ui-color-bg));
+}
+
+.payment-method-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 2rem;
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-semibold);
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.payment-method-card__details {
+  display: grid;
+  gap: calc(var(--ui-gap-xs) / 2);
+  min-width: 0;
+}
+
+.payment-method-card__brand,
+.payment-method-card__type {
+  color: var(--ui-color-text);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-semibold);
+  line-height: var(--ui-line-height-tight);
+  text-transform: capitalize;
+}
+
+.payment-method-card__last4 {
+  color: var(--ui-color-text);
+  font-family: var(--ui-font-family-mono);
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-line-height-normal);
+}
+
+.payment-method-card__expiry {
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-xs);
+  line-height: var(--ui-line-height-normal);
+}
+
+.payment-method-card__badge {
+  justify-self: start;
+  padding: calc(var(--ui-gap-xs) / 2) var(--ui-gap-sm);
+  border: 1px solid color-mix(in srgb, var(--ui-color-success) 35%, var(--ui-color-border));
+  border-radius: var(--ui-radius-full);
+  background: color-mix(in srgb, var(--ui-color-success) 9%, var(--ui-color-bg));
+  color: var(--ui-color-success);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-semibold);
+  line-height: var(--ui-line-height-tight);
+}
+
+.payment-method-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ui-gap-sm);
+  grid-column: 1 / -1;
+}
+
+.payment-method-card__action {
+  min-height: 2rem;
+  padding-inline: var(--ui-gap-md);
+}
+
+/*
+ * Promoting a card is the affirmative action next to `--remove`, so it takes
+ * the same tinted-outline shape in the primary tone rather than the filled
+ * `btn-primary` it would otherwise be — two filled buttons side by side give
+ * neither of them a hierarchy.
+ */
+.payment-method-card__action--default {
+  color: var(--ui-color-primary);
+  border-color: color-mix(in srgb, var(--ui-color-primary) 24%, var(--ui-color-border));
+  background: color-mix(in srgb, var(--ui-color-primary) 4%, var(--ui-color-bg));
+}
+
+.payment-method-card__action--remove {
+  color: var(--ui-color-danger);
+  border-color: color-mix(in srgb, var(--ui-color-danger) 24%, var(--ui-color-border));
+  background: color-mix(in srgb, var(--ui-color-danger) 4%, var(--ui-color-bg));
+}
+
+@media (min-width: 48rem) {
+  .payment-method-card {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+  }
+
+  .payment-method-card__actions {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 30rem) {
+  .payment-method-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .payment-method-card__badge {
+    grid-column: 1 / -1;
+  }
+
+  .payment-method-card__actions {
+    justify-content: stretch;
+  }
+
+  .payment-method-card__action {
+    flex: 1;
+  }
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  pointer-events: none;
+  /* Keep dialogs off screen edges and clear of notches/home indicators */
+  padding: max(var(--ui-gap-lg), env(safe-area-inset-top))
+    max(var(--ui-gap-lg), env(safe-area-inset-right))
+    max(var(--ui-gap-lg), env(safe-area-inset-bottom))
+    max(var(--ui-gap-lg), env(safe-area-inset-left));
+}
+
+.modal-card {
+  pointer-events: auto;
+  background: var(--ui-color-bg);
+  color: var(--ui-color-text);
+  border-radius: var(--ui-radius-lg);
+  border: 1px solid var(--ui-color-border);
+  box-shadow: var(--ui-color-shadow-overlay);
+  min-width: min(20rem, 100%);
+  max-width: min(26rem, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: var(--ui-gap-xl);
+}
+
+/* Width presets — the default card keeps its historical 26rem cap */
+.modal-card--md {
+  width: 100%;
+  max-width: min(36rem, 100%);
+}
+
+.modal-card--lg {
+  width: 100%;
+  max-width: min(48rem, 100%);
+}
+
+.modal-card--xl {
+  width: 100%;
+  max-width: min(64rem, 100%);
+}
+
+/* Stable tall card (e.g. sidebar-nav modals) so switching sections never resizes it */
+.modal-card--tall {
+  height: min(85dvh, 100%);
+  /* The height alone was not enough to bound the content. `.modal-card` is a block
+     that scrolls, and `.modal-body` is a grid with no `min-height: 0`, so a child
+     asking for `height: 100%` resolved against an auto-height parent and grew
+     instead — the settings sidebar's divider ran 513px on one tab and 2430px on
+     another inside this fixed 765px card. A flex column with a shrinkable body
+     passes the bound down, so the panes scroll and the chrome stays put. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* `Modal.Root` wraps children in `FocusTrap`, which renders an unclassed div — so
+   the bound has to pass through whatever that child is, not through `.modal-body`
+   (this modal renders none). One child in a flex column, told to fill it and allowed
+   to shrink, is what lets the panes inside scroll instead of the card growing. */
+.modal-card--tall > * {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Dialogs go near-full-width on phones (safe margins come from .modal padding) */
+@media (max-width: 30rem) {
+  .modal-card {
+    width: 100%;
+  }
+}
+
+.modal-title {
+  margin: 0;
+  font-size: var(--ui-font-size-lg);
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+.modal-description {
+  margin: 0;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-gap-sm);
+  margin-bottom: var(--ui-gap-md);
+}
+
+.modal-body {
+  display: grid;
+  gap: var(--ui-gap-sm);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ui-gap-sm);
+  margin-top: var(--ui-gap-lg);
+}
+
+/* Pagination */
+.pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-gap-sm);
+}
+
+.pagination-button {
+  min-width: calc(var(--ui-gap-lg) * 2 + var(--ui-gap-xs));
+  height: calc(var(--ui-gap-lg) * 2 + var(--ui-gap-xs));
+  border-radius: var(--ui-radius-md);
+  border: 1px solid var(--ui-color-border);
+  background: var(--ui-color-bg);
+  color: var(--ui-color-text);
+  cursor: pointer;
+}
+
+.pagination-button[data-active='true'] {
+  background: var(--ui-color-primary);
+  color: var(--ui-color-text-inverse);
+  border-color: var(--ui-color-primary);
+}
+
+/* Popover */
+.popover {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  line-height: 1;
+}
+.popover > * {
+  margin: 0;
+}
+
+.trigger-reset {
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+.popover-card {
+  position: absolute;
+  z-index: 1001;
+  min-width: 13.75rem;
+  padding: var(--ui-gap-md);
+  border-radius: var(--ui-radius-lg);
+  border: 1px solid var(--ui-color-border);
+  background: var(--ui-color-bg);
+  color: var(--ui-color-text);
+  box-shadow: var(--ui-color-shadow-overlay);
+}
+
+.popover[data-placement='bottom'] .popover-card {
+  top: auto;
+  bottom: calc(100% + var(--ui-gap-sm));
+  inset-inline-start: -1px;
+}
+
+.popover[data-placement='right'] .popover-card {
+  top: 0;
+  left: calc(100% + var(--ui-gap-xs));
+}
+
+/* ProtectedRoute - Uses LoadingContainer styling, no additional CSS needed */
+
+/* Radio */
+.radio {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-gap-sm);
+  cursor: pointer;
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-line-height-normal);
+}
+
+.radio-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.radio-circle {
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid var(--ui-color-border);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ui-color-bg);
+}
+
+.radio-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--ui-color-primary);
+}
+
+.radio-circle[data-checked='true'] {
+  border-color: var(--ui-color-primary);
+}
+
+.radio:has(.radio-input:focus-visible) .radio-circle {
+  outline: var(--ui-outline-width) solid var(--ui-color-primary);
+  outline-offset: var(--ui-outline-offset);
+}
+
+/* RadioGroup */
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-sm);
+  font-size: var(--ui-font-size-sm);
+}
+
+/* ResizablePanel */
+.resizable-panel-group {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.resizable-panel {
+  position: relative;
+  min-height: 0;
+  min-width: 0;
+}
+
+.resizable-separator {
+  position: relative;
+  flex-shrink: 0;
+  background: transparent;
+  transition: background-color var(--ui-motion-duration-base) var(--ui-motion-ease-standard);
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.resizable-separator::after {
+  content: '';
+  background: var(--ui-color-border);
+  position: absolute;
+  transition: background-color var(--ui-motion-duration-base) var(--ui-motion-ease-standard);
+}
+
+.resizable-separator[data-direction='horizontal'] {
+  width: 0.625rem;
+  cursor: col-resize;
+  margin-inline: -0.3125rem;
+}
+
+.resizable-separator[data-direction='horizontal']::after {
+  width: var(--ui-border-width);
+  height: 100%;
+}
+
+.resizable-separator[data-direction='vertical'] {
+  height: 0.625rem;
+  cursor: row-resize;
+  margin-top: -0.3125rem;
+  margin-bottom: -0.3125rem;
+}
+
+.resizable-separator[data-direction='vertical']::after {
+  height: var(--ui-border-width);
+  width: 100%;
+}
+
+.resizable-separator:hover::after,
+.resizable-separator.dragging::after,
+.resizable-separator:focus-visible::after {
+  background: var(--ui-color-primary);
+}
+
+.resizable-separator:focus-visible {
+  outline: none;
+}
+
+.resizable-separator:focus-visible::before {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--ui-outline-width));
+  border: var(--ui-outline-width) solid var(--ui-color-primary);
+  border-radius: var(--ui-radius-sm);
+  pointer-events: none;
+}
+
+.resizable-separator.dragging {
+  user-select: none;
+}
+
+/* ScrollArea */
+.scroll-area {
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* WebKit browsers (Chrome, Safari, Edge) */
+.scroll-area::-webkit-scrollbar {
+  width: var(--scrollbar-size, 0.375rem);
+  height: var(--scrollbar-size, 0.375rem);
+}
+
+.scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Remove arrows */
+.scroll-area::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.scroll-area::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.scroll-area::-webkit-scrollbar,
+.scroll-area::-webkit-scrollbar-thumb {
+  border-radius: calc(var(--scrollbar-size, 0.375rem) / 2);
+  background-clip: padding-box;
+}
+
+.scroll-area::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  transition: background-color var(--ui-motion-duration-base) var(--ui-motion-ease-standard);
+}
+
+/* Auto-hide scrollbar */
+.scroll-area[data-scrollbar-visible='true']::-webkit-scrollbar-thumb,
+.scroll-area[data-scrollbar-hover='true']::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, var(--ui-color-muted) 70%, transparent);
+}
+
+.scroll-area[data-scrollbar-hover='true']::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, var(--ui-color-muted) 90%, transparent);
+}
+
+/* Select */
+.select {
+  width: 100%;
+  padding: var(--ui-gap-sm) var(--ui-gap-md);
+  border: 1px solid var(--ui-color-border-strong);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-color-bg);
+  color: var(--ui-color-text);
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-line-height-normal);
+  font-weight: var(--ui-font-weight-regular);
+  cursor: pointer;
+  padding-inline-end: 1.625rem;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%235f6368' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 7.5l5 5 5-5'/%3E%3C/svg%3E");
+  background-position: calc(100% - 0.875rem) 50%;
+  background-size: 0.875rem 0.875rem;
+  background-repeat: no-repeat;
+}
+
+.select:disabled {
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text-muted);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.select:focus,
+.select:focus-visible,
+.select:active {
+  outline: none;
+  border-color: var(--ui-color-accent);
+  box-shadow: var(--ui-focus);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%235f6368' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l5-5 5 5'/%3E%3C/svg%3E");
+  background-position: calc(100% - 0.875rem) 50%;
+  background-size: 0.875rem 0.875rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%239aa0a6' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 7.5l5 5 5-5'/%3E%3C/svg%3E");
+  }
+
+  .select:focus,
+  .select:focus-visible,
+  .select:active {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%239aa0a6' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l5-5 5 5'/%3E%3C/svg%3E");
+  }
+}
+
+:root[data-theme='dark'] .select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%239aa0a6' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 7.5l5 5 5-5'/%3E%3C/svg%3E");
+}
+
+:root[data-theme='dark'] .select:focus,
+:root[data-theme='dark'] .select:focus-visible,
+:root[data-theme='dark'] .select:active {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%239aa0a6' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l5-5 5 5'/%3E%3C/svg%3E");
+}
+
+.select option {
+  cursor: pointer;
+  border: none;
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-color-bg);
+  color: var(--ui-color-text);
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-line-height-normal);
+  font-weight: var(--ui-font-weight-regular);
+}
+
+.select option:focus,
+.select option:hover {
+  cursor: pointer;
+  background: var(--ui-color-surface);
+}
+
+.select-custom {
+  position: relative;
+  width: 100%;
+}
+
+.select-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-gap-sm);
+  text-align: start;
+}
+
+.select-trigger[data-open='true'] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%235f6368' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l5-5 5 5'/%3E%3C/svg%3E");
+  background-position: calc(100% - 0.875rem) 50%;
+  background-size: 0.875rem 0.875rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .select-trigger[data-open='true'] {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%239aa0a6' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l5-5 5 5'/%3E%3C/svg%3E");
+  }
+}
+
+:root[data-theme='dark'] .select-trigger[data-open='true'] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%239aa0a6' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l5-5 5 5'/%3E%3C/svg%3E");
+}
+
+.select-label {
+  flex: 1;
+  color: inherit;
+}
+
+.select-menu {
+  position: absolute;
+  top: calc(100% + var(--ui-gap-xs));
+  inset-inline-start: 0;
+  width: 100%;
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-color-bg);
+  box-shadow: var(--ui-color-shadow-overlay);
+  padding: var(--ui-gap-xs);
+  display: grid;
+  gap: var(--ui-gap-xs);
+  z-index: 1002;
+}
+
+.select-option {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: start;
+  padding: var(--ui-gap-sm) var(--ui-gap-md);
+  border-radius: var(--ui-radius-md);
+  cursor: pointer;
+  color: var(--ui-color-text);
+  font-weight: var(--ui-font-weight-regular);
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-line-height-normal);
+}
+
+.select-option:hover,
+.select-option:focus {
+  outline: none;
+  background: var(--ui-color-surface);
+}
+
+.select-option[data-selected='true'] {
+  background: color-mix(in srgb, var(--ui-color-primary-muted) 70%, var(--ui-color-bg) 30%);
+  color: var(--ui-color-primary);
+}
+
+.select-option[data-highlighted='true'] {
+  background: var(--ui-color-surface);
+  outline: var(--ui-outline-width) solid var(--ui-color-primary);
+  outline-offset: calc(var(--ui-outline-offset) * -1);
+}
+
+/* RTL: background-position has no logical form, so mirror the chevron manually */
+[dir='rtl'] .select,
+[dir='rtl'] .select-trigger {
+  background-position: 0.875rem 50%;
+}
+
+/* Slider */
+.slider {
+  width: 100%;
+  cursor: pointer;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-sm);
+  font-size: var(--ui-font-size-sm);
+}
+
+.tab-list {
+  display: inline-flex;
+  gap: var(--ui-gap-sm);
+  padding: var(--ui-gap-xs);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-color-surface);
+}
+
+.tab {
+  border: none;
+  background: transparent;
+  padding: var(--ui-gap-xs) var(--ui-gap-sm);
+  border-radius: var(--ui-radius-md);
+  cursor: pointer;
+  font-weight: var(--ui-font-weight-medium);
+  font-size: var(--ui-font-size-sm);
+  color: var(--ui-color-text);
+}
+
+.tab[data-active='true'] {
+  background: color-mix(in srgb, var(--ui-color-primary) 16%, var(--ui-color-bg) 84%);
+  color: var(--ui-color-primary);
+}
+
+.tab-panel {
+  padding: var(--ui-gap-md) 0;
+  color: var(--ui-color-text);
+  font-size: var(--ui-font-size-sm);
+}
+
+/* Toast */
+.toast {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-xs);
+}
+
+.toast-card {
+  min-width: 16.25rem;
+  max-width: 22.5rem;
+  background: var(--ui-color-surface-strong);
+  color: var(--ui-color-text-inverse);
+  padding: var(--ui-gap-sm) var(--ui-gap-md);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-color-shadow-overlay);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-gap-sm);
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-line-height-tight);
+  border-inline-start: 0.1875rem solid transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  .toast-card {
+    color: var(--ui-color-text);
+  }
+}
+
+.toast-card[data-tone='info'] {
+  border-inline-start-color: var(--ui-alert-info-border);
+}
+
+.toast-card[data-tone='success'] {
+  border-inline-start-color: var(--ui-alert-success-border);
+}
+
+.toast-card[data-tone='danger'] {
+  background: var(--ui-alert-danger-bg);
+  color: var(--ui-alert-danger-text);
+  border-inline-start-color: var(--ui-alert-danger-border);
+}
+
+.toast-card[data-tone='warning'] {
+  background: var(--ui-alert-warning-bg);
+  color: var(--ui-alert-warning-text);
+  border-inline-start-color: var(--ui-alert-warning-border);
+}
+
+.toast-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast-title {
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+.toast-description {
+  opacity: 0.85;
+  font-size: var(--ui-font-size-xs);
+}
+
+.toast-dismiss {
+  flex-shrink: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: var(--ui-gap-xs);
+  color: inherit;
+  opacity: 0.6;
+  font-size: var(--ui-font-size-xs);
+  line-height: 1;
+  border-radius: var(--ui-radius-sm);
+}
+
+.toast-dismiss:hover {
+  opacity: 1;
+}
+
+.toast-dismiss:focus-visible {
+  outline: var(--ui-outline-width) solid currentColor;
+  outline-offset: var(--ui-outline-offset);
+}
+
+.toast-action {
+  flex-shrink: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: var(--ui-gap-xs) var(--ui-gap-sm);
+  color: inherit;
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-semibold);
+  text-decoration: underline;
+  text-underline-offset: 0.125em;
+  border-radius: var(--ui-radius-sm);
+}
+
+.toast-action:hover {
+  opacity: 0.8;
+}
+
+.toast-action:focus-visible {
+  outline: var(--ui-outline-width) solid currentColor;
+  outline-offset: var(--ui-outline-offset);
+}
+
+/* Toaster */
+.toaster {
+  position: fixed;
+  z-index: 9999;
+}
+
+.toaster[data-position='top-right'] {
+  top: max(var(--ui-gap-lg), env(safe-area-inset-top));
+  right: max(var(--ui-gap-lg), env(safe-area-inset-right));
+}
+
+.toaster[data-position='top-left'] {
+  top: max(var(--ui-gap-lg), env(safe-area-inset-top));
+  left: max(var(--ui-gap-lg), env(safe-area-inset-left));
+}
+
+.toaster[data-position='bottom-right'] {
+  bottom: max(var(--ui-gap-lg), env(safe-area-inset-bottom));
+  right: max(var(--ui-gap-lg), env(safe-area-inset-right));
+}
+
+.toaster[data-position='bottom-left'] {
+  bottom: max(var(--ui-gap-lg), env(safe-area-inset-bottom));
+  left: max(var(--ui-gap-lg), env(safe-area-inset-left));
+}
+
+/* ============================================================================
+   Side Peek (Notion-style slide-out panel)
+   ============================================================================ */
+
+.side-peek-overlay {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: 999;
+  transition: background 0.2s ease-out;
+}
+
+.side-peek-overlay--open {
+  background: var(--ui-color-scrim);
+}
+
+.side-peek {
+  position: fixed;
+  top: 0;
+  inset-inline-end: 0;
+  bottom: 0;
+  z-index: 1000;
+  background: var(--ui-color-bg);
+  border-inline-start: 1px solid var(--ui-color-border);
+  box-shadow: var(--ui-color-shadow-overlay);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition:
+    transform 0.2s ease-out,
+    width 0.3s ease;
+  overflow: hidden;
+  /* Clear notches and the home indicator on edge-to-edge devices */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* RTL: panel sits at the physical left, so it slides in from the left */
+[dir='rtl'] .side-peek {
+  transform: translateX(-100%);
+}
+
+.side-peek--open,
+[dir='rtl'] .side-peek--open {
+  transform: translateX(0);
+}
+
+/* Size variants */
+.side-peek--sm {
+  width: 20rem;
+  max-width: 100vw;
+}
+
+.side-peek--md {
+  width: 30rem;
+  max-width: 100vw;
+}
+
+.side-peek--lg {
+  width: 40rem;
+  max-width: 100vw;
+}
+
+.side-peek--xl {
+  width: 50rem;
+  max-width: 100vw;
+}
+
+.side-peek--full {
+  width: 100vw;
+}
+
+/* Responsive: phones and portrait tablets get full width */
+@media (max-width: 48rem) {
+  .side-peek--sm,
+  .side-peek--md,
+  .side-peek--lg,
+  .side-peek--xl {
+    width: 100vw;
+  }
+}
+
+/* Header */
+.side-peek-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-gap-md);
+  padding: var(--ui-gap-md) var(--ui-gap-lg);
+  border-bottom: 1px solid var(--ui-color-border);
+  flex-shrink: 0;
+}
+
+/* Title */
+.side-peek-title {
+  margin: 0;
+  font-size: var(--ui-font-size-lg);
+  font-weight: var(--ui-font-weight-semibold);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Description */
+.side-peek-description {
+  margin: 0;
+  font-size: var(--ui-font-size-sm);
+  color: var(--ui-color-muted);
+}
+
+/* Content */
+.side-peek-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--ui-gap-lg);
+}
+
+/* Footer */
+.side-peek-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ui-gap-sm);
+  padding: var(--ui-gap-md) var(--ui-gap-lg);
+  border-top: 1px solid var(--ui-color-border);
+  flex-shrink: 0;
+}
+
+/* Close button skin — sizing comes from IconButton */
+.side-peek-close {
+  color: var(--ui-color-muted);
+  font-size: 1.25rem;
+}
+
+.side-peek-close:hover {
+  background: var(--ui-color-hover);
+  color: var(--ui-color-text);
+}
+
+/* PeekLink active state */
+[data-peek-active] {
+  color: var(--ui-color-primary);
+}
+
+/* FeatureHint — contextual one-time tooltip */
+.feature-hint {
+  position: relative;
+  display: inline-block;
+}
+
+/* Rendered in a portal on document.body: needs fixed positioning plus explicit
+   font/color tokens so it never inherits browser defaults. */
+.feature-hint-callout {
+  position: fixed;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  width: 14rem;
+  padding: var(--ui-gap-sm) var(--ui-gap-md);
+  font-family: var(--ui-font-family);
+  color: var(--ui-color-text);
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  box-shadow: var(--ui-color-shadow-overlay);
+  animation: feature-hint-fade-in var(--ui-motion-duration-base) ease-out;
+}
+
+@keyframes feature-hint-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   Pricing Table
+   ============================================ */
+/* ===== PLAN CHANGE DIALOG ===== */
+/*
+ * Every rule below was previously expressed as Tailwind-palette classes
+ * (`bg-gray-50`, `border-green-300`, `text-yellow-600`) that this repo does not
+ * define, so the dialog a customer sees when changing plans rendered as
+ * unstyled stacked text. Tone is carried by modifiers rather than colour
+ * utilities: `--upgrade`/`--downgrade` map to the semantic success/warning
+ * tokens and therefore theme correctly in both light and dark.
+ */
+.plan-change-dialog {
+  color: var(--ui-color-text);
+}
+
+.plan-change-dialog__comparison {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-gap-lg);
+}
+
+.plan-change-dialog__plan {
+  flex: 1;
+  padding: var(--ui-gap-lg);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-lg);
+}
+
+/* The plan being left behind recedes, so the comparison reads in one glance. */
+.plan-change-dialog__plan--current {
+  background: var(--ui-color-surface);
+}
+
+.plan-change-dialog__plan--upgrade {
+  border-color: color-mix(in srgb, var(--ui-color-success) 38%, var(--ui-color-border));
+  background: color-mix(in srgb, var(--ui-color-success) 6%, transparent);
+}
+
+.plan-change-dialog__plan--downgrade {
+  border-color: color-mix(in srgb, var(--ui-color-warning) 38%, var(--ui-color-border));
+  background: color-mix(in srgb, var(--ui-color-warning) 6%, transparent);
+}
+
+.plan-change-dialog__plan-label {
+  display: block;
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-medium);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.plan-change-dialog__plan-label--upgrade {
+  color: var(--ui-color-success);
+}
+
+.plan-change-dialog__plan-label--downgrade {
+  color: var(--ui-color-warning);
+}
+
+.plan-change-dialog__plan-name {
+  margin: var(--ui-gap-xs) 0 0;
+  font-size: var(--ui-font-size-lg);
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+.plan-change-dialog__plan-price {
+  margin: var(--ui-gap-xs) 0 0;
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-sm);
+}
+
+/* Points from the current plan to the new one; decorative, so it recedes. */
+.plan-change-dialog__arrow {
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-xl);
+}
+
+.plan-change-dialog__proration {
+  margin-top: var(--ui-gap-xl);
+  padding: var(--ui-gap-lg);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-color-surface);
+}
+
+.plan-change-dialog__proration-text {
+  margin: 0;
+  font-size: var(--ui-font-size-sm);
+}
+
+.plan-change-dialog__proration-detail {
+  margin: var(--ui-gap-sm) 0 0;
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-xs);
+}
+
+.plan-change-dialog__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--ui-gap-lg);
+  padding: var(--ui-gap-md);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-lg);
+}
+
+.plan-change-dialog__summary-label {
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-sm);
+}
+
+.plan-change-dialog__summary-value {
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+/*
+ * Holds its width when the label becomes "Processing…", so confirming does not
+ * shift the button out from under the pointer that just clicked it.
+ */
+.plan-change-dialog__confirm {
+  min-width: 11rem;
+}
+
+/*
+ * Shared by every dialog footer (PlanChangeDialog, StripeCardForm,
+ * BillingSettingsPage). It was used in four places and defined in none.
+ */
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ui-gap-md);
+  margin-top: var(--ui-gap-xl);
+}
+
+.pricing-table {
+  display: grid;
+  gap: var(--ui-gap-xl);
+  width: 100%;
+}
+
+.pricing-table__toggle {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-gap-xs);
+  padding: var(--ui-gap-xs);
+  border: 1px solid var(--ui-color-border);
+  border-radius: 0.5rem;
+  background: var(--ui-color-surface);
+}
+
+.pricing-table__toggle-button {
+  min-width: 6.5rem;
+  border-radius: 0.375rem;
+}
+
+.pricing-table__toggle-button:not(.pricing-table__toggle-button--active) {
+  background: transparent;
+}
+
+.pricing-table__savings-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.25rem;
+  padding: 0 var(--ui-gap-sm);
+  border-radius: var(--ui-radius-full);
+  background: var(--ui-alert-success-bg);
+  color: var(--ui-alert-success-text);
+  font-size: var(--ui-font-size-2xs);
+  font-weight: var(--ui-font-weight-bold);
+}
+
+.pricing-table__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: var(--ui-gap-lg);
+  align-items: stretch;
+}
+
+.pricing-table__grid--1 {
+  max-width: 24rem;
+  margin-inline: auto;
+}
+
+.pricing-table__grid--2 {
+  max-width: 52rem;
+  margin-inline: auto;
+}
+
+.pricing-table__loading,
+.pricing-table__error,
+.pricing-table__empty {
+  padding: var(--ui-gap-xl);
+  border: 1px solid var(--ui-color-border);
+  border-radius: 0.5rem;
+  background: var(--ui-color-bg);
+  color: var(--ui-color-text-muted);
+  text-align: center;
+}
+
+.pricing-table__error {
+  border-color: var(--ui-alert-danger-border);
+  background: var(--ui-alert-danger-bg);
+  color: var(--ui-alert-danger-text);
+}
+
+/* ===== TENANT USAGE OVERRIDE EDITOR ===== */
+/*
+ * Admin editor for per-tenant usage limits. Its grid, its error box and its
+ * "this row no longer matches the plan default" highlight were all expressed
+ * as Tailwind-palette classes (`border-red-200`, `bg-amber-50`,
+ * `text-green-600`, `hover:bg-primary/90`, `w-24`) that this repo never
+ * defined, so the table rendered as unstyled stacked text with a full-width
+ * number field. Tone is carried by the semantic danger/warning/success tokens,
+ * which theme correctly in dark mode; button tone and hover/disabled states
+ * come from the Button `variant` prop rather than being reimplemented here.
+ */
+.tenant-usage-override-editor {
+  color: var(--ui-color-text);
+}
+
+.tenant-usage-override-editor__header {
+  display: grid;
+  gap: var(--ui-gap-xs);
+}
+
+.tenant-usage-override-editor__title {
+  margin: 0;
+  font-size: var(--ui-font-size-lg);
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+.tenant-usage-override-editor__subtitle {
+  margin: 0;
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-sm);
+}
+
+.tenant-usage-override-editor__error {
+  margin-top: var(--ui-gap-lg);
+  padding: var(--ui-gap-md);
+  border: 1px solid color-mix(in srgb, var(--ui-color-danger) 38%, var(--ui-color-border));
+  border-radius: var(--ui-radius-md);
+  background: color-mix(in srgb, var(--ui-color-danger) 8%, transparent);
+  color: var(--ui-color-danger);
+  font-size: var(--ui-font-size-sm);
+}
+
+.tenant-usage-override-editor__form {
+  margin-top: var(--ui-gap-xl);
+}
+
+/*
+ * The table owns its column track sizes so the header and every body row stay
+ * aligned from one declaration. Equal quarters would waste width on the
+ * numeric field and starve the metric name.
+ */
+.tenant-usage-override-editor__table {
+  --tenant-usage-columns: minmax(8rem, 1.4fr) minmax(6rem, 1fr) minmax(7rem, 1fr) auto;
+}
+
+.tenant-usage-override-editor__row {
+  display: grid;
+  grid-template-columns: var(--tenant-usage-columns);
+  align-items: center;
+  gap: var(--ui-gap-lg);
+  padding: var(--ui-gap-md) 0;
+  border-bottom: 1px solid var(--ui-color-border);
+}
+
+.tenant-usage-override-editor__row--header {
+  padding-top: 0;
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+}
+
+/*
+ * Marks a row whose limit has been overridden away from the plan default, so
+ * an admin can see at a glance which tenants deviate.
+ */
+.tenant-usage-override-editor__row--modified {
+  background: color-mix(in srgb, var(--ui-color-warning) 8%, transparent);
+}
+
+.tenant-usage-override-editor__metric {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ui-gap-xs);
+  min-width: 0;
+}
+
+.tenant-usage-override-editor__metric-name {
+  font-weight: var(--ui-font-weight-medium);
+}
+
+.tenant-usage-override-editor__metric-unit {
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-xs);
+}
+
+.tenant-usage-override-editor__default {
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-sm);
+}
+
+.tenant-usage-override-editor__value {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-gap-sm);
+}
+
+.tenant-usage-override-editor__input {
+  width: 6rem;
+  padding: var(--ui-gap-xs) var(--ui-gap-sm);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-color-bg);
+  color: var(--ui-color-text);
+  font-family: inherit;
+  font-size: var(--ui-font-size-sm);
+  outline: none;
+}
+
+.tenant-usage-override-editor__input:focus {
+  border-color: var(--ui-color-primary);
+  box-shadow: var(--ui-focus);
+}
+
+.tenant-usage-override-editor__unlimited {
+  color: var(--ui-color-success);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-medium);
+  white-space: nowrap;
+}
+
+/* "Reset to Default" must not wrap onto two lines in its narrow column. */
+.tenant-usage-override-editor__reset-btn {
+  white-space: nowrap;
+}
+
+.tenant-usage-override-editor__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-gap-md);
+  margin-top: var(--ui-gap-xl);
+}
+
+/*
+ * Holds its width across "Save Overrides" / "Saving..." so the footer does not
+ * twitch out from under the pointer that just submitted it.
+ */
+.tenant-usage-override-editor__save-btn {
+  min-width: 10rem;
+}
+
+/* ============================================
+   Plan Card
+   ============================================ */
+.plan-card {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: var(--ui-gap-lg);
+  min-height: 100%;
+  padding: var(--ui-gap-xl);
+  border: 1px solid var(--ui-color-border);
+  border-radius: 0.5rem;
+  background: var(--ui-color-bg);
+  box-shadow: var(--ui-color-shadow);
+}
+
+.plan-card--highlighted {
+  border-color: var(--ui-color-primary);
+  box-shadow: var(--ui-color-shadow);
+}
+
+.plan-card--current {
+  border-color: color-mix(in srgb, var(--ui-color-success) 45%, var(--ui-color-border));
+  background: color-mix(in srgb, var(--ui-alert-success-bg) 20%, var(--ui-color-bg));
+}
+
+.plan-card__badge {
+  position: absolute;
+  top: var(--ui-gap-lg);
+  inset-inline-end: var(--ui-gap-lg);
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+  padding: 0 var(--ui-gap-sm);
+  border: 1px solid var(--ui-badge-primary-border);
+  border-radius: var(--ui-radius-full);
+  background: var(--ui-badge-primary-bg);
+  color: var(--ui-color-primary);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-bold);
+}
+
+.plan-card__header {
+  display: grid;
+  gap: var(--ui-gap-sm);
+  padding-inline-end: 6.5rem;
+}
+
+.plan-card__name {
+  margin: 0;
+  color: var(--ui-color-text);
+  font-size: var(--ui-font-size-lg);
+  font-weight: var(--ui-font-weight-bold);
+  line-height: var(--ui-line-height-tight);
+}
+
+.plan-card__description {
+  margin: 0;
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-line-height-normal);
+}
+
+.plan-card__price {
+  display: grid;
+  gap: var(--ui-gap-xs);
+  padding-bottom: var(--ui-gap-lg);
+  border-bottom: 1px solid var(--ui-color-border);
+}
+
+.plan-card__price-amount {
+  color: var(--ui-color-text);
+  font-size: 2rem;
+  font-weight: var(--ui-font-weight-bold);
+  line-height: var(--ui-line-height-tight);
+}
+
+.plan-card__trial {
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-sm);
+}
+
+.plan-card__features {
+  display: grid;
+  gap: var(--ui-gap-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-card__feature {
+  display: grid;
+  grid-template-columns: 1.25rem 1fr;
+  column-gap: var(--ui-gap-sm);
+  row-gap: 0.125rem;
+  align-items: start;
+  color: var(--ui-color-text);
+  font-size: var(--ui-font-size-sm);
+}
+
+.plan-card__feature-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: var(--ui-radius-full);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-bold);
+}
+
+.plan-card__feature-icon.included {
+  background: var(--ui-alert-success-bg);
+  color: var(--ui-alert-success-text);
+}
+
+.plan-card__feature-icon.excluded {
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text-muted);
+}
+
+.plan-card__feature-name {
+  min-width: 0;
+}
+
+.plan-card__feature-description {
+  grid-column: 2;
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-xs);
+  line-height: var(--ui-line-height-normal);
+}
+
+.plan-card__action {
+  padding-top: var(--ui-gap-sm);
+}
+
+.plan-card__button {
+  width: 100%;
+  min-height: 2.75rem;
+  border-radius: 0.5rem;
+}
+
+/*
+ * The recommended plan's call to action. Tone already comes from the `primary`
+ * variant, so this only adds the lift and weight that separate it from the
+ * outline buttons on the cards either side of it.
+ */
+.plan-card__button--primary {
+  box-shadow: var(--ui-color-shadow);
+  font-weight: var(--ui-font-weight-bold);
+}
+
+.plan-card__button--current {
+  color: var(--ui-color-text-muted);
+}
+
+@media (max-width: 48rem) {
+  .pricing-table__toggle {
+    width: 100%;
+  }
+
+  .pricing-table__toggle-button {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .plan-card {
+    padding: var(--ui-gap-lg);
+  }
+
+  .plan-card__badge {
+    position: static;
+    justify-self: start;
+  }
+
+  .plan-card__header {
+    padding-inline-end: 0;
+  }
+
+  .plan-card__price-amount {
+    font-size: 1.75rem;
+  }
+}
+
+/* ===== SUBSCRIPTION STATUS ===== */
+/*
+ * Nothing to report yet. The unsubscribed card centres its copy so it reads as
+ * a prompt to pick a plan rather than as a subscription record whose fields all
+ * happen to be blank. Tone for the action buttons comes from the `variant`
+ * prop, not from classes.
+ */
+.subscription-status--none {
+  justify-items: center;
+  text-align: center;
+}
+
+/* ===== INVOICE LIST ===== */
+/*
+ * A table without a `<table>`: the header and every invoice row are separate
+ * grids, so the column template is declared once here and shared by both. A
+ * second copy would drift and the columns would stop lining up — which is the
+ * only thing this markup is for.
+ */
+.invoice-list__header,
+.invoice-row {
+  display: grid;
+  grid-template-columns:
+    minmax(6rem, 0.9fr) minmax(12rem, 1.4fr) minmax(6rem, 0.8fr) minmax(7rem, 0.8fr)
+    minmax(5rem, auto);
+  gap: var(--ui-gap-md);
+  align-items: center;
+}
+
+/*
+ * Cells are grid items, so their automatic minimum size is their content: a
+ * long billing period would otherwise spill across the column boundary and
+ * break the alignment the shared template just bought. Let them clip instead.
+ */
+.invoice-list__header-date,
+.invoice-list__header-period,
+.invoice-list__header-amount,
+.invoice-list__header-status,
+.invoice-row__date,
+.invoice-row__period,
+.invoice-row__amount,
+.invoice-row__status {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * The rule belongs between rows, not on them: a border on every row would
+ * double against the header's own bottom edge and hang below the last invoice.
+ */
+.invoice-list__items > .invoice-row + .invoice-row {
+  border-top: 1px solid var(--ui-color-border);
+}
+
+.invoice-list__error {
+  padding: var(--ui-gap-md);
+  border: 1px solid var(--ui-alert-danger-border);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-alert-danger-bg);
+  color: var(--ui-alert-danger-text);
+  font-size: var(--ui-font-size-sm);
+}
+
+/*
+ * Holds its width while the label swaps to "Loading...", so the control does
+ * not shrink out from under the pointer that just clicked it.
+ */
+.invoice-list__load-more-button {
+  min-width: 9rem;
+}
+
+/* ===== USAGE DASHBOARD ===== */
+/*
+ * UsageDashboard and the UsageSummary empty state were written against
+ * Tailwind palette utilities (`text-muted-foreground`, `flex flex-col gap-4`)
+ * that this repo never defines, so all four states — loading, error, empty,
+ * loaded — rendered as the same run of unstyled text. Each state now has a
+ * distinct panel treatment, because "we could not load your usage" must not
+ * look like "you have no usage".
+ */
+.usage-dashboard {
+  display: grid;
+  gap: var(--ui-gap-lg);
+  color: var(--ui-color-text);
+}
+
+/*
+ * Loading and error replace the metric grid outright, so the whole component
+ * becomes the state rather than a message floating under a bare header.
+ */
+.usage-dashboard--loading,
+.usage-dashboard--error {
+  padding: var(--ui-gap-lg);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-lg);
+}
+
+.usage-dashboard--error {
+  border-color: var(--ui-alert-danger-border);
+  background: color-mix(in srgb, var(--ui-color-danger) 5%, transparent);
+}
+
+.usage-dashboard__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-gap-sm);
+}
+
+.usage-dashboard__title {
+  margin: 0;
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+.usage-dashboard__period {
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tone and density come from the Button `variant`/`size` props; the header
+   only needs the control pushed to the far end, past the period range. */
+.usage-dashboard__refresh-btn {
+  margin-inline-start: auto;
+}
+
+/* A filled slab reads as "fetching"; the pulse is the only motion here. */
+.usage-dashboard__loading {
+  padding: var(--ui-gap-lg);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-sm);
+  text-align: center;
+  animation: usage-dashboard-pulse 1.6s ease-in-out infinite;
+}
+
+.usage-dashboard__error {
+  padding: var(--ui-gap-md);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-alert-danger-bg);
+  color: var(--ui-alert-danger-text);
+  font-size: var(--ui-font-size-sm);
+}
+
+/* Dashed and untinted: nothing is configured, nothing went wrong. */
+.usage-dashboard__empty {
+  padding: var(--ui-gap-xl);
+  border: 1px dashed var(--ui-color-border);
+  border-radius: var(--ui-radius-lg);
+  text-align: center;
+}
+
+.usage-dashboard__empty-text {
+  margin: 0;
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-sm);
+}
+
+.usage-dashboard__loading > p,
+.usage-dashboard__error > p {
+  margin: 0;
+}
+
+/* One bar per row on a phone; bars need horizontal room to stay legible, so
+   the column count stops at three rather than following the tile default. */
+.usage-dashboard__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--ui-gap-lg);
+}
+
+@media (min-width: 48rem) {
+  .usage-dashboard__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .usage-dashboard__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.usage-dashboard__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-gap-sm) var(--ui-gap-xl);
+  padding-top: var(--ui-gap-md);
+  border-top: 1px solid var(--ui-color-border);
+  font-size: var(--ui-font-size-sm);
+}
+
+/* The row wraps between figures, never through one. */
+.usage-dashboard__stat {
+  white-space: nowrap;
+}
+
+.usage-dashboard__stat-label {
+  color: var(--ui-color-text-muted);
+}
+
+.usage-dashboard__stat-value {
+  font-weight: var(--ui-font-weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Matches the dashboard's empty panel, so "no limits on this plan" reads the
+   same whichever of the two components the page happens to render. */
+.usage-summary--empty {
+  padding: var(--ui-gap-lg);
+  border: 1px dashed var(--ui-color-border);
+  border-radius: var(--ui-radius-lg);
+  text-align: center;
+}
+
+@keyframes usage-dashboard-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .usage-dashboard__loading {
+    animation: none;
+  }
+}
+
+/* ============================================
+   Touch targets — coarse pointers (touch) get a minimum 2.75rem
+   (44-pixel) hit area on interactive elements. Desktop density
+   (pointer: fine) is unchanged.
+   ============================================ */
+@media (pointer: coarse) {
+  .btn:not(.btn-inline),
+  .input,
+  .select,
+  .select-trigger,
+  .select-option,
+  .oauth-button,
+  .menu-item,
+  .tab,
+  .accordion-header,
+  .error-fallback-retry,
+  .toast-action {
+    min-height: var(--ui-touch-target);
+  }
+
+  .pagination-button,
+  .dialog-close,
+  .toast-dismiss,
+  .close-btn {
+    min-width: var(--ui-touch-target);
+    min-height: var(--ui-touch-target);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Label rows act as the hit area for small visual controls */
+  .checkbox,
+  .radio {
+    min-height: var(--ui-touch-target);
+  }
+
+  /* Switch keeps its visual size; extend the hit area invisibly */
+  .switch::before {
+    content: '';
+    position: absolute;
+    inset: calc((1.625rem - var(--ui-touch-target)) / 2) 0;
+  }
+
+  /* Resize separators are hard to grab at 1px; widen the hit zone */
+  .resizable-separator[data-direction='horizontal'] {
+    width: 1.25rem;
+    margin-inline: -0.625rem;
+  }
+
+  .resizable-separator[data-direction='vertical'] {
+    height: 1.25rem;
+    margin-top: -0.625rem;
+    margin-bottom: -0.625rem;
+  }
+}
+
+/* ============================================
+   STATUS DOT
+   ============================================ */
+
+/*
+ * A small round marker that takes its colour from a `bg-*` utility beside it:
+ * `<span className="status-dot bg-success" />`.
+ *
+ * Named rather than sized in the markup because `w-2`/`h-2` are not on this
+ * system's scale — nothing defined them, so every one of these dots rendered
+ * at zero size next to its label. `flex-shrink` matters: they sit in flex rows
+ * and would otherwise be squeezed away by a long label.
+ */
+.status-dot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--ui-radius-full);
+}
+
+/* ============================================
+   MEDIA GALLERY
+   ============================================ */
+
+/*
+ * `.media-gallery` and `.media-gallery-grid` were applied by the component but
+ * defined by no stylesheet — the grid worked only because every property was
+ * repeated inline at each of its two call sites. The static half lives here
+ * now; `grid-template-columns` stays inline because the column count is a prop.
+ */
+.media-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-md);
+}
+
+.media-gallery-grid {
+  display: grid;
+  gap: var(--ui-gap-md);
+}

@@ -1,0 +1,208 @@
+// main/shared/src/modules/system/index.ts
+/**
+ * System Shared Utilities
+ *
+ * This module provides foundational system services including caching,
+ * error handling, HTTP utilities, logging, observability, and security.
+ *
+ * @module Modules/System
+ */
+
+export {
+  CacheCapacityError,
+  CacheConnectionError,
+  CacheDeserializationError,
+  CacheError,
+  CacheInvalidKeyError,
+  CacheMemoryLimitError,
+  CacheNotInitializedError,
+  CacheProviderNotFoundError,
+  CacheSerializationError,
+  CacheTimeoutError,
+  LRUCache,
+  cacheAside,
+  isCacheConnectionError,
+  isCacheError,
+  isCacheTimeoutError,
+  memoize,
+  toCacheError,
+} from './cache';
+export type {
+  BaseCacheConfig,
+  CacheConfig,
+  CacheDeleteOptions,
+  CacheEntry,
+  CacheEntryMetadata,
+  CacheGetOptions,
+  CacheProvider,
+  CacheSetOptions,
+  CacheStats,
+  LRUCacheOptions,
+  MemoizeFunction,
+  MemoizeOptions,
+  MemoryCacheConfig,
+  RedisCacheConfig,
+} from './cache';
+
+export {
+  AppError,
+  AuthenticationError,
+  BadRequestError,
+  ConflictError,
+  ExternalDependencyError,
+  ForbiddenError,
+  InternalError,
+  ERROR_CODES,
+  NotFoundError,
+  RequestSchemaError,
+  UnprocessableError,
+  TooManyRequestsError,
+  TimeoutError,
+  UnavailableError,
+  ValidationError,
+  getKindForStatusCode,
+  getStatusCodeForKind,
+  isAppError,
+  normalizeUnknownError,
+  toErrorWire,
+} from './errors';
+export type {
+  AppErrorInit,
+  ErrorCode,
+  ErrorKind,
+  ErrorStatusCode,
+  ErrorWire,
+  FieldError,
+} from './errors';
+
+export {
+  apiResultSchema,
+  createErrorCodeSchema,
+  emptyBodySchema,
+  envelopeErrorResponseSchema,
+  errorCodeSchema,
+  errorResponseSchema,
+  extractBearerToken,
+  extractCsrfToken,
+  extractIpAddress,
+  extractUserAgent,
+  getRequesterId,
+  getValidatedClientIp,
+  ipMatchesCidr,
+  isFromTrustedProxy,
+  isValidIp,
+  isValidIpv4,
+  isValidIpv6,
+  parseCidr,
+  parseCookies,
+  parseMultipartFile,
+  parseUserAgent,
+  parseXForwardedFor,
+  serializeCookie,
+  simpleErrorResponseSchema,
+  successResponseSchema,
+  validateCidrList,
+} from './http';
+export type {
+  ApiResultEnvelope,
+  CookieOptions,
+  CookieSerializeOptions,
+  EmptyBody,
+  ErrorResponseEnvelope,
+  ForwardedInfo,
+  HttpReply,
+  HttpRequest,
+  ParsedMultipartFile,
+  ParsedUserAgent,
+  ProxyValidationConfig,
+  RouteResult,
+  SimpleErrorResponse,
+  SuccessResponseEnvelope,
+} from './http';
+
+export type {
+  LogErrorLike,
+  LogEvent,
+  LogLevel,
+  LogMeta,
+  LogRequestContext,
+  Logger,
+} from './logger';
+
+export { getMetricsCollector, MetricsCollector, resetMetricsCollector } from './observability';
+export type {
+  Breadcrumb,
+  BreadcrumbLevel,
+  ErrorTrackingConfig,
+  ErrorTrackingProvider,
+  MetricsSummary,
+} from './observability';
+
+export {
+  buildDetailedHealthResponse,
+  checkCache,
+  checkDatabase,
+  checkEmail,
+  checkPubSub,
+  checkQueue,
+  checkRateLimit,
+  checkSchema,
+  checkStorage,
+  checkWebSocket,
+  detailedHealthResponseSchema,
+  determineOverallStatus,
+  liveResponseSchema,
+  readyResponseSchema,
+  uniquePorts,
+} from './runtime';
+export type {
+  DetailedHealthResponse,
+  EmailHealthConfig,
+  HealthCheckCache,
+  HealthCheckDatabase,
+  HealthCheckPubSub,
+  HealthCheckQueue,
+  LiveResponse,
+  OverallStatus,
+  ReadyResponse,
+  RoutesResponse,
+  SchemaHealth,
+  SchemaValidationResult,
+  SchemaValidator,
+  ServiceHealth,
+  ServiceStatus,
+  StartupSummaryOptions,
+  StorageHealthConfig,
+  WebSocketStats,
+} from './runtime';
+
+export {
+  API_CSP,
+  EDGE_CSP,
+  addAuthHeader,
+  createTokenStore,
+  createRateLimiter,
+  detectNoSQLInjection,
+  detectSQLInjection,
+  findUnsafeScriptSources,
+  generateSecurityHeaders,
+  getInjectionErrors,
+  getProductionSecurityDefaults,
+  ipv4ToInt,
+  isIpv4InCidrRange,
+  isValidInputKeyName,
+  parseIpv4Cidr,
+  sanitizeObject,
+  sanitizeString,
+  tokenStore,
+} from './security';
+export type {
+  Ipv4CidrRange,
+  RateLimitInfo,
+  SQLInjectionDetectionOptions,
+  SanitizationResult,
+  SecurityHeaderOptions,
+  SecurityHeaders,
+  TokenStore,
+  ValidationOptions,
+} from './security';

@@ -1,0 +1,730 @@
+/* main/apps/web/src/features/settings/components/AccountModal.css */
+
+/* ============================================================================
+ * Modal shell — sidebar + content two-pane layout inside Modal.Root(size=xl)
+ * ========================================================================== */
+
+.account-modal {
+  display: grid;
+  min-height: 0;
+  height: 100%;
+  grid-template-columns: 14rem minmax(0, 1fr);
+  /* Bound the row. Without this the single implicit row grows to the tallest pane,
+     the sidebar stretches to match it (grid items stretch by default), and its
+     right border ran the height of whatever tab was open — measured at 553px on
+     Notifications and 2430px on Security, inside a dialog that is always 900px.
+     `minmax(0, 1fr)` caps the row at the grid's height so the panes' own
+     `overflow-y: auto` does the scrolling and the divider is a constant. */
+  grid-template-rows: minmax(0, 1fr);
+  gap: var(--ui-gap-xl);
+}
+
+.account-modal__sidebar {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--ui-gap-lg);
+  padding-right: var(--ui-gap-lg);
+  border-right: 1px solid var(--ui-color-border);
+  overflow-y: auto;
+}
+
+.account-modal__sidebar-header {
+  display: grid;
+  gap: var(--ui-gap-xs);
+  padding: var(--ui-gap-sm) var(--ui-gap-sm) 0;
+}
+
+.account-modal__nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-xs);
+}
+
+/* Section menu. Sized to match `.app-left-menu__item` — the app has two vertical
+   navigations and they were on different scales (md/semibold at 2.75rem here
+   against the shell's inherited sm at 2.5rem), which reads as two design systems
+   in one window. Same size, same row height; weight carries the selected state. */
+.account-modal__nav-button {
+  justify-content: flex-start;
+  min-height: 2.5rem;
+  padding: var(--ui-gap-sm) var(--ui-gap-md);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  text-align: left;
+}
+
+.account-modal__main {
+  min-width: 0;
+  overflow-y: auto;
+}
+
+/* The content region keeps the historical `settings-page` class/container name
+ * so every shared section style and container query below applies unchanged. */
+.settings-page {
+  container: settings-page / inline-size;
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 48rem) {
+  .account-modal {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: var(--ui-gap-lg);
+  }
+
+  .account-modal__sidebar {
+    padding-right: 0;
+    padding-bottom: var(--ui-gap-sm);
+    border-right: 0;
+    border-bottom: 1px solid var(--ui-color-border);
+    overflow-y: visible;
+  }
+
+  .account-modal__nav {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .account-modal__nav-button {
+    flex: 0 0 auto;
+  }
+}
+
+/* ============================================================================
+ * Shared settings section styles (moved verbatim from SettingsPage.css)
+ * ========================================================================== */
+
+.settings-page__content-panel {
+  min-width: 0;
+  padding: clamp(var(--ui-gap-lg), 2vw, var(--ui-gap-xl));
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-color-bg);
+}
+
+.settings-page .card {
+  box-shadow: none;
+}
+
+.settings-stack {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0;
+}
+
+.settings-section {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.settings-section + .settings-section {
+  margin-top: var(--ui-gap-xl);
+  padding-top: var(--ui-gap-xl);
+  border-top: 1px solid var(--ui-color-border);
+}
+
+.settings-section__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ui-gap-lg);
+  margin-bottom: var(--ui-gap-lg);
+}
+
+.settings-section__title-block {
+  min-width: 0;
+}
+
+.settings-section__description,
+.settings-tab-intro__description {
+  margin-top: var(--ui-gap-xs);
+  max-width: 42rem;
+  line-height: var(--ui-line-height-normal);
+}
+
+.settings-section__action {
+  flex: 0 0 auto;
+}
+
+.settings-section__body {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-gap-lg);
+}
+
+.settings-section__secondary-action {
+  margin-top: var(--ui-gap-lg);
+}
+
+.settings-page .space-y-3 > * + * {
+  margin-top: var(--ui-gap-md);
+}
+
+.settings-page .space-y-5 > * + * {
+  margin-top: var(--ui-gap-xl);
+}
+
+.settings-tab-intro {
+  min-width: 0;
+  padding-bottom: var(--ui-gap-sm);
+}
+
+.settings-field {
+  display: grid;
+  gap: var(--ui-gap-xs);
+}
+
+.settings-field--narrow {
+  max-width: 22rem;
+}
+
+.settings-toggle-row {
+  display: grid;
+  min-width: 0;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: clamp(var(--ui-gap-lg), 3vw, var(--ui-gap-2xl));
+  padding-block: var(--ui-gap-xs);
+}
+
+.settings-toggle-row--compact {
+  gap: var(--ui-gap-xl);
+}
+
+.settings-toggle-row--bordered {
+  padding: var(--ui-gap-lg) var(--ui-gap-sm);
+}
+
+.settings-toggle-row__content {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-gap-xs);
+}
+
+.settings-toggle-row__content label {
+  width: fit-content;
+  cursor: pointer;
+}
+
+.settings-toggle-row__actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ui-gap-sm);
+}
+
+.settings-page .switch {
+  align-self: start;
+  width: 3.25rem;
+  height: 1.875rem;
+  min-height: 1.875rem;
+  margin-top: 0.0625rem;
+}
+
+.settings-page .switch-thumb {
+  top: 0.25rem;
+  left: 0.25rem;
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+.settings-page .switch[data-checked='true'] .switch-thumb {
+  transform: translateX(1.375rem);
+}
+
+.settings-notifications {
+  display: grid;
+  gap: var(--ui-gap-2xl);
+}
+
+.settings-notifications__section {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-gap-lg);
+  padding-top: var(--ui-gap-xl);
+  border-top: 1px solid var(--ui-color-border);
+}
+
+.settings-notifications__type-list {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-gap-md);
+}
+
+.settings-toggle-card {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-gap-lg);
+  padding: var(--ui-gap-xl);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-color-bg);
+}
+
+.settings-channel-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-gap-sm) var(--ui-gap-lg);
+  padding-top: var(--ui-gap-lg);
+  border-top: 1px solid var(--ui-color-border);
+}
+
+.settings-phone-card {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-gap-md);
+  padding: var(--ui-gap-lg);
+  background: var(--ui-color-bg);
+}
+
+.settings-phone-card__header,
+.settings-phone-card__form-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-gap-lg);
+}
+
+.settings-phone-card__form-row .input {
+  flex: 1 1 16rem;
+  min-width: 12rem;
+}
+
+.settings-phone-card__form-row .btn {
+  flex: 0 0 auto;
+}
+
+.settings-language-picker__tokens {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: var(--ui-gap-xs);
+  padding-top: var(--ui-gap-xs);
+}
+
+.settings-language-token {
+  display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: var(--ui-gap-xs);
+  padding: 0.2rem var(--ui-gap-sm);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text);
+  font-size: var(--ui-font-size-xs);
+}
+
+.settings-language-token__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-language-token__remove {
+  display: inline-flex;
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-sm);
+  background: transparent;
+  color: var(--ui-color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+
+.settings-language-token__remove:hover,
+.settings-language-token__remove:focus-visible {
+  color: var(--ui-color-danger);
+  outline: none;
+}
+
+.settings-quiet-hours {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--ui-gap-md);
+  padding-top: var(--ui-gap-sm);
+}
+
+.settings-quiet-hours__field {
+  display: grid;
+  min-width: 5rem;
+  gap: var(--ui-gap-xs);
+}
+
+.settings-quiet-hours__timezone {
+  padding-bottom: var(--ui-gap-sm);
+}
+
+.settings-consent {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-gap-lg);
+}
+
+.settings-consent__header {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-gap-xs);
+}
+
+.settings-consent__list {
+  display: grid;
+  min-width: 0;
+  border-top: 1px solid var(--ui-color-border);
+  border-bottom: 1px solid var(--ui-color-border);
+}
+
+.settings-consent__list .settings-toggle-row--bordered + .settings-toggle-row--bordered {
+  border-top: 1px solid var(--ui-color-border);
+}
+
+.settings-consent__actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--ui-gap-xs);
+}
+
+.settings-data-controls,
+.settings-danger-zone {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-gap-xl);
+}
+
+.settings-data-controls__group {
+  padding-top: var(--ui-gap-xl);
+  border-top: 1px solid var(--ui-color-border);
+}
+
+.settings-action-panel,
+.settings-data-export {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-gap-lg);
+  padding: var(--ui-gap-lg);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-color-surface);
+}
+
+.settings-action-panel--status {
+  background: var(--ui-color-bg);
+}
+
+.settings-action-panel--warning {
+  border-color: color-mix(in srgb, var(--ui-color-warning) 40%, var(--ui-color-border));
+  background: color-mix(in srgb, var(--ui-color-warning) 5%, var(--ui-color-surface));
+}
+
+.settings-action-panel--danger {
+  border-color: color-mix(in srgb, var(--ui-color-danger) 40%, var(--ui-color-border));
+  background: color-mix(in srgb, var(--ui-color-danger) 5%, var(--ui-color-surface));
+}
+
+.settings-action-panel__header {
+  display: grid;
+  min-width: 0;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--ui-gap-lg);
+}
+
+.settings-action-panel__copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-gap-xs);
+}
+
+.settings-action-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-gap-sm);
+}
+
+.settings-danger-zone {
+  padding: var(--ui-gap-lg);
+  border: 1px solid color-mix(in srgb, var(--ui-color-danger) 45%, var(--ui-color-border));
+  border-radius: var(--ui-radius-md);
+  background: color-mix(in srgb, var(--ui-color-danger) 4%, var(--ui-color-bg));
+}
+
+.settings-danger-zone__header {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-gap-xs);
+}
+
+.settings-preferences {
+  display: grid;
+  gap: var(--ui-gap-2xl);
+}
+
+.settings-preferences__group {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-gap-md);
+}
+
+.settings-preferences__group + .settings-preferences__group {
+  padding-top: var(--ui-gap-2xl);
+  border-top: 1px solid var(--ui-color-border);
+}
+
+.settings-preferences__theme-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ui-gap-md);
+}
+
+.settings-preferences__theme-option {
+  display: grid;
+  min-height: 6.5rem;
+  align-items: start;
+  justify-items: start;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--ui-gap-md);
+  padding: var(--ui-gap-lg);
+  border: 1px solid var(--ui-color-border);
+  background: var(--ui-color-bg);
+  color: var(--ui-color-text);
+  text-align: left;
+  white-space: normal;
+}
+
+.settings-preferences__theme-option[data-selected='true'] {
+  border-color: var(--ui-color-primary);
+  background: var(--ui-color-primary-muted);
+}
+
+.settings-preferences__theme-swatch {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-full);
+  background: linear-gradient(135deg, var(--ui-color-bg) 0 50%, var(--ui-color-text) 50% 100%);
+}
+
+.settings-preferences__theme-copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-gap-xs);
+}
+
+.settings-preferences__theme-label {
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+.settings-preferences__theme-description {
+  line-height: var(--ui-line-height-normal);
+}
+
+.settings-preferences__control {
+  max-width: 28rem;
+}
+
+@container settings-page (max-width: 56rem) {
+  .settings-page__content-panel {
+    padding: var(--ui-gap-lg);
+  }
+
+  .settings-section__header {
+    flex-direction: column;
+    gap: var(--ui-gap-sm);
+  }
+
+  .settings-section__action {
+    width: 100%;
+  }
+}
+
+@container settings-page (max-width: 38rem) {
+  .settings-toggle-row,
+  .settings-action-panel__header {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-toggle-row__actions,
+  .settings-consent__actions {
+    justify-content: flex-start;
+  }
+
+  .settings-phone-card__header,
+  .settings-phone-card__form-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .settings-page .switch {
+    justify-self: start;
+  }
+
+  .settings-action-panel,
+  .settings-data-export,
+  .settings-danger-zone,
+  .settings-toggle-card {
+    padding: var(--ui-gap-md);
+  }
+
+  .settings-preferences__theme-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 48rem) {
+  .settings-section__header {
+    flex-direction: column;
+    gap: var(--ui-gap-sm);
+  }
+
+  .settings-section__action {
+    width: 100%;
+  }
+
+  .settings-toggle-row {
+    grid-template-columns: 1fr;
+    gap: var(--ui-gap-lg);
+  }
+
+  .settings-toggle-row__actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .settings-phone-card__header,
+  .settings-phone-card__form-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .settings-page__content-panel {
+    padding: var(--ui-gap-lg);
+  }
+
+  .settings-action-panel,
+  .settings-data-export,
+  .settings-danger-zone {
+    padding: var(--ui-gap-md);
+  }
+
+  .settings-action-panel__header {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-toggle-card {
+    padding: var(--ui-gap-md);
+  }
+
+  .settings-channel-list {
+    gap: var(--ui-gap-sm) var(--ui-gap-lg);
+  }
+
+  .settings-preferences__theme-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   Widgets whose sizes were written as utility classes this system never had
+   ========================================================================== */
+
+/* The hour inputs in the quiet-hours row: two digits, so they should not
+   stretch to the grid cell. Was `w-20`, which styled nothing. */
+.settings-quiet-hours__input {
+  width: 5rem;
+}
+
+/* Avatar block. The image, the initials fallback and the loading scrim must
+   agree on one diameter, which is the real reason this is a named class and
+   not three copies of a size utility. */
+.settings-avatar {
+  --settings-avatar-size: 5rem;
+
+  width: var(--settings-avatar-size);
+  height: var(--settings-avatar-size);
+}
+
+.settings-avatar__fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ui-radius-full);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-xl);
+  font-weight: var(--ui-font-weight-medium);
+}
+
+/* Dims the avatar while an upload is in flight. A scrim is one of the few
+   places a fixed dark overlay is right in both themes: it darkens whatever is
+   behind it rather than participating in the palette. */
+.settings-avatar__scrim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ui-radius-full);
+  background: var(--ui-color-scrim);
+}
+
+/* Countdown ring on the destructive-action dialog. */
+.settings-countdown-ring {
+  width: 2rem;
+  height: 2rem;
+}
+
+.settings-countdown-ring__track {
+  color: var(--ui-color-border);
+}
+
+/* Grace-period progress bar on the deletion notice. */
+.settings-deletion-progress {
+  width: 100%;
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: var(--ui-radius-full);
+  background: var(--ui-color-surface);
+}
+
+.settings-deletion-progress__fill {
+  height: 100%;
+  border-radius: var(--ui-radius-full);
+  background: var(--ui-color-danger);
+  transition: width 300ms ease;
+}
+
+/* The settings route renders this behind its modal purely so the route has a
+   body. Without a background it flashed the raw page colour on navigation. */
+.account-modal-route-backdrop {
+  min-height: 100vh;
+  background: var(--ui-color-bg);
+}
+
+/* Provider icon badge in the connected-accounts list. Was `w-10 h-10`. */
+.settings-provider-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--ui-radius-full);
+  background: var(--ui-color-surface);
+  font-weight: var(--ui-font-weight-medium);
+}

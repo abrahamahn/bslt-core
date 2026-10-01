@@ -1,0 +1,87 @@
+{
+  "extends": "../../../config/tsconfig.node.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "tsBuildInfoFile": "./node_modules/.cache/typescript/tsconfig.tsbuildinfo",
+    "typeRoots": [
+      "../../../node_modules/@types"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@bslt/shared": [
+        "../../shared/src/index.ts"
+      ],
+      "@bslt/shared/*": [
+        "../../shared/src/modules/*",
+        "../../shared/src/*"
+      ],
+      "@bslt/shared/config": [
+        "../../shared/src/modules/system/config/index.ts"
+      ],
+      "@bslt/shared/config/*": [
+        "../../shared/src/modules/system/config/*"
+      ],
+      "@bslt/shared/system": [
+        "../../shared/src/modules/system/index.ts"
+      ],
+      "@bslt/shared/system/*": [
+        "../../shared/src/modules/system/*"
+      ],
+      "@bslt/shared/system/constants": [
+        "../../shared/src/constants/system/index.ts"
+      ],
+      "@bslt/shared/system/constants/*": [
+        "../../shared/src/constants/system/*"
+      ],
+      "@bslt/db": [
+        "../db/src/index.ts"
+      ],
+      "@bslt/db/*": [
+        "../db/src/*"
+      ],
+      "@bslt/server-system": [
+        "../system/src/index.ts"
+      ],
+      "@bslt/server-system/*": [
+        "../system/src/*"
+      ],
+      "@bslt/core": [
+        "./src/index.ts"
+      ],
+      "@bslt/core/*": [
+        "./src/*"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "vitest.config.ts",
+    "eslint.config.ts",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.ts",
+    "src/**/*.spec.tsx",
+    "src/**/__tests__/**"
+  ],
+  "references": [
+    {
+      "path": "../../shared"
+    },
+    {
+      "path": "../db"
+    },
+    {
+      "path": "../system"
+    }
+  ]
+}

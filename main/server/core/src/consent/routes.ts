@@ -1,0 +1,76 @@
+// main/server/core/src/consent/routes.ts
+/**
+ * Consent Routes
+ *
+ * Route definitions for the consent module.
+ * Uses the generic router pattern for DRY registration.
+ *
+ * User routes: get and update consent preferences
+ */
+
+import {
+  createRouteMap,
+  protectedRoute,
+  type HttpReply,
+  type HttpRequest,
+  type RouteDefinition,
+  type RouteHandler,
+  type RouteMap,
+  type RouteOpenApiMeta,
+} from '@bslt/server-system/http';
+import { updateConsentPreferencesRequestSchema } from '@bslt/shared/core/compliance';
+
+import { handleGetConsent, handleUpdateConsent } from './handlers';
+
+import type { ConsentAppContext } from './types';
+
+// ============================================================================
+// Route Helper
+// ============================================================================
+
+/**
+ * Helper that wraps protectedRoute for user routes.
+ */
+function userRoute(
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+  handler: (
+    ctx: ConsentAppContext,
+    body: unknown,
+    request: HttpRequest,
+    reply: HttpReply,
+  ) => Promise<unknown>,
+  openapi?: RouteOpenApiMeta,
+): RouteDefinition {
+  return protectedRoute(method, handler as RouteHandler, 'user', undefined, openapi);
+}
+
+// ============================================================================
+// Route Definitions
+// ============================================================================
+
+/**
+ * Consent module route map.
+ *
+ * User routes (role: 'user'):
+ * - users/me/consent (GET) -- get current consent preferences
+ * - users/me/consent (PATCH) -- update consent preferences
+ */
+export const consentRoutes: RouteMap = createRouteMap([
+  // Get current consent preferences
+  [
+    'users/me/consent',
+    userRoute('GET', handleGetConsent, { summary: 'Get consent preferences', tags: ['Consent'] }),
+  ],
+
+  // Update consent preferences
+  [
+    'users/me/consent/update',
+    protectedRoute(
+      'PATCH',
+      handleUpdateConsent as RouteHandler,
+      'user',
+      updateConsentPreferencesRequestSchema,
+      { summary: 'Update consent preferences', tags: ['Consent'] },
+    ),
+  ],
+]);

@@ -1,0 +1,224 @@
+// main/apps/web/src/features/settings/components/AvatarUpload.tsx
+/**
+ * Avatar Upload Component
+ *
+ * Component for uploading and managing user avatar.
+ */
+
+import { MAX_IMAGE_SIZE } from '@bslt/shared/constants/media';
+import { Alert, Avatar, Button, FileInput, Modal, Spinner } from '@bslt/ui';
+import { useRef, useState, type ReactElement } from 'react';
+
+import { useAvatarDelete, useAvatarUpload } from '../hooks';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+export interface AvatarUploadProps {
+  currentAvatarUrl: string | null;
+  userName: string | null;
+  onSuccess?: () => void;
+}
+
+// ============================================================================
+// Component
+// ============================================================================
+
+export const AvatarUpload = ({
+  currentAvatarUrl,
+  userName,
+  onSuccess,
+}: AvatarUploadProps): ReactElement => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const {
+    uploadAvatar,
+    isLoading: isUploading,
+    error: uploadError,
+  } = useAvatarUpload({
+    onSuccess: () => {
+      setPreviewUrl(null);
+      setSelectedFile(null);
+      onSuccess?.();
+    },
+  });
+
+  const {
+    deleteAvatar,
+    isLoading: isDeleting,
+    error: deleteError,
+  } = useAvatarDelete({
+    onSuccess: () => {
+      onSuccess?.();
+    },
+  });
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const file = e.target.files?.[0];
+    if (file === undefined) return;
+
+    setValidationError(null);
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      setValidationError('Please select a valid image file (JPEG, PNG, WebP, or GIF).');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > MAX_IMAGE_SIZE) {
+      setValidationError('File size must be less than 5MB.');
+      return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e): void => {
+      setPreviewUrl(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+    setSelectedFile(file);
+  };
+
+  const handleUpload = (): void => {
+    if (selectedFile !== null) {
+      uploadAvatar(selectedFile);
+    }
+  };
+
+  const handleCancel = (): void => {
+    setPreviewUrl(null);
+    setSelectedFile(null);
+    if (fileInputRef.current !== null) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleConfirmDelete = (): void => {
+    setConfirmDelete(false);
+    deleteAvatar();
+  };
+
+  const displayUrl = previewUrl ?? currentAvatarUrl;
+  const isLoading = isUploading || isDeleting;
+  const error = uploadError ?? deleteError;
+
+  // Get initials from name
+  const initials =
+    userName !== null && userName !== '' && userName.trim().length > 0
+      ? userName
+          .split(' ')
+          .filter((n) => n.length > 0)
+          .map((n) => n[0])
+          .join('')
+          .toUpperCase()
+          .slice(0, 2)
+      : '?';
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-6">
+        <div className="relative">
+          {displayUrl !== null && displayUrl.length > 0 ? (
+            <Avatar src={displayUrl} alt={userName ?? 'User avatar'} className="settings-avatar" />
+          ) : (
+            <div className="settings-avatar settings-avatar__fallback">{initials}</div>
+          )}
+          {isLoading && (
+            <div className="settings-avatar__scrim">
+              <Spinner size="sm" />
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <FileInput.Field
+            ref={fileInputRef}
+            type="file"
+            label="Avatar"
+            hideLabel
+            description="JPG, PNG, WebP or GIF. Max 5MB."
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={handleFileSelect}
+            className="hidden"
+            id="avatar-upload"
+          />
+
+          {selectedFile === null ? (
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading}
+              >
+                Upload Photo
+              </Button>
+              {currentAvatarUrl !== null && currentAvatarUrl.length > 0 && (
+                <Button
+                  type="button"
+                  variant="text"
+                  onClick={() => {
+                    setConfirmDelete(true);
+                  }}
+                  disabled={isLoading}
+                  className="text-danger"
+                >
+                  Remove
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Button type="button" onClick={handleUpload} disabled={isLoading}>
+                {isUploading ? 'Uploading...' : 'Save'}
+              </Button>
+              <Button type="button" variant="text" onClick={handleCancel} disabled={isLoading}>
+                Cancel
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {validationError !== null && <Alert tone="danger">{validationError}</Alert>}
+      {error !== null && <Alert tone="danger">{error.message}</Alert>}
+
+      <Modal.Root
+        open={confirmDelete}
+        onClose={() => {
+          setConfirmDelete(false);
+        }}
+      >
+        <Modal.Header>
+          <Modal.Title>Remove photo</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Modal.Description>
+            Your profile photo will be removed and replaced with your initials.
+          </Modal.Description>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              setConfirmDelete(false);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button type="button" variant="danger" onClick={handleConfirmDelete}>
+            Remove
+          </Button>
+        </Modal.Footer>
+      </Modal.Root>
+    </div>
+  );
+};
