@@ -12,7 +12,7 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 
-import { readArchive } from './archive';
+import { readArchive, type FeatureArchive } from './archive';
 import {
   destination,
   featureId,
@@ -21,11 +21,12 @@ import {
   object,
   registries,
   sha256,
+  sameFeature,
   STATE_PATH,
   type FeatureManifest,
 } from './manifest';
 
-type State = { schemaVersion: 1; features: FeatureManifest[] };
+export type State = { schemaVersion: 1; features: FeatureManifest[] };
 const LOCK = '.bslt-feature-install';
 /** Refuse symlinks at every existing parent, including dangling links and linked files. */
 function safePath(root: string, relative: string): string {
@@ -122,14 +123,21 @@ function checkState(root: string, state: State, version: string | undefined): vo
       );
   }
 }
-export function checkFeatures(directory: string): State {
-  const { root, version } = workspace(directory);
+/** Read installed versions even when a Core update has made them incompatible. */
+export function listFeatures(directory: string): State {
+  return readState(workspace(directory).root);
+}
+function checkLock(root: string): void {
   if (existsSync(safePath(root, LOCK)))
     throw new Error(
       `Another install is running or was interrupted. Inspect ${LOCK}/backup.json before continuing.`,
     );
+}
+export function checkFeatures(directory: string, requireCompatible = true): State {
+  const { root, version } = workspace(directory);
+  checkLock(root);
   const state = readState(root);
-  checkState(root, state, version);
+  checkState(root, state, requireCompatible ? version : undefined);
   return state;
 }
 /** Preflight every destination, keep an on-disk undo journal, and roll back ordinary I/O failures. */
@@ -174,8 +182,15 @@ async function modify(
   directory: string,
   action: (root: string, version: string, state: State) => Promise<State>,
   requireCompatible = true,
+  dryRun = false,
 ): Promise<State> {
   const { root, version } = workspace(directory);
+  checkLock(root);
+  if (dryRun) {
+    const state = readState(root);
+    checkState(root, state, requireCompatible ? version : undefined);
+    return action(root, version, state);
+  }
   const lock = safePath(root, LOCK);
   mkdirSync(lock); // Exclusive writer lock; never remove a lock owned by another process.
   try {
@@ -187,44 +202,78 @@ async function modify(
     if (!existsSync(path.join(lock, 'backup.json'))) rmSync(lock, { recursive: true });
   }
 }
+export interface FeatureChangeOptions {
+  update?: boolean;
+  dryRun?: boolean;
+}
+/** Download/validation must finish before acquiring the writer lock or replacing the old release. */
+export async function applyFeature(
+  directory: string,
+  pack: FeatureArchive,
+  options: FeatureChangeOptions = {},
+): Promise<State> {
+  return modify(
+    directory,
+    async (root, version, state) => {
+      const m = pack.manifest;
+      if (m.coreVersion !== version)
+        throw new Error(`Feature requires Core ${m.coreVersion}; installed Core is ${version}.`);
+      const existing = state.features.find((f) => f.id === m.id);
+      if (options.update && existing === undefined)
+        throw new Error(`${m.id} is not installed. Run pnpm features:add ${m.id} first.`);
+      if (existing !== undefined) {
+        if (sameFeature(existing, m)) return state;
+        if (!options.update)
+          throw new Error(
+            `${m.id}@${existing.version} is already installed. Use pnpm features:update ${m.id} to replace it safely.`,
+          );
+        if (existing.version === m.version && existing.coreVersion === m.coreVersion)
+          throw new Error(
+            'The installed release has different contents. Ask the distributor for a new version; existing releases cannot be replaced in place.',
+          );
+      } else {
+        for (const side of ['web', 'server']) {
+          if (filesIn(root, `main/apps/${side}/src/extensions/packs/${m.id}`).length > 0)
+            throw new Error(`Refusing to overwrite an unmanaged feature directory: ${m.id}`);
+        }
+      }
+      const owned = new Set(
+        Object.keys(existing?.files ?? {}).map((source) => destination(m.id, source)),
+      );
+      const changes = new Map<string, Buffer | null>();
+      for (const file of owned) changes.set(file, null);
+      for (const [source, data] of pack.files) {
+        const dest = destination(m.id, source);
+        if (read(root, dest) !== null && !owned.has(dest))
+          throw new Error(`Refusing to overwrite an unmanaged file: ${dest}`);
+        changes.set(dest, data);
+      }
+      const next: State = {
+        schemaVersion: 1,
+        features: [...state.features.filter((item) => item.id !== m.id), m].sort((a, b) =>
+          a.id.localeCompare(b.id),
+        ),
+      };
+      for (const [file, contents] of Object.entries(registries(next.features)))
+        changes.set(file, Buffer.from(contents));
+      changes.set(STATE_PATH, Buffer.from(json(next)));
+      // Preview runs the same file checks and computes the same replacement without application writes.
+      if (options.dryRun) {
+        for (const file of changes.keys()) read(root, file);
+      } else transaction(root, changes);
+      return next;
+    },
+    !options.update,
+    options.dryRun,
+  );
+}
 export async function installFeature(
   directory: string,
   archive: string,
   expectedHash?: string,
+  options: FeatureChangeOptions = {},
 ): Promise<State> {
-  const pack = await readArchive(path.resolve(archive), expectedHash);
-  return modify(directory, async (root, version, state) => {
-    const m = pack.manifest;
-    if (m.coreVersion !== version)
-      throw new Error(`Feature requires Core ${m.coreVersion}; installed Core is ${version}.`);
-    const existing = state.features.find((f) => f.id === m.id);
-    if (existing !== undefined) {
-      if (json(existing) === json(m)) return state;
-      throw new Error(
-        `${m.id} is already installed. Remove it before installing a different release.`,
-      );
-    }
-    for (const side of ['web', 'server']) {
-      if (filesIn(root, `main/apps/${side}/src/extensions/packs/${m.id}`).length > 0)
-        throw new Error(`Refusing to overwrite an unmanaged feature directory: ${m.id}`);
-    }
-    const changes = new Map<string, Buffer | null>();
-    for (const [source, data] of pack.files) {
-      const dest = destination(m.id, source);
-      if (read(root, dest) !== null)
-        throw new Error(`Refusing to overwrite an unmanaged file: ${dest}`);
-      changes.set(dest, data);
-    }
-    const next: State = {
-      schemaVersion: 1,
-      features: [...state.features, m].sort((a, b) => a.id.localeCompare(b.id)),
-    };
-    for (const [file, contents] of Object.entries(registries(next.features)))
-      changes.set(file, Buffer.from(contents));
-    changes.set(STATE_PATH, Buffer.from(json(next)));
-    transaction(root, changes);
-    return next;
-  });
+  return applyFeature(directory, await readArchive(path.resolve(archive), expectedHash), options);
 }
 export async function removeFeature(directory: string, id: string): Promise<State> {
   featureId(id);

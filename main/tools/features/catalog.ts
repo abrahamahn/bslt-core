@@ -3,6 +3,7 @@ import { lstatSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { savedCatalog } from './config';
 import { featureId, object } from './manifest';
 
 export const CATALOG_FILE = 'features.catalog.json';
@@ -24,6 +25,7 @@ export interface CatalogOptions {
   catalog?: string;
   token?: string;
   fetchImpl?: typeof fetch;
+  onProgress?: (message: string) => void;
 }
 export interface LoadedCatalog {
   catalog: FeatureCatalog;
@@ -78,6 +80,23 @@ export function parseFeatureName(input: string): { id: string; version?: string 
     throw new Error('Use a feature name or name@1.2.3 with an exact version.');
   return { id, ...(version === undefined ? {} : { version }) };
 }
+export function compareVersions(a: string, b: string): number {
+  const left = a.split('.').map(BigInt),
+    right = b.split('.').map(BigInt);
+  for (let i = 0; i < 3; i++) {
+    if ((left[i] ?? 0n) < (right[i] ?? 0n)) return -1;
+    if ((left[i] ?? 0n) > (right[i] ?? 0n)) return 1;
+  }
+  return 0;
+}
+export function compatibleReleases(catalog: FeatureCatalog, coreVersion: string): FeatureRelease[] {
+  const ids = [
+    ...new Set(
+      catalog.features.filter((item) => item.coreVersion === coreVersion).map((item) => item.id),
+    ),
+  ].sort();
+  return ids.map((id) => selectRelease(catalog, id, coreVersion));
+}
 export function selectRelease(
   catalog: FeatureCatalog,
   name: string,
@@ -90,16 +109,14 @@ export function selectRelease(
       item.coreVersion === coreVersion &&
       (requested.version === undefined || item.version === requested.version),
   );
-  releases.sort((a, b) => {
-    const left = a.version.split('.').map(BigInt),
-      right = b.version.split('.').map(BigInt);
-    for (let i = 0; i < 3; i++) {
-      if ((left[i] ?? 0n) < (right[i] ?? 0n)) return 1;
-      if ((left[i] ?? 0n) > (right[i] ?? 0n)) return -1;
-    }
-    return 0;
-  });
+  releases.sort((a, b) => compareVersions(b.version, a.version));
   const selected = releases[0];
+  if (selected === undefined && !catalog.features.some((item) => item.id === requested.id)) {
+    const names = [...new Set(catalog.features.map((item) => item.id))].sort().slice(0, 8);
+    throw new Error(
+      `Unknown feature "${requested.id}". ${names.length ? `Available names: ${names.join(', ')}. ` : ''}Run pnpm features:available.`,
+    );
+  }
   if (selected === undefined)
     throw new Error(
       `No release of ${name} supports Core ${coreVersion}. Run pnpm features:available to list compatible packs.`,
@@ -201,7 +218,8 @@ export async function loadCatalog(
   root: string,
   options: CatalogOptions = {},
 ): Promise<LoadedCatalog> {
-  const source = options.catalog ?? CATALOG_FILE;
+  const source = options.catalog ?? savedCatalog(root) ?? CATALOG_FILE;
+  options.onProgress?.('Reading the feature catalog…');
   let data: Buffer,
     base: URL,
     authOrigin = '';
@@ -225,7 +243,7 @@ export async function loadCatalog(
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT')
         throw new Error(
-          'No feature catalog found. Place features.catalog.json in Core or set BSLT_FEATURE_CATALOG to your distributor catalog.',
+          'No feature catalog found. Run pnpm features:setup <catalog-path-or-url>, place features.catalog.json in Core, or set BSLT_FEATURE_CATALOG.',
         );
       throw error;
     }

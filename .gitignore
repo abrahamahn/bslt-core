@@ -131,3 +131,7 @@ docs/archive/refactor/
 
 # Feature installation undo journal (can contain local source)
 .bslt-feature-install/
+
+# Local feature catalog setup
+.bslt-features.json
+.bslt-feature-setup-*/

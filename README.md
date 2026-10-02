@@ -29,12 +29,15 @@ Production settings are documented in `config/env/.env.production.example`.
 
 ## Install a feature pack (Core)
 
-Place your distributor's `features.catalog.json` in this Core checkout, keeping downloaded archives
-at the relative paths listed in it. For a hosted catalog, set `BSLT_FEATURE_CATALOG` to its HTTPS URL
-and, if required, `BSLT_FEATURE_TOKEN` to your distributor-issued download token. Then run:
+Keep your distributor's catalog and archives together. If downloaded as a ZIP, unzip that bundle first.
+Save its catalog location once, then choose a feature from the interactive picker:
 
 ```sh
-pnpm features:available
+pnpm features:setup /path/to/downloads/features.catalog.json
+pnpm features
+
+# Or install directly, with an optional preview:
+pnpm features:add account-insights --dry-run
 pnpm features:add account-insights
 # Pin a specific release: pnpm features:add account-insights@1.0.0
 pnpm type-check
@@ -42,15 +45,20 @@ pnpm build
 pnpm dev
 ```
 
+Setup also accepts a stable HTTPS catalog URL. Set `BSLT_FEATURE_TOKEN` in your shell or secret manager
+if the server requires a download token. Setup validates access and saves only the catalog address in
+`.bslt-features.json`, which Git ignores. Tokens and URLs with query parameters are never saved by setup.
+`BSLT_FEATURE_CATALOG` overrides saved setup; `--catalog` overrides both.
+
 Names select the newest catalog release compatible with this Core version. `features:available` lists
-those releases. Override the catalog for one command with `--catalog /path/to/features.catalog.json`.
+those releases and installed versions; append a word to search, such as `pnpm features:available insights`. Override the catalog for one command with `--catalog /path/to/features.catalog.json`.
 Catalogs contain names, versions, archive addresses, and mandatory SHA-256 checksums. Remote catalogs
 cannot read local files; bearer tokens are sent only to the configured catalog origin, including during
 redirects. Keep tokens and catalog URLs containing temporary credentials out of Git. There is no
 default hosted catalog or npm registry lookup.
 
 You can also install a trusted download directly: `pnpm features:add /path/to/pack.tar.gz`. Run
-`pnpm features:add` to be prompted for a name or path. The npm equivalent is
+`pnpm features` or `pnpm features:add` to choose a numbered entry, name, or path. Press Enter to cancel. The npm equivalent is
 `npm run features:add -- account-insights` after installing workspace dependencies
 with pnpm. Sign in and open **Account Insights** in the navigation (`/extensions/account-insights`).
 It shows profile completeness and email verification using an authenticated feature API.
@@ -61,7 +69,11 @@ packs, `pnpm features:check` checks them, and `pnpm features:remove <id>` remove
 
 Packs must match this Core version exactly and use its existing dependencies/database schema. The
 installer refuses local edits, unsafe archive paths, and unmanaged file collisions. To change a pack
-release, remove the old pack before installing its replacement. Keep installed files, both
+release, run `pnpm features:update <name>`; preview it first with `--dry-run`. The replacement is verified
+before existing source changes, and a failed write restores the previous release. Updates also work
+after a Core version change. Automatic selection never downgrades; use `name@version` to request one.
+`features:list` stays readable when a pack needs updating; `features:check` enforces compatibility.
+Run `pnpm features --help` for all commands. Keep installed files, both
 `src/extensions/installed.*` registries, and `features.lock.json` together in your private Git repository.
 Only install trusted source: hashes detect corruption but do not authenticate the publisher. Use
 `--sha256 <trusted-download-checksum>` to verify a distributor-provided archive checksum.

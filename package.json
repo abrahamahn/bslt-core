@@ -7,6 +7,7 @@
     "node": ">=18.19 <25"
   },
   "scripts": {
+    "features": "node --import tsx main/tools/features/cli.ts",
     "dev": "pnpm features:check && pnpm --parallel --filter @bslt/server --filter @bslt/web dev",
     "build": "pnpm features:check && pnpm -r --workspace-concurrency=1 run build",
     "type-check": "pnpm features:check && pnpm -r run type-check",
@@ -14,10 +15,12 @@
     "db:migrate": "pnpm --filter @bslt/server exec node --conditions=source --import tsx src/migrate.ts",
     "start": "pnpm features:check && pnpm --parallel --filter @bslt/server --filter @bslt/web start",
     "features:add": "node --import tsx main/tools/features/cli.ts add",
+    "features:update": "node --import tsx main/tools/features/cli.ts update",
     "features:remove": "node --import tsx main/tools/features/cli.ts remove",
     "features:list": "node --import tsx main/tools/features/cli.ts list",
     "features:check": "node --import tsx main/tools/features/cli.ts check",
-    "features:available": "node --import tsx main/tools/features/cli.ts available"
+    "features:available": "node --import tsx main/tools/features/cli.ts available",
+    "features:setup": "node --import tsx main/tools/features/cli.ts setup"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

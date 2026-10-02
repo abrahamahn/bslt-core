@@ -71,6 +71,16 @@ export function manifest(value: unknown): FeatureManifest {
   }
   return m as unknown as FeatureManifest;
 }
+export function sameFeature(a: FeatureManifest, b: FeatureManifest): boolean {
+  return (
+    a.id === b.id &&
+    a.name === b.name &&
+    a.version === b.version &&
+    a.coreVersion === b.coreVersion &&
+    Object.keys(a.files).length === Object.keys(b.files).length &&
+    Object.entries(a.files).every(([file, hash]) => b.files[file] === hash)
+  );
+}
 export const STATE_PATH = 'features.lock.json';
 export const SERVER_REGISTRY = 'main/apps/server/src/extensions/installed.ts';
 export const WEB_REGISTRY = 'main/apps/web/src/extensions/installed.tsx';
