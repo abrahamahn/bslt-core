@@ -19,6 +19,7 @@ import { LandingPage } from '@pages/LandingPage';
 import { PrivacyPolicyPage, TermsPage } from '@pages/LegalDocumentPage';
 import { NotFoundPage } from '@pages/NotFoundPage';
 import { UnavailablePage } from '@pages/UnavailablePage';
+import { featureRoutes } from '../extensions';
 import { AppLayout } from './layouts';
 import type { ElementType } from 'react';
 export interface AppRoute {
@@ -74,6 +75,7 @@ export function createAppRoutes(): AppRoute[] {
         { path: 'disclaimer', element: DisclaimerPage },
         { path: 'forbidden', element: ForbiddenPage },
         { path: 'unavailable', element: UnavailablePage },
+        ...featureRoutes,
         { path: '*', element: NotFoundPage },
       ],
     },

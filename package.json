@@ -7,12 +7,16 @@
     "node": ">=18.19 <25"
   },
   "scripts": {
-    "dev": "pnpm --parallel --filter @bslt/server --filter @bslt/web dev",
-    "build": "pnpm -r --workspace-concurrency=1 run build",
-    "type-check": "pnpm -r run type-check",
+    "dev": "pnpm features:check && pnpm --parallel --filter @bslt/server --filter @bslt/web dev",
+    "build": "pnpm features:check && pnpm -r --workspace-concurrency=1 run build",
+    "type-check": "pnpm features:check && pnpm -r run type-check",
     "test": "node --conditions=source --import tsx --test main/apps/server/src/edition-smoke.test.ts",
     "db:migrate": "pnpm --filter @bslt/server exec node --conditions=source --import tsx src/migrate.ts",
-    "start": "pnpm --parallel --filter @bslt/server --filter @bslt/web start"
+    "start": "pnpm features:check && pnpm --parallel --filter @bslt/server --filter @bslt/web start",
+    "features:add": "node --import tsx main/tools/features/cli.ts add",
+    "features:remove": "node --import tsx main/tools/features/cli.ts remove",
+    "features:list": "node --import tsx main/tools/features/cli.ts list",
+    "features:check": "node --import tsx main/tools/features/cli.ts check"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -25,6 +29,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.0.9",
+    "tar": "7.5.22",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },

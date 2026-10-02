@@ -50,6 +50,7 @@ export type {
 export type { User } from '@bslt/shared/core/users';
 
 // API Client
+export { createFeatureClient } from './api/features';
 export { createApiClient, clearApiClient, getApiClient } from './api';
 export type { ApiClient, ApiClientConfig, TosRequiredPayload, ApiClientOptions } from './api';
 

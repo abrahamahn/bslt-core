@@ -181,6 +181,16 @@ test(
         headers: { authorization: `Bearer ${accessToken}` },
       });
       assert.equal(account.statusCode, 200, account.body);
+      const featureEndpoint = process.env['EDITION_TEST_FEATURE_ENDPOINT'];
+      if (featureEndpoint !== undefined) {
+        assert.ok(featureEndpoint.startsWith('/api/extensions/'));
+        assert.equal((await app.server.inject(featureEndpoint)).statusCode, 401);
+        const feature = await app.server.inject({
+          url: featureEndpoint,
+          headers: { authorization: `Bearer ${accessToken}` },
+        });
+        assert.equal(feature.statusCode, 200, feature.body);
+      }
       if (edition === 'core')
         assert.equal((await app.server.inject('/api/admin/health')).statusCode, 404);
     } finally {

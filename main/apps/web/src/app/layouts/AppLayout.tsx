@@ -5,6 +5,7 @@ import { useAuth } from '@auth/hooks';
 import { Link, Outlet } from '@bslt/react/router';
 import { AccountModal } from '@features/settings';
 import type { ReactElement, ReactNode } from 'react';
+import { featureNavigation } from '../../extensions';
 import { AppFooter } from './AppFooter';
 export interface AppLayoutProps {
   children?: ReactNode;
@@ -21,6 +22,7 @@ export function AppLayout({ children }: AppLayoutProps): ReactElement {
             <>
               <Link to="/profile">Account</Link>
               <Link to="/settings">Settings</Link>
+              {featureNavigation.map(({ to, label }) => <Link key={to} to={to}>{label}</Link>)}
               <button
                 type="button"
                 onClick={() => {
