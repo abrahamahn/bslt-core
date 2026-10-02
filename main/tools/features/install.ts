@@ -71,6 +71,9 @@ function workspace(root: string): { root: string; version: string } {
     throw new Error('Run feature installation from a current BSLT Core source distribution.');
   return { root, version: edition['version'] };
 }
+export function coreVersion(root: string): string {
+  return workspace(root).version;
+}
 function readState(root: string): State {
   const state = object(JSON.parse(read(root, STATE_PATH)?.toString('utf8') ?? '{}'));
   if (state['schemaVersion'] !== 1 || !Array.isArray(state['features']))
@@ -89,7 +92,7 @@ function filesIn(root: string, relative: string): string[] {
     return entry.isDirectory() ? filesIn(root, child) : [child];
   });
 }
-function checkState(root: string, state: State, version: string): void {
+function checkState(root: string, state: State, version: string | undefined): void {
   for (const m of state.features) {
     const owned = new Set(Object.keys(m.files).map((file) => destination(m.id, file)));
     for (const side of ['web', 'server']) {
@@ -100,7 +103,7 @@ function checkState(root: string, state: State, version: string): void {
           );
       }
     }
-    if (m.coreVersion !== version)
+    if (version !== undefined && m.coreVersion !== version)
       throw new Error(
         `Feature ${m.id} requires Core ${m.coreVersion}; installed Core is ${version}.`,
       );
@@ -170,13 +173,14 @@ function transaction(root: string, changes: Map<string, Buffer | null>): void {
 async function modify(
   directory: string,
   action: (root: string, version: string, state: State) => Promise<State>,
+  requireCompatible = true,
 ): Promise<State> {
   const { root, version } = workspace(directory);
   const lock = safePath(root, LOCK);
   mkdirSync(lock); // Exclusive writer lock; never remove a lock owned by another process.
   try {
     const state = readState(root);
-    checkState(root, state, version);
+    checkState(root, state, requireCompatible ? version : undefined);
     return await action(root, version, state);
   } finally {
     // A failed rollback or interrupted process leaves its undo journal in place.
@@ -224,16 +228,20 @@ export async function installFeature(
 }
 export async function removeFeature(directory: string, id: string): Promise<State> {
   featureId(id);
-  return modify(directory, async (root, _version, state) => {
-    const m = state.features.find((f) => f.id === id);
-    if (m === undefined) throw new Error(`Feature is not installed: ${id}`);
-    const changes = new Map<string, Buffer | null>();
-    for (const source of Object.keys(m.files)) changes.set(destination(id, source), null);
-    const next: State = { schemaVersion: 1, features: state.features.filter((f) => f.id !== id) };
-    for (const [file, contents] of Object.entries(registries(next.features)))
-      changes.set(file, Buffer.from(contents));
-    changes.set(STATE_PATH, Buffer.from(json(next)));
-    transaction(root, changes);
-    return next;
-  });
+  return modify(
+    directory,
+    async (root, _version, state) => {
+      const m = state.features.find((f) => f.id === id);
+      if (m === undefined) throw new Error(`Feature is not installed: ${id}`);
+      const changes = new Map<string, Buffer | null>();
+      for (const source of Object.keys(m.files)) changes.set(destination(id, source), null);
+      const next: State = { schemaVersion: 1, features: state.features.filter((f) => f.id !== id) };
+      for (const [file, contents] of Object.entries(registries(next.features)))
+        changes.set(file, Buffer.from(contents));
+      changes.set(STATE_PATH, Buffer.from(json(next)));
+      transaction(root, changes);
+      return next;
+    },
+    false,
+  );
 }

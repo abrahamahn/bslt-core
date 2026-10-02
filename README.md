@@ -29,17 +29,29 @@ Production settings are documented in `config/env/.env.production.example`.
 
 ## Install a feature pack (Core)
 
-From this Core checkout, install a trusted downloaded feature archive:
+Place your distributor's `features.catalog.json` in this Core checkout, keeping downloaded archives
+at the relative paths listed in it. For a hosted catalog, set `BSLT_FEATURE_CATALOG` to its HTTPS URL
+and, if required, `BSLT_FEATURE_TOKEN` to your distributor-issued download token. Then run:
 
 ```sh
-pnpm features:add /path/to/account-insights-1.0.0.tar.gz
+pnpm features:available
+pnpm features:add account-insights
+# Pin a specific release: pnpm features:add account-insights@1.0.0
 pnpm type-check
 pnpm build
 pnpm dev
 ```
 
-Or run `pnpm features:add` to be prompted for the path. You can also use
-`npm run features:add -- /path/to/account-insights-1.0.0.tar.gz` after installing workspace dependencies
+Names select the newest catalog release compatible with this Core version. `features:available` lists
+those releases. Override the catalog for one command with `--catalog /path/to/features.catalog.json`.
+Catalogs contain names, versions, archive addresses, and mandatory SHA-256 checksums. Remote catalogs
+cannot read local files; bearer tokens are sent only to the configured catalog origin, including during
+redirects. Keep tokens and catalog URLs containing temporary credentials out of Git. There is no
+default hosted catalog or npm registry lookup.
+
+You can also install a trusted download directly: `pnpm features:add /path/to/pack.tar.gz`. Run
+`pnpm features:add` to be prompted for a name or path. The npm equivalent is
+`npm run features:add -- account-insights` after installing workspace dependencies
 with pnpm. Sign in and open **Account Insights** in the navigation (`/extensions/account-insights`).
 It shows profile completeness and email verification using an authenticated feature API.
 
