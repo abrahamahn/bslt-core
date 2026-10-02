@@ -83,7 +83,7 @@
     }
   },
   "devDependencies": {
-    "fastify": "^5.12.1",
+    "fastify": "^5.12.5",
     "typescript": "^5.7.2"
   }
 }
