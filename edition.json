@@ -1158,8 +1158,8 @@
     "main/tools/features/ui.ts": "551cbc8b33dead144dbeecb67c0090ff689a7b75ccff4a2b369cce5cd451e974",
     "main/tools/scripts/audit/shared-vitest-aliases.ts": "c448e761a89129a99bfb062a6e2444f61d77bcc1c9172234cea94813681188d5",
     "main/tools/scripts/build/ensure-js-extensions.ts": "8f4bf1378fbfdc8aeded83d53800adeaae84de992c4dae68d574f223e451db80",
-    "package.json": "9c5be7a94964418dfe071abbe7dc507214b5944633dd23d3ac5de505f2f21992",
-    "pnpm-lock.yaml": "af56f6a39cbbe5821e2e53f3bc8f291927734878b69860bfd5a2fd716a9b26ed",
+    "package.json": "04b3369c94c7f76756801b81cc8bde66096c1c5745b231851d582dae7610cc45",
+    "pnpm-lock.yaml": "ce5f62f10600b605bc8e5aa670ec1979307ad9508e51ff0a8ea6a6bffabfee43",
     "pnpm-workspace.yaml": "1e857f7ea49a037cf08f7797e893114f7bd7d34ee0267f4b4140a6593f647693",
     "tsconfig.json": "6fd855a9a1fa52875214e478cf7c97f23708988a8ffe71e1cc05b61a772776ea",
     "turbo.json": "7501a78f49436401ed38dca69ca4d97eea54e0144488c42819e7de4c13527e3a"
