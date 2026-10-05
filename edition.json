@@ -1154,7 +1154,7 @@
     "main/tools/features/install.ts": "03e1a29c346bdf765544845c586b9c3702dab4fd6e48521eaec4bf5e1b7ebfc5",
     "main/tools/features/manifest.ts": "d21a85606adc2160dc63745efaa1805141ecc5c6fe01cd0d54adcb2e2e0b74a9",
     "main/tools/features/resolve.ts": "084e4d749b1671d3a842dc7ba19a0e5787ac1b569e18b471f17763a0b275ed1a",
-    "main/tools/features/ui.ts": "9d5f95b85954179bd1452ef8648a2d67566a49178db51b622a0f199487244ad0",
+    "main/tools/features/ui.ts": "551cbc8b33dead144dbeecb67c0090ff689a7b75ccff4a2b369cce5cd451e974",
     "main/tools/scripts/audit/shared-vitest-aliases.ts": "c448e761a89129a99bfb062a6e2444f61d77bcc1c9172234cea94813681188d5",
     "main/tools/scripts/build/ensure-js-extensions.ts": "8f4bf1378fbfdc8aeded83d53800adeaae84de992c4dae68d574f223e451db80",
     "package.json": "481c7b211479be73b9f318cf2a129a32484798a13788f1d367f0c0ed89094350",
