@@ -18,7 +18,13 @@ export async function readArchive(file: string, expectedHash?: string): Promise<
   const stat = lstatSync(file);
   if (!stat.isFile() || stat.size > MAX_ARCHIVE)
     throw new Error('Expected a regular archive under 8 MiB.');
-  const compressed = readFileSync(file);
+  return readArchiveBytes(readFileSync(file), expectedHash);
+}
+/** Parse an uploaded archive once; callers can retain the verified result for installation. */
+export async function readArchiveBytes(
+  compressed: Buffer,
+  expectedHash?: string,
+): Promise<FeatureArchive> {
   if (compressed.length > MAX_ARCHIVE) throw new Error('Archive exceeds 8 MiB.');
   const digest = sha256(compressed);
   if (expectedHash !== undefined && digest !== expectedHash)

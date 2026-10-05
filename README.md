@@ -29,6 +29,27 @@ Production settings are documented in `config/env/.env.production.example`.
 
 ## Install a feature pack (Core)
 
+For a downloaded module, complete the local setup above and run this command from your Core project:
+
+```sh
+pnpm features:ui
+```
+
+Your browser opens a local module installer. Choose the downloaded `.tar.gz` file (up to 8 MiB),
+review the module version, Core compatibility, and proposed file changes, then click **Install module**.
+For an installed module, the preview shows **Update** with the previous version and any removed files.
+The installer connects its page, navigation, and API automatically. After installation, run
+`pnpm type-check && pnpm build`, restart the app, then sign in and open the module route shown on screen.
+Complete any provider setup described in the module's guide.
+
+Keep the terminal open while installing; Ctrl+C closes the installer. If the browser does not open,
+use the complete URL printed in the terminal. `pnpm features:ui --no-open` prints the URL without
+opening a browser. The installer accepts files through your browser and operates only on the Core
+project where you started it. Uploads are validated in memory; installation uses that exact previewed
+archive. Full Core and Pro source downloads are separate from module packs.
+
+For a catalog or a command-line workflow, use the feature commands below.
+
 Keep your distributor's catalog and archives together. If downloaded as a ZIP, unzip that bundle first.
 Save its catalog location once, then choose a feature from the interactive picker:
 

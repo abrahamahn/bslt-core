@@ -8,6 +8,7 @@
   },
   "scripts": {
     "features": "node --import tsx main/tools/features/cli.ts",
+    "features:ui": "node --import tsx main/tools/features/ui.ts",
     "dev": "pnpm features:check && pnpm --parallel --filter @bslt/server --filter @bslt/web dev",
     "build": "pnpm features:check && pnpm -r --workspace-concurrency=1 run build",
     "type-check": "pnpm features:check && pnpm -r run type-check",

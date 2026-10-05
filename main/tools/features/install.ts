@@ -205,6 +205,8 @@ async function modify(
 export interface FeatureChangeOptions {
   update?: boolean;
   dryRun?: boolean;
+  /** Reject a stale preview under the writer lock before changing any managed files. */
+  expectedState?: State;
 }
 /** Download/validation must finish before acquiring the writer lock or replacing the old release. */
 export async function applyFeature(
@@ -215,6 +217,16 @@ export async function applyFeature(
   return modify(
     directory,
     async (root, version, state) => {
+      if (
+        options.expectedState &&
+        (options.expectedState.features.length !== state.features.length ||
+          options.expectedState.features.some(
+            (expected) => !state.features.some((current) => sameFeature(expected, current)),
+          ))
+      )
+        throw new Error(
+          'Installed modules changed since preview. Choose the archive again to review the current changes.',
+        );
       const m = pack.manifest;
       if (m.coreVersion !== version)
         throw new Error(`Feature requires Core ${m.coreVersion}; installed Core is ${version}.`);

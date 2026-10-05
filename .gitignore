@@ -20,6 +20,7 @@ _graphs/
 *.js.map
 *.d.ts.map
 *.txt
+!main/apps/storefront/public/robots.txt
 vitest.config.d.ts
 vite.config.d.ts
 eslint.config.js
