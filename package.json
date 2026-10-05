@@ -1,6 +1,6 @@
 {
   "name": "@bslt/root",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "BSLT core source distribution",
   "private": true,
   "engines": {
@@ -9,6 +9,7 @@
   "scripts": {
     "features": "node --import tsx main/tools/features/cli.ts",
     "features:ui": "node --import tsx main/tools/features/ui.ts",
+    "db:bootstrap:admin": "pnpm --filter @bslt/server exec node --conditions=source --import tsx src/bootstrap-admin.ts",
     "dev": "pnpm features:check && pnpm --parallel --filter @bslt/server --filter @bslt/web dev",
     "build": "pnpm features:check && pnpm -r --workspace-concurrency=1 run build",
     "type-check": "pnpm features:check && pnpm -r run type-check",

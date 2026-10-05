@@ -1,3 +1,4 @@
+import { registerFeatureWebhooks } from '../extensions';
 // main/apps/server/src/http/router.ts
 /**
  * App Route Composition
@@ -67,6 +68,7 @@ export function createAppAuthGuardFactory(ctx: Pick<AppContext, 'repos'>): AuthG
 }
 
 export async function registerRoutes(app: FastifyInstance, ctx: AppContext): Promise<void> {
+  registerFeatureWebhooks(app, ctx);
   const routerOptions: Pick<RouterOptions, 'prefix' | 'jwtSecret' | 'authGuardFactory'> = {
     prefix: '/api',
     jwtSecret: ctx.config.auth.jwt.secret,

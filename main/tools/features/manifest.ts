@@ -103,8 +103,20 @@ export function registries(features: readonly FeatureManifest[]): Record<string,
       server
         .map((m, i) => `import { routes as routes${i} } from './packs/${m.id}/index';\n`)
         .join('') +
+      server
+        .flatMap((m, i) =>
+          m.files['server/webhooks.ts'] === undefined
+            ? []
+            : [`import { webhooks as webhooks${i} } from './packs/${m.id}/webhooks';\n`],
+        )
+        .join('') +
       `export const installedFeatures: readonly InstalledServerFeature[] = [\n` +
-      server.map((m, i) => `  { id: ${JSON.stringify(m.id)}, routes: routes${i} },\n`).join('') +
+      server
+        .map(
+          (m, i) =>
+            `  { id: ${JSON.stringify(m.id)}, routes: routes${i}${m.files['server/webhooks.ts'] === undefined ? '' : `, webhooks: webhooks${i}`} },\n`,
+        )
+        .join('') +
       '];\n',
     [WEB_REGISTRY]:
       header +

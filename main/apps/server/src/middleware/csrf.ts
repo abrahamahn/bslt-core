@@ -17,6 +17,13 @@ import { ForbiddenError, extractCsrfToken } from '@bslt/shared/system';
 
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
+declare module 'fastify' {
+  interface FastifyContextConfig {
+    /** Set only by the installed-extension signed webhook registrar. */
+    extensionSignedWebhook?: boolean;
+  }
+}
+
 const { CSRF_COOKIE_NAME } = AUTH_CONSTANTS;
 
 // ============================================================================
@@ -97,6 +104,17 @@ export function registerCsrf(server: FastifyInstance, options: CsrfOptions): voi
     // Skip validation for exempt paths (auth endpoints)
     const urlPath = req.url.split('?')[0] ?? req.url;
     if (CSRF_EXEMPT_PATHS.has(urlPath)) {
+      return;
+    }
+    if (
+      req.method === 'POST' &&
+      req.routeOptions.config.extensionSignedWebhook === true &&
+      req.routeOptions.config.rawBody === true &&
+      req.routeOptions.url === urlPath &&
+      /^\/api\/extensions\/[a-z][a-z0-9-]*\/webhooks\/[a-z][a-z0-9-]*$/.test(urlPath)
+    ) {
+      // These exact routes authenticate the raw payload with the provider's
+      // signature. Browsers cannot supply a cookie in place of that signature.
       return;
     }
 

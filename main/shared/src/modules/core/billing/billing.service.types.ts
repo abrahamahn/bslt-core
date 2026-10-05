@@ -31,6 +31,8 @@ export interface CheckoutParams {
   successUrl: string;
   cancelUrl: string;
   metadata?: Record<string, string>;
+  /** Stable caller-owned key for retrying the same checkout creation safely. */
+  idempotencyKey?: string;
 }
 
 /** Result of creating a checkout session */
