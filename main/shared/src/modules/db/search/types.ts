@@ -23,9 +23,7 @@ export type FilterPrimitive = string | number | boolean | Date | null;
  * Value types for filter conditions.
  */
 export type FilterValue =
-  | FilterPrimitive
-  | FilterPrimitive[]
-  | { min: FilterPrimitive; max: FilterPrimitive };
+  FilterPrimitive | FilterPrimitive[] | { min: FilterPrimitive; max: FilterPrimitive };
 
 // ============================================================================
 // Filter Conditions

@@ -204,7 +204,7 @@ export class WriteService {
 
     return {
       operation,
-      record: record as T & { id: string; version: number },
+      record: record,
     };
   }
 

@@ -372,7 +372,7 @@ export const recordSchema: Schema<RealtimeRecord> = createSchema((data: unknown)
   const id = uuidSchema.parse(obj['id']);
   const version = validatePositiveInt(obj['version'], 'version');
 
-  return { ...obj, id, version } as RealtimeRecord;
+  return { ...obj, id, version };
 });
 
 /** @complexity O(t * r) where t = tables, r = records per table */

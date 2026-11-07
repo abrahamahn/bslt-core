@@ -51,7 +51,7 @@ export class UpdateBuilder implements QueryBuilder {
    * @example update('users').setRaw('version', 'version + 1')
    */
   setRaw(column: string, expression: string): this {
-    this._set.set(column, { text: expression, values: [] } as SqlFragment);
+    this._set.set(column, { text: expression, values: [] });
     return this;
   }
 
@@ -63,7 +63,7 @@ export class UpdateBuilder implements QueryBuilder {
     this._set.set(column, {
       text: `${escapeIdentifier(column)} + $1`,
       values: [amount],
-    } as SqlFragment);
+    });
     return this;
   }
 
@@ -75,7 +75,7 @@ export class UpdateBuilder implements QueryBuilder {
     this._set.set(column, {
       text: `${escapeIdentifier(column)} - $1`,
       values: [amount],
-    } as SqlFragment);
+    });
     return this;
   }
 

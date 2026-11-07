@@ -49,9 +49,7 @@ export function loggerPlugin(server: FastifyInstance, opts: LoggerPluginOptions 
       const correlationId =
         typeof existingCorrelationId === 'string'
           ? existingCorrelationId
-          : getOrCreateCorrelationId(
-              request.headers as Record<string, string | string[] | undefined>,
-            );
+          : getOrCreateCorrelationId(request.headers);
 
       requestWithCorrelation.correlationId = correlationId;
       reply.header('x-correlation-id', correlationId);
@@ -61,7 +59,7 @@ export function loggerPlugin(server: FastifyInstance, opts: LoggerPluginOptions 
         method: request.method,
         url: request.url,
         ip: request.ip,
-        headers: request.headers as Record<string, string | string[] | undefined>,
+        headers: request.headers,
       });
 
       request.requestContext = requestContext;

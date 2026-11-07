@@ -8,10 +8,10 @@
 
 import { can as baseCan } from '../auth/auth.policy';
 
-import type { User } from './users.schemas';
 import type { UserId } from '../../../schema/ids';
 import type { AuthContext, PolicyAction, PolicyResource } from '../auth/auth.policy';
 import type { AppRole } from '../auth/roles';
+import type { User } from './users.schemas';
 
 // ============================================================================
 // Access Control Logic

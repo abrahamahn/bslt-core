@@ -13,7 +13,7 @@ import { randomInt, randomUUID } from 'node:crypto';
 import argon2 from 'argon2';
 
 import type { Argon2Config } from '@bslt/shared/system/config';
-import type { Options } from 'argon2';
+import type { HashOptions } from 'argon2';
 
 // ============================================================================
 // Types
@@ -43,7 +43,7 @@ export async function hashPassword(
   password: string,
   config: Argon2Config = DEFAULT_ARGON2_CONFIG,
 ): Promise<string> {
-  const options: Options = {
+  const options: HashOptions = {
     type: config.type,
     memoryCost: config.memoryCost,
     timeCost: config.timeCost,
@@ -83,7 +83,7 @@ export function needsRehash(hash: string, config: Argon2Config = DEFAULT_ARGON2_
     return true;
   }
 
-  const options: Options = {
+  const options: HashOptions = {
     type: config.type,
     memoryCost: config.memoryCost,
     timeCost: config.timeCost,

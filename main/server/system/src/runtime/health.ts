@@ -227,8 +227,7 @@ export async function logStartupSummary(
 ): Promise<void> {
   const { host, port, routeCount } = options;
   const captchaConfig = ctx.config.auth.captcha as
-    | { enabled?: boolean | undefined; provider?: string | null | undefined }
-    | undefined;
+    { enabled?: boolean | undefined; provider?: string | null | undefined } | undefined;
   const health = await getDetailedHealth(ctx, healthOptions);
 
   ctx.log.info('Startup Summary', {

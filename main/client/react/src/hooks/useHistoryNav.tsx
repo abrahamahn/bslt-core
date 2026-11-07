@@ -28,12 +28,17 @@ type LocationState = {
   fromRedirect?: boolean;
 };
 
+const isLocationState = (value: unknown): value is LocationState =>
+  typeof value === 'object' && value !== null;
+
 const HistoryContext = createContext<HistoryContextValue | null>(null);
 
 export const HistoryProvider = ({ children }: { children: ReactNode }): ReactElement => {
   const navigate = useNavigate();
   const location = useLocation();
-  const locationState = (location.state ?? null) as LocationState | null;
+  const locationState: LocationState | null = isLocationState(location.state)
+    ? location.state
+    : null;
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [index, setIndex] = useState<number>(-1);
   const indexRef = useRef<number>(-1);

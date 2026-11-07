@@ -71,13 +71,7 @@ export interface AdminUserListFilters {
   plan?: string | undefined;
   /** Column to sort by (snake_case database column names) */
   sortBy?:
-    | 'email'
-    | 'username'
-    | 'first_name'
-    | 'last_name'
-    | 'created_at'
-    | 'updated_at'
-    | undefined;
+    'email' | 'username' | 'first_name' | 'last_name' | 'created_at' | 'updated_at' | undefined;
   /** Sort direction */
   sortOrder?: 'asc' | 'desc' | undefined;
   /** Page number (1-indexed, defaults to 1) */

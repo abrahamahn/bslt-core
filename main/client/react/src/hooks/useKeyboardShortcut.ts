@@ -158,10 +158,10 @@ export function useKeyboardShortcut(options: KeyboardShortcutOptions): void {
     const targetElement = target ?? (typeof window !== 'undefined' ? window : null);
     if (targetElement === null) return;
 
-    targetElement.addEventListener(eventType, handleKeyEvent as EventListener);
+    targetElement.addEventListener(eventType, handleKeyEvent);
 
     return (): void => {
-      targetElement.removeEventListener(eventType, handleKeyEvent as EventListener);
+      targetElement.removeEventListener(eventType, handleKeyEvent);
     };
   }, [target, eventType, handleKeyEvent, enabled]);
 }
@@ -225,10 +225,10 @@ export function useKeyBindings(
     if (targetElement === null) return;
 
     const eventType = restOptions.eventType ?? 'keydown';
-    targetElement.addEventListener(eventType, handleKeyEvent as EventListener);
+    targetElement.addEventListener(eventType, handleKeyEvent);
 
     return (): void => {
-      targetElement.removeEventListener(eventType, handleKeyEvent as EventListener);
+      targetElement.removeEventListener(eventType, handleKeyEvent);
     };
   }, [handleKeyEvent, enabled, restOptions.target, restOptions.eventType]);
 }

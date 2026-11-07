@@ -68,7 +68,7 @@ export class RedisCacheProvider implements CacheProvider {
     this.logger = options.logger;
     this.onEviction = options.onEviction;
 
-    const redisOptions: RedisOptions = {
+    const redisOptions: Omit<RedisOptions, 'replyMapping'> = {
       host: config.host,
       port: config.port,
       db: config.db ?? 0,

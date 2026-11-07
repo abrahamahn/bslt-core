@@ -22,9 +22,9 @@
     "dist"
   ],
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1063.0",
-    "@aws-sdk/credential-providers": "^3.1063.0",
-    "@aws-sdk/s3-request-presigner": "^3.1063.0",
+    "@aws-sdk/client-s3": "^3.1164.0",
+    "@aws-sdk/credential-providers": "^3.1164.0",
+    "@aws-sdk/s3-request-presigner": "^3.1164.0",
     "@bslt/shared": "workspace:*"
   },
   "scripts": {

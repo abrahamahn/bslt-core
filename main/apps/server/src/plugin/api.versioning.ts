@@ -144,7 +144,7 @@ export function extractApiVersion(request: {
     extractFromAcceptHeader(request.headers) ??
     extractFromCustomHeader(request.headers) ?? {
       version: CURRENT_API_VERSION,
-      source: 'default' as ApiVersionSource,
+      source: 'default',
     }
   );
 }

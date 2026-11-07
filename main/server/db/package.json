@@ -73,16 +73,16 @@
   ],
   "dependencies": {
     "@bslt/shared": "workspace:*",
-    "ioredis": "^5.9.2",
-    "postgres": "^3.4.4"
+    "ioredis": "^6.0.0",
+    "postgres": "^4.1.0"
   },
   "devDependencies": {
-    "@types/node": "^25.0.9",
-    "tsx": "^4.15.0",
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
-    "vitest": "^4.1.8"
+    "vitest": "^5.0.0"
   },
   "peerDependenciesMeta": {
     "vitest": {

@@ -121,7 +121,7 @@ export const simpleErrorResponseSchema: Schema<SimpleErrorResponse> = createSche
 export type EmptyBody = Record<string, never>;
 
 export const emptyBodySchema: Schema<EmptyBody> = createSchema((_data: unknown) => {
-  return {} as EmptyBody;
+  return {};
 });
 
 export function createErrorCodeSchema(errorCodes: Record<string, string>): Schema<string> {

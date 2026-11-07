@@ -21,8 +21,8 @@ import { isoDateTimeSchema } from '../schemas';
 
 import { planFeatureSchema, planSchema } from './billing.schemas';
 
-import type { Plan, PlanFeature, PlanInterval } from './billing.schemas';
 import type { Schema } from '../../../schema';
+import type { Plan, PlanFeature, PlanInterval } from './billing.schemas';
 
 // ============================================================================
 // Types

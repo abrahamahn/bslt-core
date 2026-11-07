@@ -277,7 +277,7 @@ export function loadAuthConfig(env: FullEnv, apiBaseUrl: string, appName = 'Your
       ? {
           captcha: {
             enabled: true as const,
-            provider: (env.CAPTCHA_PROVIDER ?? 'turnstile') as 'turnstile',
+            provider: env.CAPTCHA_PROVIDER ?? 'turnstile',
             siteKey: env.CAPTCHA_SITE_KEY,
             secretKey: env.CAPTCHA_SECRET_KEY,
           },

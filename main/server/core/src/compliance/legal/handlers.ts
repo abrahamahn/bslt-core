@@ -15,8 +15,8 @@ import { record } from '../../audit/service';
 
 import { getCurrentLegalDocuments, getUserAgreements, publishLegalDocument } from './service';
 
-import type { LegalAppContext, LegalRequest } from './types';
 import type { AuditRecordParams } from '../../audit/types';
+import type { LegalAppContext, LegalRequest } from './types';
 import type {
   ConsentRecord as DbConsentRecord,
   LegalDocument as DbLegalDocument,

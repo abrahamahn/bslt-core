@@ -208,10 +208,9 @@
     "clean": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo",
     "prepack": "npm run build && npm run verify-exports && npm run test"
   },
-  "dependencies": {},
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^25.0.9"
+    "@types/node": "^26.6.6",
+    "typescript": "^5.9.3"
   },
   "private": true
 }

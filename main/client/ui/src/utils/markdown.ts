@@ -48,10 +48,7 @@ export interface MarkdownLinkSpan {
 }
 
 export type MarkdownSpan =
-  | MarkdownTextSpan
-  | MarkdownStyledSpan
-  | MarkdownCodeSpan
-  | MarkdownLinkSpan;
+  MarkdownTextSpan | MarkdownStyledSpan | MarkdownCodeSpan | MarkdownLinkSpan;
 
 export interface MarkdownHeading {
   readonly kind: 'heading';

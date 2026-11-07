@@ -29,20 +29,11 @@ export function getProviderClient(
 
   switch (provider) {
     case 'google':
-      return createGoogleProvider(
-        (providerConfig as OAuthProviderConfig).clientId,
-        (providerConfig as OAuthProviderConfig).clientSecret,
-      );
+      return createGoogleProvider(providerConfig.clientId, providerConfig.clientSecret);
     case 'github':
-      return createGitHubProvider(
-        (providerConfig as OAuthProviderConfig).clientId,
-        (providerConfig as OAuthProviderConfig).clientSecret,
-      );
+      return createGitHubProvider(providerConfig.clientId, providerConfig.clientSecret);
     case 'kakao':
-      return createKakaoProvider(
-        (providerConfig as OAuthProviderConfig).clientId,
-        (providerConfig as OAuthProviderConfig).clientSecret,
-      );
+      return createKakaoProvider(providerConfig.clientId, providerConfig.clientSecret);
     case 'apple': {
       const appleConfig = providerConfig as OAuthProviderConfig & {
         teamId?: string;

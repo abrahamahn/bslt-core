@@ -57,7 +57,7 @@ export function createCache(
   }
 
   // Default to memory
-  return createMemoryCache(config as Partial<CacheConfig>, options);
+  return createMemoryCache(config, options);
 }
 
 /**

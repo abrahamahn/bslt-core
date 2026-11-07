@@ -18,9 +18,7 @@ declare module 'fastify' {
 
 export function registerRequestInfoHook(app: FastifyInstance): void {
   app.addHook('onRequest', (req, _reply, done) => {
-    const userAgent = extractUserAgent(
-      req.headers as Record<string, string | string[] | undefined>,
-    );
+    const userAgent = extractUserAgent(req.headers);
     const ipAddress = extractIpAddress(req);
     req.requestInfo = {
       ip: ipAddress,

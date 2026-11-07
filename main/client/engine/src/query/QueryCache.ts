@@ -133,7 +133,7 @@ export function hashQueryKey(queryKey: QueryKey): string {
   }
   return JSON.stringify(queryKey, (_, val: unknown): unknown =>
     typeof val === 'object' && val !== null && !Array.isArray(val)
-      ? Object.keys(val as Record<string, unknown>)
+      ? Object.keys(val)
           .sort()
           .reduce<Record<string, unknown>>((result, key) => {
             const record = val as Record<string, unknown>;

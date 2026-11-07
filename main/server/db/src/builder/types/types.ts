@@ -134,14 +134,7 @@ export interface ColumnSpec {
  * Supports common PostgreSQL types
  */
 export type DbValue =
-  | string
-  | number
-  | boolean
-  | Date
-  | null
-  | Buffer
-  | DbValue[]
-  | Record<string, unknown>;
+  string | number | boolean | Date | null | Buffer | DbValue[] | Record<string, unknown>;
 
 /**
  * Type-safe identifier escaping.

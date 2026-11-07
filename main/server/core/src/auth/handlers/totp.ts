@@ -226,10 +226,7 @@ export async function handleTotpLoginVerify(
     // Verify the challenge JWT
     let payload: Record<string, unknown>;
     try {
-      payload = jwtVerify(body.challengeToken, ctx.config.auth.jwt.secret) as Record<
-        string,
-        unknown
-      >;
+      payload = jwtVerify(body.challengeToken, ctx.config.auth.jwt.secret);
     } catch (error) {
       if (error instanceof JwtError) {
         throw new InvalidTokenError('Challenge token is invalid or expired');

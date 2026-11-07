@@ -127,7 +127,7 @@ export const del = deleteFrom;
 export function truncate(table: string | TableSpec): QueryResult {
   const tableSpec = typeof table === 'string' ? { name: table } : table;
   const fragment = formatTable(tableSpec);
-  return { text: `TRUNCATE ${fragment.text}`, values: fragment.values as unknown[] };
+  return { text: `TRUNCATE ${fragment.text}`, values: fragment.values };
 }
 
 /**
@@ -137,5 +137,5 @@ export function truncate(table: string | TableSpec): QueryResult {
 export function truncateCascade(table: string | TableSpec): QueryResult {
   const tableSpec = typeof table === 'string' ? { name: table } : table;
   const fragment = formatTable(tableSpec);
-  return { text: `TRUNCATE ${fragment.text} CASCADE`, values: fragment.values as unknown[] };
+  return { text: `TRUNCATE ${fragment.text} CASCADE`, values: fragment.values };
 }

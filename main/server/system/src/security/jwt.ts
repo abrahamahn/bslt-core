@@ -41,10 +41,7 @@ export interface VerifyOptions {
 // ============================================================================
 
 export type JwtErrorCode =
-  | 'INVALID_TOKEN'
-  | 'INVALID_SIGNATURE'
-  | 'TOKEN_EXPIRED'
-  | 'MALFORMED_TOKEN';
+  'INVALID_TOKEN' | 'INVALID_SIGNATURE' | 'TOKEN_EXPIRED' | 'MALFORMED_TOKEN';
 
 const JWT_STATUS: Record<JwtErrorCode, number> = {
   MALFORMED_TOKEN: 400,

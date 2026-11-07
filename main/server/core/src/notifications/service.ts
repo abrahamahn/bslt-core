@@ -369,8 +369,8 @@ export async function getPreferences(
       .values({
         user_id: userId,
         global_enabled: DEFAULT_NOTIFICATION_PREFERENCES.globalEnabled,
-        quiet_hours: DEFAULT_NOTIFICATION_PREFERENCES.quietHours as QuietHoursConfig,
-        types: DEFAULT_NOTIFICATION_PREFERENCES.types as TypePreferences,
+        quiet_hours: DEFAULT_NOTIFICATION_PREFERENCES.quietHours,
+        types: DEFAULT_NOTIFICATION_PREFERENCES.types,
       })
       .returningAll()
       .toSql(),
@@ -421,7 +421,7 @@ export async function updatePreferences(
   if (quietHoursUpdate !== undefined) {
     // Type assertion needed for JSONB field from database
     const newQuietHours: QuietHoursConfig = {
-      ...(current.quietHours as QuietHoursConfig),
+      ...current.quietHours,
     };
     if (quietHoursUpdate.enabled !== undefined) {
       newQuietHours.enabled = quietHoursUpdate.enabled;
@@ -449,7 +449,7 @@ export async function updatePreferences(
       if (typeUpdate === undefined) {
         continue;
       }
-      const existingType = newTypes[type as keyof typeof newTypes];
+      const existingType = newTypes[type];
       // No longer checking for undefined - TypePreferences ensures all types exist
       if (typeUpdate.enabled !== undefined) {
         existingType.enabled = typeUpdate.enabled;
@@ -557,7 +557,7 @@ export function isNotificationAllowed(
   // The DB JSONB is typed as a complete record, but a stored row may predate a
   // category, so treat the lookup as possibly-undefined and fall back.
   const typePrefs =
-    (prefsTypes[type as keyof TypePreferences] as NotificationTypePreference | undefined) ??
+    (prefsTypes[type] as NotificationTypePreference | undefined) ??
     DEFAULT_NOTIFICATION_PREFERENCES.types[type];
   if (!typePrefs.enabled) {
     return false;
@@ -574,7 +574,7 @@ export function isNotificationAllowed(
   // would never be re-delivered.
   const isInterrupting = channel === 'push' || channel === 'sms';
   // Type assertion needed for JSONB field from database
-  const prefsQuietHours = prefs.quietHours as QuietHoursConfig;
+  const prefsQuietHours = prefs.quietHours;
   if (isInterrupting && prefsQuietHours.enabled) {
     const userHour = nowHour(prefsQuietHours.timezone);
     const startHour: number = prefsQuietHours.startHour;
@@ -743,11 +743,7 @@ export async function getSubscriptionStats(db: DbClient): Promise<{
  * Event types that can trigger in-app notifications.
  */
 export type NotificationEventType =
-  | 'invite_received'
-  | 'payment_success'
-  | 'payment_failed'
-  | 'security_alert'
-  | 'plan_changed';
+  'invite_received' | 'payment_success' | 'payment_failed' | 'security_alert' | 'plan_changed';
 
 /**
  * Map event types to notification categories for preference checks.

@@ -7,12 +7,7 @@ import { useNavigate } from '../router';
  * Authentication mode - determines which auth form/page is shown.
  */
 export type AuthMode =
-  | 'login'
-  | 'register'
-  | 'forgot-password'
-  | 'reset-password'
-  | 'magic-link'
-  | 'email-otp';
+  'login' | 'register' | 'forgot-password' | 'reset-password' | 'magic-link' | 'email-otp';
 
 /**
  * Navigation options for auth mode changes.

@@ -13,16 +13,13 @@
  * const users = await db.query<User>(select('users').where(eq('active', true)));
  */
 
-import postgres, {
-  type Options,
-  type ParameterOrJSON,
-  type Sql,
-  type TransactionSql,
-} from 'postgres';
+import postgres, { type Options, type Sql, type TransactionSql } from 'postgres';
 
 import { buildPostgresDsn } from '@bslt/shared/helpers';
 
 import { isValidSchemaName } from './tenancy';
+
+type UnsafeParameters = NonNullable<Parameters<Sql['unsafe']>[1]>;
 
 export interface QueryResult {
   readonly text: string;
@@ -61,10 +58,7 @@ export interface QueryOptions {
  * Transaction isolation levels
  */
 export type IsolationLevel =
-  | 'read uncommitted'
-  | 'read committed'
-  | 'repeatable read'
-  | 'serializable';
+  'read uncommitted' | 'read committed' | 'repeatable read' | 'serializable';
 
 /**
  * Transaction options
@@ -234,18 +228,18 @@ export function createDbFromSql(sql: PostgresClient, session?: SessionContext): 
       if (typeof beginFn === 'function') {
         return (sql as Sql).begin(async (tx: TransactionSql) => {
           await applySession(tx);
-          const r = await tx.unsafe(text, [...values] as ParameterOrJSON<never>[]);
+          const r = await tx.unsafe(text, [...values] as UnsafeParameters);
           return r as unknown as T[];
-        }) as unknown as Promise<T[]>;
+        });
       }
 
       await applySession(sql);
-      const r = await sql.unsafe(text, [...values] as ParameterOrJSON<never>[]);
+      const r = await sql.unsafe(text, [...values] as UnsafeParameters);
       return r as unknown as T[];
     }
 
     // The postgres driver's unsafe() accepts (query, args) where args is an array
-    const result = await sql.unsafe(text, [...values] as ParameterOrJSON<never>[]);
+    const result = await sql.unsafe(text, [...values] as UnsafeParameters);
     return result as unknown as T[];
   };
 
@@ -271,17 +265,17 @@ export function createDbFromSql(sql: PostgresClient, session?: SessionContext): 
         if (typeof beginFn === 'function') {
           return (sql as Sql).begin(async (tx: TransactionSql) => {
             await applySession(tx);
-            const r = await tx.unsafe(query.text, [...query.values] as ParameterOrJSON<never>[]);
+            const r = await tx.unsafe(query.text, [...query.values] as UnsafeParameters);
             return (r as unknown as { count: number }).count;
           });
         }
 
         await applySession(sql);
-        const r = await sql.unsafe(query.text, [...query.values] as ParameterOrJSON<never>[]);
+        const r = await sql.unsafe(query.text, [...query.values] as UnsafeParameters);
         return (r as unknown as { count: number }).count;
       }
 
-      const res = await sql.unsafe(query.text, [...query.values] as ParameterOrJSON<never>[]);
+      const res = await sql.unsafe(query.text, [...query.values] as UnsafeParameters);
       return (res as unknown as { count: number }).count;
     },
 
@@ -326,7 +320,7 @@ export function createDbFromSql(sql: PostgresClient, session?: SessionContext): 
 
       if (typeof beginFn === 'function') {
         const result = client.begin(isolationClause, runCallback);
-        return (await result) as T;
+        return await result;
       }
 
       if (typeof savepointFn === 'function') {
@@ -340,7 +334,7 @@ export function createDbFromSql(sql: PostgresClient, session?: SessionContext): 
           const txDb = createDbFromSql(tx);
           return callback(txDb);
         });
-        return (await result) as T;
+        return await result;
       }
 
       throw new Error('Database client does not support transactions');

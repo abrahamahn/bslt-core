@@ -146,7 +146,7 @@ export async function applyOffsetPagination<T>(
     ? Number((countResult[0] as { count?: number | string } | undefined)?.count ?? 0)
     : typeof countResult === 'number'
       ? countResult
-      : Number((countResult as { count?: number | string }).count ?? 0);
+      : Number(countResult.count ?? 0);
 
   // Apply pagination
   const offset = (page - 1) * limit;

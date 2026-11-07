@@ -72,8 +72,7 @@ export function useDeleteApiKey() {
     // Drop the row immediately so revocation feels instant.
     onMutate: (id) => {
       const previous = queryCache.getQueryData(API_KEYS_QUERY_KEY) as
-        | ApiKeysListResponse
-        | undefined;
+        ApiKeysListResponse | undefined;
       if (previous !== undefined) {
         queryCache.setQueryData(API_KEYS_QUERY_KEY, {
           ...previous,

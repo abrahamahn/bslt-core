@@ -224,7 +224,7 @@ export function createCsrfRequestClient(config: BaseClientConfig): CsrfRequestCl
       ) {
         return request<T>(path, options, 1);
       }
-      throw createApiError(response.status, data as ApiErrorBody);
+      throw createApiError(response.status, data);
     }
 
     return data as T;

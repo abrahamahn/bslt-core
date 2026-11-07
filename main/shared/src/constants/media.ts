@@ -123,7 +123,7 @@ export const MIME_TO_EXT: Record<string, string> = Object.fromEntries([
   ['application/pdf', 'pdf'],
   ['text/plain', 'txt'],
   ['application/json', 'json'],
-]) as Record<string, string>;
+]);
 
 // ============================================================================
 // Magic Number Signatures

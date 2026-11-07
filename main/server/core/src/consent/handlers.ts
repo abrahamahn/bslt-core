@@ -15,8 +15,8 @@ import { record } from '../audit/service';
 
 import { getUserConsent, updateUserConsent } from './service';
 
-import type { ConsentAppContext, ConsentRequest, UpdateConsentInput } from './types';
 import type { AuditRecordParams } from '../audit/types';
+import type { ConsentAppContext, ConsentRequest, UpdateConsentInput } from './types';
 
 // ============================================================================
 // Helper Functions

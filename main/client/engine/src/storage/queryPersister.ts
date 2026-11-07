@@ -230,24 +230,22 @@ export function createPersistedClientFromQueryCache(
         entry.state.data !== undefined &&
         (shouldPersist === undefined || shouldPersist(entry.queryKey)),
     )
-    .map(
-      (entry): PersistedQuery => ({
-        queryKey: entry.queryKey,
-        queryHash: JSON.stringify(entry.queryKey),
-        state: {
-          data: entry.state.data,
-          dataUpdatedAt: entry.state.dataUpdatedAt,
-          error: entry.state.error,
-          errorUpdatedAt: entry.state.errorUpdatedAt,
-          fetchFailureCount: entry.state.fetchFailureCount,
-          fetchFailureReason: null,
-          fetchMeta: null,
-          fetchStatus: entry.state.fetchStatus,
-          isInvalidated: entry.state.isInvalidated,
-          status: entry.state.status,
-        },
-      }),
-    );
+    .map((entry): PersistedQuery => ({
+      queryKey: entry.queryKey,
+      queryHash: JSON.stringify(entry.queryKey),
+      state: {
+        data: entry.state.data,
+        dataUpdatedAt: entry.state.dataUpdatedAt,
+        error: entry.state.error,
+        errorUpdatedAt: entry.state.errorUpdatedAt,
+        fetchFailureCount: entry.state.fetchFailureCount,
+        fetchFailureReason: null,
+        fetchMeta: null,
+        fetchStatus: entry.state.fetchStatus,
+        isInvalidated: entry.state.isInvalidated,
+        status: entry.state.status,
+      },
+    }));
 
   return {
     timestamp: options.timestamp ?? Date.now(),

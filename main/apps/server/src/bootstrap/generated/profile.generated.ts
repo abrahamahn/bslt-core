@@ -3,14 +3,7 @@
 // DO NOT EDIT MANUALLY.
 
 export type CapabilityId =
-  | 'comms'
-  | 'core'
-  | 'db'
-  | 'media'
-  | 'realtime'
-  | 'storage'
-  | 'system'
-  | 'workers';
+  'comms' | 'core' | 'db' | 'media' | 'realtime' | 'storage' | 'system' | 'workers';
 
 type CapabilityTier = 'minimal' | 'optional';
 

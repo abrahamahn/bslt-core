@@ -16,10 +16,10 @@ import { createSchema, parseNumber, parseString } from '../schema';
 
 import { STATUS_COMPONENTS } from './contract.health';
 
-import type { StatusComponentName, StatusComponentState } from './contract.health';
 import type { Contract } from '../api/api';
 import type { OverallStatus } from '../modules/system';
 import type { Schema } from '../schema';
+import type { StatusComponentName, StatusComponentState } from './contract.health';
 
 // ============================================================================
 // Types

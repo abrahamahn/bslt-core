@@ -2,9 +2,9 @@
 import { createCursorForItem, decodeCursor, getSortableValue } from './cursor';
 import { PaginationError } from './pagination';
 
+import type { SortOrder } from '../search/types';
 import type { CursorData } from './cursor';
 import type { CursorPaginationOptions } from './pagination';
-import type { SortOrder } from '../search/types';
 
 // ============================================================================
 // SQL Identifier Safety

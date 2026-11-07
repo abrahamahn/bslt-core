@@ -30,12 +30,7 @@ export type PolicyAction = 'read' | 'write' | 'delete' | 'manage' | 'invite';
  * High-level resources
  */
 export type PolicyResource =
-  | 'tenant'
-  | 'membership'
-  | 'billing'
-  | 'audit-log'
-  | 'settings'
-  | 'data';
+  'tenant' | 'membership' | 'billing' | 'audit-log' | 'settings' | 'data';
 
 /**
  * The "Big Can" - Centralized logic for every authorization check in the system.

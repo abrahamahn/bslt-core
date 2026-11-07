@@ -3,7 +3,6 @@ import type {
   FullEnv,
   NpmConfig,
   PackageManagerConfig,
-  PackageManagerProvider,
   PnpmConfig,
   YarnConfig,
 } from '@bslt/shared/system/config';
@@ -37,7 +36,7 @@ import type {
  */
 
 export function loadPackageManagerConfig(env: FullEnv): PackageManagerConfig {
-  const provider = env.PACKAGE_MANAGER_PROVIDER as PackageManagerProvider;
+  const provider = env.PACKAGE_MANAGER_PROVIDER;
 
   switch (provider) {
     case 'npm': {

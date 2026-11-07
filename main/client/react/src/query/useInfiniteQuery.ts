@@ -235,8 +235,7 @@ export function useInfiniteQuery<
 
   // Get current state snapshot (use queryKeyRef to avoid recreating on array reference change)
   const getSnapshot = useCallback(():
-    | QueryState<InfiniteData<TData, TPageParam>, TError>
-    | undefined => {
+    QueryState<InfiniteData<TData, TPageParam>, TError> | undefined => {
     return cache.getQueryState<InfiniteData<TData, TPageParam>, TError>(queryKeyRef.current);
   }, [cache]);
 
@@ -301,8 +300,7 @@ export function useInfiniteQuery<
     // Check if data is fresh - use cache data directly, not local ref
     // (local ref may be empty on remount even if cache has fresh data)
     const cachedData = cache.getQueryData(currentQueryKey) as
-      | InfiniteData<TData, TPageParam>
-      | undefined;
+      InfiniteData<TData, TPageParam> | undefined;
     if (!cache.isStale(currentQueryKey) && (cachedData?.pages.length ?? 0) > 0) return;
 
     // Prevent duplicate fetches
@@ -365,11 +363,11 @@ export function useInfiniteQuery<
     cache.setFetchStatus(currentQueryKey, 'fetching');
 
     try {
-      const nextPage = await fetchPage(nextPageParam as TPageParam);
+      const nextPage = await fetchPage(nextPageParam);
 
       const newData: InfiniteData<TData, TPageParam> = {
         pages: [...infiniteData.pages, nextPage],
-        pageParams: [...infiniteData.pageParams, nextPageParam as TPageParam],
+        pageParams: [...infiniteData.pageParams, nextPageParam],
       };
 
       setInfiniteData(newData);
@@ -409,11 +407,11 @@ export function useInfiniteQuery<
     cache.setFetchStatus(currentQueryKey, 'fetching');
 
     try {
-      const prevPage = await fetchPage(prevPageParam as TPageParam);
+      const prevPage = await fetchPage(prevPageParam);
 
       const newData: InfiniteData<TData, TPageParam> = {
         pages: [prevPage, ...infiniteData.pages],
-        pageParams: [prevPageParam as TPageParam, ...infiniteData.pageParams],
+        pageParams: [prevPageParam, ...infiniteData.pageParams],
       };
 
       setInfiniteData(newData);
@@ -466,8 +464,7 @@ export function useInfiniteQuery<
 
     // Check cache data directly - local ref may be empty on remount even if cache has fresh data
     const cachedData = cache.getQueryData(queryKeyRef.current) as
-      | InfiniteData<TData, TPageParam>
-      | undefined;
+      InfiniteData<TData, TPageParam> | undefined;
     if (cache.isStale(queryKeyRef.current) || (cachedData?.pages.length ?? 0) === 0) {
       void fetchInitialPageRef.current();
     }

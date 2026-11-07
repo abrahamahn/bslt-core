@@ -174,10 +174,7 @@ Offline-first mutation queue with conflict resolution.
 import { createTransactionQueue } from '@bslt/client-engine';
 
 const queue = createTransactionQueue({
-  submitTransaction: async (tx) =>
-    fetch('/api/transactions', {
-      /*...*/
-    }),
+  submitTransaction: async (tx) => fetch('/api/transactions', {/*...*/}),
   onRollback: async (tx) => undoOptimisticUpdates(tx),
 });
 

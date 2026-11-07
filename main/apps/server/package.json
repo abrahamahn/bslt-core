@@ -16,21 +16,21 @@
     "type-check": "tsc -p tsconfig.lint.json"
   },
   "dependencies": {
+    "@bslt/comms": "workspace:*",
     "@bslt/core": "workspace:*",
     "@bslt/db": "workspace:*",
-    "@bslt/comms": "workspace:*",
     "@bslt/server-system": "workspace:*",
     "@bslt/shared": "workspace:*",
     "@bslt/storage": "workspace:*",
-    "@fastify/compress": "^8.3.1",
-    "@fastify/swagger": "^9.7.0",
-    "@fastify/swagger-ui": "^5.2.5",
-    "fastify": "^5.12.5",
-    "fastify-plugin": "^5.1.0",
-    "stripe": "^20.2.0"
+    "@fastify/compress": "^9.3.0",
+    "@fastify/swagger": "^9.9.3",
+    "@fastify/swagger-ui": "^6.1.3",
+    "fastify": "^5.12.8",
+    "fastify-plugin": "^6.0.1",
+    "stripe": "^20.3.1"
   },
   "devDependencies": {
-    "vite-tsconfig-paths": "^6.0.5"
+    "vite-tsconfig-paths": "^6.1.1"
   },
   "private": true
 }

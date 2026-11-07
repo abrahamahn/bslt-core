@@ -475,7 +475,7 @@ export class SmtpClient {
 
       const tlsSocket = tlsConnect(
         {
-          socket: oldSocket as Socket,
+          socket: oldSocket,
           host: this.config.host,
           rejectUnauthorized: true,
         },

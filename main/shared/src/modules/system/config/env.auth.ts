@@ -20,8 +20,8 @@ import {
 
 import { trueFalseSchema } from './env.base';
 
-import type { RateLimitConfig as ServerRateLimitConfig } from './env.server';
 import type { Schema } from '../../../schema';
+import type { RateLimitConfig as ServerRateLimitConfig } from './env.server';
 
 // ============================================================================
 // Types

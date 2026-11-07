@@ -110,7 +110,7 @@ export const systemRoutes: RouteMap = createRouteMap([
         // "does the CDN send a region header?" verdict has to ride here to be
         // readable from outside — `/health/geo` carries the full detail but is
         // publicly reachable only where the edge forwards `/health/*`.
-        geo: geoProbe(ctx, req.headers as GeoHeaders).summary,
+        geo: geoProbe(ctx, req.headers).summary,
       };
     }),
   ],

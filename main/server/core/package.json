@@ -67,12 +67,12 @@
     "type-check": "tsc -p tsconfig.lint.json"
   },
   "dependencies": {
-    "@bslt/server-system": "workspace:*",
     "@bslt/db": "workspace:*",
+    "@bslt/server-system": "workspace:*",
     "@bslt/shared": "workspace:*",
-    "@simplewebauthn/server": "^13.3.2",
-    "argon2": "^0.41.1",
-    "otpauth": "^9.4.1"
+    "@simplewebauthn/server": "^14.1.0",
+    "argon2": "^0.45.2",
+    "otpauth": "^9.6.0"
   },
   "peerDependencies": {
     "fastify": "^5.0.0"
@@ -83,7 +83,7 @@
     }
   },
   "devDependencies": {
-    "fastify": "^5.12.5",
-    "typescript": "^5.7.2"
+    "fastify": "^5.12.8",
+    "typescript": "^5.9.3"
   }
 }

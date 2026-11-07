@@ -13,6 +13,7 @@ import {
 import { NOTIFICATION_PAYLOAD_MAX_SIZE } from '../../../constants/system';
 import { createSchema, urlSchema, uuidSchema } from '../../../schema';
 
+import type { Schema } from '../../../schema';
 import type {
   BatchSendResult as SharedBatchSendResult,
   NotificationAction as SharedNotificationAction,
@@ -33,7 +34,6 @@ import type {
   UpdatePreferencesRequest as SharedUpdatePreferencesRequest,
   VapidKeyResponse as SharedVapidKeyResponse,
 } from './notifications.types';
-import type { Schema } from '../../../schema';
 
 // ============================================================================
 // Re-exports

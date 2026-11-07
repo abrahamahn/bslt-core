@@ -35,7 +35,7 @@ export const errorHandlerPlugin = fp<ErrorHandlerOptions>(
 
     server.setErrorHandler((error: Error, request: FastifyRequest, reply: FastifyReply) => {
       // Use Fastify's built-in request.log — it's already a request-scoped child logger.
-      const log = toErrorMapperLogger(request.log as Logger);
+      const log = toErrorMapperLogger(request.log);
 
       const correlationId: string | undefined =
         request.correlationId || (request.headers['x-correlation-id'] as string | undefined);

@@ -116,8 +116,7 @@ const INITIAL_USER_HYDRATION_TIMEOUT_MS = 5000;
 const BROWSER_DEVICE_ID_STORAGE_KEY = 'bslt:browser-device-id';
 
 type InitializeHydrationResult =
-  | { status: 'hydrated'; user: User }
-  | { status: 'failed' | 'stale' | 'timed-out' };
+  { status: 'hydrated'; user: User } | { status: 'failed' | 'stale' | 'timed-out' };
 
 // Type guard for User
 const isUser = (value: unknown): value is User => {
@@ -223,7 +222,7 @@ export class AuthService {
   }) {
     this.config = args.config;
 
-    const sharedTokenStore = tokenStore as TokenStore;
+    const sharedTokenStore = tokenStore;
     this.tokenStore = {
       get: (): string | null => sharedTokenStore.get(),
       set: (token: string): void => {
@@ -617,7 +616,6 @@ export class AuthService {
         return false;
       }
       // Auth errors (401, invalid token, etc.): clear session
-      void error;
       if (this.isAuthGenerationCurrent(refreshGeneration)) {
         this.clearAuth();
       }

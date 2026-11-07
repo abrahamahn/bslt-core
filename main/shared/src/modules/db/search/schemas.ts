@@ -14,6 +14,7 @@ import {
 import { createSchema } from '../../../schema';
 import { sortOrderSchema } from '../pagination/pagination';
 
+import type { Schema } from '../../../schema';
 import type {
   CompoundFilter,
   CursorSearchResult,
@@ -32,9 +33,7 @@ import type {
   SearchResult,
   SearchResultItem,
   SortConfig,
-  SortOrder,
 } from './types';
-import type { Schema } from '../../../schema';
 
 // ============================================================================
 // Filter Operator Schemas
@@ -79,7 +78,7 @@ export const filterPrimitiveSchema: Schema<FilterPrimitive> = createSchema((data
     typeof data === 'boolean' ||
     data instanceof Date
   ) {
-    return data as FilterPrimitive;
+    return data;
   }
   throw new Error('Invalid filter primitive value');
 });
@@ -610,7 +609,7 @@ export const facetConfigSchema: Schema<FacetConfig> = createSchema((data: unknow
     result.sortBy = obj['sortBy'];
   }
   if (obj['sortOrder'] === 'asc' || obj['sortOrder'] === 'desc') {
-    result.sortOrder = obj['sortOrder'] as SortOrder;
+    result.sortOrder = obj['sortOrder'];
   }
   if (typeof obj['includeMissing'] === 'boolean') {
     result.includeMissing = obj['includeMissing'];

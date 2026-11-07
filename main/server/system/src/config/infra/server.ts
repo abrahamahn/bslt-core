@@ -7,7 +7,7 @@ import {
 } from '@bslt/shared/constants/core';
 import { getList } from '@bslt/shared/helpers';
 
-import type { FullEnv, LogLevel, ServerConfig } from '@bslt/shared/system/config';
+import type { FullEnv, ServerConfig } from '@bslt/shared/system/config';
 
 /** Node lowercases inbound header names, so configured names must match that. */
 function toHeaderNames(value: string | undefined, fallback: readonly string[]): string[] {
@@ -82,7 +82,7 @@ export function loadServerConfig(env: FullEnv): ServerConfig {
 
     // Operational Settings
     trustProxy: env.TRUST_PROXY === 'true' || (env.TRUST_PROXY === undefined && isProd),
-    logLevel: env.LOG_LEVEL as LogLevel,
+    logLevel: env.LOG_LEVEL,
     maintenanceMode: env.MAINTENANCE_MODE === 'true',
 
     // Identity/Discovery

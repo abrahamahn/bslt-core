@@ -21,7 +21,7 @@ type EnvVars = {
   [key: string]: string | boolean | undefined;
 };
 
-const env: EnvVars = import.meta.env as EnvVars;
+const env: EnvVars = import.meta.env;
 
 // ============================================================================
 // Types

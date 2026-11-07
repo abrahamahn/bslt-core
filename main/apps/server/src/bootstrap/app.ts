@@ -33,7 +33,6 @@ import {
 import {
   type HealthCheckCache,
   type HealthCheckQueue,
-  type HttpReply,
   type HttpRequest,
   type Logger,
   type RateLimitInfo,
@@ -204,7 +203,7 @@ function registerSecurityMiddleware(
     });
     // Bridge Fastify's request/reply to the framework-agnostic middleware shape.
     server.addHook('onRequest', async (req, res) => {
-      await ipBlocklistHook(req as unknown as HttpRequest, res as unknown as HttpReply);
+      await ipBlocklistHook(req as unknown as HttpRequest, res);
     });
   }
 
@@ -320,7 +319,7 @@ function registerSecurityMiddleware(
     // `done()` runs only when the gate did not answer the request — sending and
     // continuing the lifecycle are mutually exclusive in Fastify.
     server.addHook('onRequest', (req, res, done) => {
-      const blocked = geoBlockHook(req as unknown as HttpRequest, res as unknown as HttpReply);
+      const blocked = geoBlockHook(req as unknown as HttpRequest, res);
       if (!blocked) done();
     });
   }

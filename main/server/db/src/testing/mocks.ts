@@ -44,7 +44,7 @@ export function createMockDb(): MockDbClient {
   });
 
   // withSession returns the same mock (session scoping is transparent in tests)
-  mock.withSession = vi.fn().mockReturnValue(mock as unknown as RawDb);
+  mock.withSession = vi.fn().mockReturnValue(mock);
 
   return mock;
 }
@@ -72,7 +72,7 @@ export function createMockDbWithData(options: {
   });
 
   // withSession returns the same mock (session scoping is transparent in tests)
-  mock.withSession = vi.fn().mockReturnValue(mock as unknown as RawDb);
+  mock.withSession = vi.fn().mockReturnValue(mock);
 
   return mock;
 }

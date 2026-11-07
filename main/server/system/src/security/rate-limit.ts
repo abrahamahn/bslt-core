@@ -315,7 +315,7 @@ export class RedisRateLimitStore implements RateLimitStore {
   private readonly recordTtlMs: number;
 
   constructor(config: RedisRateLimitStoreConfig) {
-    const redisOptions: RedisOptions = {
+    const redisOptions: Omit<RedisOptions, 'replyMapping'> = {
       host: config.host,
       port: config.port,
       db: config.db ?? 0,

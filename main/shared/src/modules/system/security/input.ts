@@ -244,7 +244,7 @@ export function detectNoSQLInjection(input: unknown): boolean {
   }
 
   if (typeof input === 'object' && input !== null) {
-    return Object.keys(input as Record<string, unknown>).some(
+    return Object.keys(input).some(
       (key) => key.startsWith('$') || ['__proto__', 'prototype', 'constructor'].includes(key),
     );
   }

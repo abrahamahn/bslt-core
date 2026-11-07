@@ -34,9 +34,9 @@
     ]
   },
   "devDependencies": {
-    "@types/node": "^25.0.9",
+    "@types/node": "^26.6.6",
     "tar": "7.5.22",
-    "tsx": "^4.21.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3"
   },
   "pnpm": {

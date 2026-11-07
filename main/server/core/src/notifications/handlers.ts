@@ -123,7 +123,7 @@ function getVapidPublicKey(ctx: NotificationModuleDeps): string | undefined {
     typeof provider === 'object' &&
     provider !== null &&
     'getPublicKey' in provider &&
-    typeof (provider as { getPublicKey: unknown }).getPublicKey === 'function'
+    typeof provider.getPublicKey === 'function'
   ) {
     const key = (provider as { getPublicKey: () => string | undefined }).getPublicKey();
     return key !== undefined && key !== '' ? key : undefined;

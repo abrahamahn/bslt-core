@@ -694,7 +694,7 @@ export function eq<T = Record<string, unknown>>(
   field: keyof T | string,
   value: string | number | boolean | null,
 ): FilterCondition<T> {
-  return { field, operator: FILTER_OPERATORS.EQ, value } as FilterCondition<T>;
+  return { field, operator: FILTER_OPERATORS.EQ, value };
 }
 
 /** Create a quick not-equal filter. */
@@ -702,7 +702,7 @@ export function neq<T = Record<string, unknown>>(
   field: keyof T | string,
   value: string | number | boolean | null,
 ): FilterCondition<T> {
-  return { field, operator: FILTER_OPERATORS.NEQ, value } as FilterCondition<T>;
+  return { field, operator: FILTER_OPERATORS.NEQ, value };
 }
 
 /** Create a quick greater-than filter. */
@@ -710,7 +710,7 @@ export function gt<T = Record<string, unknown>>(
   field: keyof T | string,
   value: number | Date,
 ): FilterCondition<T> {
-  return { field, operator: FILTER_OPERATORS.GT, value } as FilterCondition<T>;
+  return { field, operator: FILTER_OPERATORS.GT, value };
 }
 
 /** Create a quick less-than filter. */
@@ -718,7 +718,7 @@ export function lt<T = Record<string, unknown>>(
   field: keyof T | string,
   value: number | Date,
 ): FilterCondition<T> {
-  return { field, operator: FILTER_OPERATORS.LT, value } as FilterCondition<T>;
+  return { field, operator: FILTER_OPERATORS.LT, value };
 }
 
 /** Create a quick contains filter. */
@@ -726,7 +726,7 @@ export function contains<T = Record<string, unknown>>(
   field: keyof T | string,
   value: string,
 ): FilterCondition<T> {
-  return { field, operator: FILTER_OPERATORS.CONTAINS, value } as FilterCondition<T>;
+  return { field, operator: FILTER_OPERATORS.CONTAINS, value };
 }
 
 /** Create a quick in-array filter. */
@@ -734,5 +734,5 @@ export function inArray<T = Record<string, unknown>>(
   field: keyof T | string,
   values: Array<string | number | boolean>,
 ): FilterCondition<T> {
-  return { field, operator: FILTER_OPERATORS.IN, value: values } as FilterCondition<T>;
+  return { field, operator: FILTER_OPERATORS.IN, value: values };
 }

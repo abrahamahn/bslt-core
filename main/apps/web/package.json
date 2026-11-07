@@ -17,16 +17,16 @@
     "@bslt/react": "workspace:*",
     "@bslt/shared": "workspace:*",
     "@bslt/ui": "workspace:*",
-    "@simplewebauthn/browser": "^13.2.2",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3"
+    "@simplewebauthn/browser": "^14.0.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
-    "@types/react": "^19.2.3",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.1.2",
-    "vite": "^6.4.3",
-    "vite-tsconfig-paths": "^6.0.5"
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.2.1",
+    "vite": "^8.3.6",
+    "vite-tsconfig-paths": "^6.1.1"
   },
   "private": true
 }

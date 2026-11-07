@@ -1,12 +1,12 @@
 // main/shared/src/contracts/context.ts
 
+import type { CacheProvider, Logger } from '../modules/system';
 import type {
   EmailService,
   ErrorTracker,
   NotificationService,
   StorageService,
 } from './contract.ports';
-import type { CacheProvider, Logger } from '../modules/system';
 
 /** Minimal authenticated user information attached to request context. */
 export interface AuthenticatedUser {

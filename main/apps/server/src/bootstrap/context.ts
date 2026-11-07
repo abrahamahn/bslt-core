@@ -277,7 +277,7 @@ export async function contextualizeRequest(
 
   const userId = request.user.userId;
   const role = request.user.role;
-  const tenantId = resolveRequestedTenantId(request as RequestWithCookies);
+  const tenantId = resolveRequestedTenantId(request);
 
   request.context = request.context.contextualize({ userId, role });
 

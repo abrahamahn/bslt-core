@@ -19,13 +19,7 @@
  * - `Record<string, unknown>` -- keys with truthy values are included
  */
 export type ClassValue =
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-  | ClassValue[]
-  | { [className: string]: unknown };
+  string | number | boolean | null | undefined | ClassValue[] | { [className: string]: unknown };
 
 /**
  * Recursively resolves a single {@link ClassValue} and pushes resulting

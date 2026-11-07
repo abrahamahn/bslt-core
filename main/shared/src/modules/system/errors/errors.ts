@@ -96,16 +96,16 @@ interface ResolvedAppErrorInit {
 }
 
 const KIND_TO_STATUS: Record<ErrorKind, ErrorStatusCode> = {
-  validation: HTTP_STATUS.BAD_REQUEST as ErrorStatusCode,
-  authentication: HTTP_STATUS.UNAUTHORIZED as ErrorStatusCode,
-  authorization: HTTP_STATUS.FORBIDDEN as ErrorStatusCode,
-  not_found: HTTP_STATUS.NOT_FOUND as ErrorStatusCode,
-  conflict: HTTP_STATUS.CONFLICT as ErrorStatusCode,
-  rate_limit: HTTP_STATUS.TOO_MANY_REQUESTS as ErrorStatusCode,
-  external_dependency: HTTP_STATUS.BAD_GATEWAY as ErrorStatusCode,
-  timeout: HTTP_STATUS.GATEWAY_TIMEOUT as ErrorStatusCode,
-  unavailable: HTTP_STATUS.SERVICE_UNAVAILABLE as ErrorStatusCode,
-  internal: HTTP_STATUS.INTERNAL_SERVER_ERROR as ErrorStatusCode,
+  validation: HTTP_STATUS.BAD_REQUEST,
+  authentication: HTTP_STATUS.UNAUTHORIZED,
+  authorization: HTTP_STATUS.FORBIDDEN,
+  not_found: HTTP_STATUS.NOT_FOUND,
+  conflict: HTTP_STATUS.CONFLICT,
+  rate_limit: HTTP_STATUS.TOO_MANY_REQUESTS,
+  external_dependency: HTTP_STATUS.BAD_GATEWAY,
+  timeout: HTTP_STATUS.GATEWAY_TIMEOUT,
+  unavailable: HTTP_STATUS.SERVICE_UNAVAILABLE,
+  internal: HTTP_STATUS.INTERNAL_SERVER_ERROR,
 };
 
 function defaultCodeForKind(kind: ErrorKind): string {
@@ -611,8 +611,7 @@ export class InternalError extends AppError {
 
 export class RequestSchemaError extends UnprocessableError {
   public readonly issues:
-    | Array<{ message: string; path?: ReadonlyArray<string | number> }>
-    | undefined;
+    Array<{ message: string; path?: ReadonlyArray<string | number> }> | undefined;
 
   constructor(issues: unknown) {
     const normalizedIssues = Array.isArray(issues)

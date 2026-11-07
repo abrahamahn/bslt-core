@@ -16,7 +16,7 @@ import {
   verifyRegistrationResponse,
   type AuthenticationResponseJSON,
   type RegistrationResponseJSON,
-  type AuthenticatorTransportFuture,
+  type AuthenticatorTransport,
 } from '@simplewebauthn/server';
 
 import type { Repositories } from '@bslt/db/factory';
@@ -106,9 +106,9 @@ function getWebauthnConfig(authConfig: AuthConfig): WebauthnConfig {
 // Helpers
 // ============================================================================
 
-function parseTransports(transports: string | null): AuthenticatorTransportFuture[] | undefined {
+function parseTransports(transports: string | null): AuthenticatorTransport[] | undefined {
   if (transports === null || transports === '') return undefined;
-  return transports.split(',') as AuthenticatorTransportFuture[];
+  return transports.split(',') as AuthenticatorTransport[];
 }
 
 type RegistrationCredentialResponse = RegistrationResponseJSON;
@@ -153,7 +153,7 @@ function toRegistrationCredentialResponse(
   const transports =
     Array.isArray(response['transports']) &&
     response['transports'].every(
-      (transport): transport is AuthenticatorTransportFuture => typeof transport === 'string',
+      (transport): transport is AuthenticatorTransport => typeof transport === 'string',
     )
       ? response['transports']
       : undefined;
@@ -335,7 +335,7 @@ export async function getAuthenticationOptions(
 
   const allowCredentials: Array<{
     id: string;
-    transports?: AuthenticatorTransportFuture[];
+    transports?: AuthenticatorTransport[];
   }> = [];
 
   if (email !== undefined) {

@@ -48,7 +48,7 @@
   ],
   "dependencies": {
     "@bslt/shared": "workspace:*",
-    "web-push": "^3.6.7"
+    "web-push": "^4.0.0"
   },
   "scripts": {
     "build": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo && tsc -p tsconfig.json && node --import tsx ../../tools/scripts/build/ensure-js-extensions.ts dist",

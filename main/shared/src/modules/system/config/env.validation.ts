@@ -28,6 +28,7 @@ import { StorageEnvSchema } from './env.storage';
 import { TenancyEnvSchema } from './env.tenancy';
 import { WebhookEnvSchema } from './env.webhooks';
 
+import type { Schema } from '../../../schema';
 import type { AnalyticsConfig, AnalyticsEnv } from './env.analytics';
 import type { AuthConfig, AuthEnv } from './env.auth';
 import type { BaseEnv } from './env.base';
@@ -45,7 +46,6 @@ import type { ServerConfig, ServerEnv } from './env.server';
 import type { StorageConfig, StorageEnv } from './env.storage';
 import type { TenancyConfig, TenancyEnv } from './env.tenancy';
 import type { WebhookConfig, WebhookEnv } from './env.webhooks';
-import type { Schema } from '../../../schema';
 
 // ============================================================================
 // Combined Environment

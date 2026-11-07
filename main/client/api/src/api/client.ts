@@ -120,8 +120,7 @@ export interface TosRequiredPayload {
  * or a raw CSV document.
  */
 export type DataExportDownload =
-  | { format: 'json'; export: Record<string, unknown> }
-  | { format: 'csv'; content: string };
+  { format: 'json'; export: Record<string, unknown> } | { format: 'csv'; content: string };
 
 export interface ApiClientConfig extends BaseClientConfig {
   /**
@@ -314,8 +313,7 @@ export function createApiClient(config: ApiClientConfig): ApiClient {
       throw new NetworkError(errorMessage, originalError) as Error;
     }
 
-    const data = (await response.json().catch((parseError: unknown) => {
-      void parseError;
+    const data = (await response.json().catch((_parseError: unknown) => {
       return {};
     })) as Record<string, unknown>;
 
@@ -633,10 +631,7 @@ export function createApiClient(config: ApiClientConfig): ApiClient {
           parse(
             value: unknown,
           ): LoginSuccessResponse | TotpLoginChallengeResponse | SmsLoginChallengeResponse {
-            return parseLoginResponse(value) as
-              | LoginSuccessResponse
-              | TotpLoginChallengeResponse
-              | SmsLoginChallengeResponse;
+            return parseLoginResponse(value);
           },
         },
       );

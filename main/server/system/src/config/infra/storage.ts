@@ -10,7 +10,6 @@ import type {
   LocalStorageConfig,
   S3StorageConfig,
   StorageConfig,
-  StorageProviderName,
 } from '@bslt/shared/system/config';
 
 /**
@@ -88,7 +87,7 @@ export function loadStorageConfig(
   env: FullEnv,
   options: LoadStorageConfigOptions = {},
 ): StorageConfig {
-  const provider = env.STORAGE_PROVIDER as StorageProviderName;
+  const provider = env.STORAGE_PROVIDER;
 
   if (provider === 's3') {
     const config: S3StorageConfig = {

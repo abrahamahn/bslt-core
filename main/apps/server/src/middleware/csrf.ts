@@ -125,11 +125,7 @@ export function registerCsrf(server: FastifyInstance, options: CsrfOptions): voi
     }
 
     // Get token from header or body (body is now parsed)
-    const headerToken = extractCsrfToken(
-      req.headers as Record<string, string | string[] | undefined>,
-      req.body,
-      headerName,
-    );
+    const headerToken = extractCsrfToken(req.headers, req.body, headerName);
 
     if (headerToken == null || headerToken === '') {
       throw new ForbiddenError('Missing CSRF token in request', 'CSRF_HEADER_MISSING');
