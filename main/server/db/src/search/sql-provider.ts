@@ -8,29 +8,29 @@
  * @module
  */
 
-import { FILTER_OPERATORS, LOGICAL_OPERATORS } from '@bslt/shared/constants';
+import { FILTER_OPERATORS } from '@bslt/shared/constants';
 import {
-  decodeCursor,
-  encodeCursor,
-  InvalidCursorError,
-  InvalidFilterError,
-  isCompoundFilter,
-  isFilterCondition,
-  QueryTooComplexError,
   SearchError,
   SearchProviderError,
-  type CompoundFilter,
   type CursorSearchResult,
   type FacetConfig,
   type FacetedSearchQuery,
   type FacetedSearchResult,
-  type FilterCondition,
   type FilterOperator,
   type SearchCapabilities,
   type SearchQuery,
   type SearchResult,
   type SortConfig,
 } from '@bslt/shared/db';
+
+import {
+  buildCursorCondition,
+  buildOrderByClause,
+  buildWhereClause,
+  createCursor,
+  resolveColumnName,
+  type SqlFragment,
+} from './sql-query-translator';
 
 import type { RawDb, Repositories } from '../index';
 import type {
@@ -43,12 +43,6 @@ import type {
 // ============================================================================
 // Types
 // ============================================================================
-
-/** Internal type for SQL fragment with parameters */
-interface SqlFragment {
-  text: string;
-  values: unknown[];
-}
 
 /** Row type for count queries */
 type CountRow = Record<string, unknown> & { count: string | number };
@@ -204,18 +198,7 @@ export class SqlSearchProvider<
       const data = hasNext ? results.slice(0, limit) : results;
 
       // Get total count if requested
-      let total: number | undefined;
-      if (query.includeCount === true) {
-        // Reset param index for count query
-        this.paramIndex = 0;
-        const countWhereFragment = this.buildWhereClause(query);
-        const countWhereClause =
-          countWhereFragment != null ? `WHERE ${countWhereFragment.text}` : '';
-        const countSql = `SELECT COUNT(*) as count FROM ${this.tableConfig.table} ${countWhereClause}`;
-        const countResult = await this.db.raw<CountRow>(countSql, countWhereFragment?.values ?? []);
-        const countValue = countResult[0]?.count;
-        total = typeof countValue === 'number' ? countValue : parseInt(String(countValue), 10);
-      }
+      const total = query.includeCount === true ? await this.count(query) : undefined;
 
       const executionTime = performance.now() - startTime;
 
@@ -291,17 +274,7 @@ export class SqlSearchProvider<
         hasNext && lastItem != null ? this.createCursor(lastItem, query.sort ?? []) : null;
 
       // Get total count if requested
-      let total: number | undefined;
-      if (query.includeCount === true) {
-        // Reset param index for count query
-        this.paramIndex = 0;
-        const baseWhereFragment = this.buildWhereClause(query);
-        const countWhereClause = baseWhereFragment != null ? `WHERE ${baseWhereFragment.text}` : '';
-        const countSql = `SELECT COUNT(*) as count FROM ${this.tableConfig.table} ${countWhereClause}`;
-        const countResult = await this.db.raw<CountRow>(countSql, baseWhereFragment?.values ?? []);
-        const countValue = countResult[0]?.count;
-        total = typeof countValue === 'number' ? countValue : parseInt(String(countValue), 10);
-      }
+      const total = query.includeCount === true ? await this.count(query) : undefined;
 
       const executionTime = performance.now() - startTime;
 
@@ -456,368 +429,30 @@ export class SqlSearchProvider<
   }
 
   // ============================================================================
-  // Private Methods - Where Clause Building
+  // Private Methods - Query Translation Delegation
   // ============================================================================
 
-  /**
-   * Build a WHERE clause from query filters.
-   *
-   * @param query - Search query containing filter configuration.
-   * @returns SQL fragment with parameterized values, or undefined if no filters.
-   */
   private buildWhereClause(query: SearchQuery<TRecord>): SqlFragment | undefined {
-    if (query.filters == null) {
-      return undefined;
-    }
-
-    // Initialize complexity tracking context
-    const context = { conditionCount: 0 };
-    return this.translateFilter(query.filters, 0, context);
+    return buildWhereClause(query, this.tableConfig, this.config, () => this.nextParam());
   }
 
-  /**
-   * Translate a filter condition or compound filter to SQL.
-   *
-   * @param filter - Filter condition or compound filter to translate.
-   * @param depth - Current nesting depth for complexity checking.
-   * @param context - Mutable context tracking total condition count.
-   * @returns SQL fragment, or undefined if filter produces no SQL.
-   * @throws {QueryTooComplexError} When depth or condition count exceeds limits.
-   */
-  private translateFilter(
-    filter: FilterCondition<TRecord> | CompoundFilter<TRecord>,
-    depth: number = 0,
-    context: { conditionCount: number } = { conditionCount: 0 },
-  ): SqlFragment | undefined {
-    // Check query depth limit
-    if (depth > this.config.maxQueryDepth) {
-      throw new QueryTooComplexError(
-        `Filter nesting exceeds maximum depth of ${String(this.config.maxQueryDepth)}`,
-        this.config.maxQueryDepth,
-        this.config.maxConditions,
-      );
-    }
-
-    if (isFilterCondition(filter)) {
-      // Check condition count limit
-      context.conditionCount++;
-      if (context.conditionCount > this.config.maxConditions) {
-        throw new QueryTooComplexError(
-          `Filter exceeds maximum of ${String(this.config.maxConditions)} conditions`,
-          this.config.maxQueryDepth,
-          this.config.maxConditions,
-        );
-      }
-      return this.translateCondition(filter);
-    }
-
-    if (isCompoundFilter(filter)) {
-      return this.translateCompound(filter, depth, context);
-    }
-
-    return undefined;
-  }
-
-  /**
-   * Translate a single filter condition to SQL.
-   *
-   * @param condition - Filter condition with field, operator, and value.
-   * @returns SQL fragment for the condition.
-   * @throws {InvalidFilterError} When the field or operator is unsupported.
-   */
-  private translateCondition(condition: FilterCondition<TRecord>): SqlFragment | undefined {
-    const fieldName = String(condition.field);
-    const columnName = this.resolveColumnName(fieldName);
-    if (columnName == null || columnName === '') {
-      throw new InvalidFilterError(`Unknown field: ${fieldName}`, fieldName);
-    }
-
-    const value = condition.value;
-    const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
-
-    switch (condition.operator) {
-      case FILTER_OPERATORS.EQ:
-        return { text: `${columnName} = $${this.nextParam()}`, values: [value] };
-
-      case FILTER_OPERATORS.NEQ:
-        return { text: `${columnName} <> $${this.nextParam()}`, values: [value] };
-
-      case FILTER_OPERATORS.GT:
-        return { text: `${columnName} > $${this.nextParam()}`, values: [value] };
-
-      case FILTER_OPERATORS.GTE:
-        return { text: `${columnName} >= $${this.nextParam()}`, values: [value] };
-
-      case FILTER_OPERATORS.LT:
-        return { text: `${columnName} < $${this.nextParam()}`, values: [value] };
-
-      case FILTER_OPERATORS.LTE:
-        return { text: `${columnName} <= $${this.nextParam()}`, values: [value] };
-
-      case FILTER_OPERATORS.CONTAINS:
-        return {
-          text: `${columnName} ILIKE $${this.nextParam()}`,
-          values: [`%${this.escapeLikePattern(stringValue)}%`],
-        };
-
-      case FILTER_OPERATORS.StartsWith:
-        return {
-          text: `${columnName} ILIKE $${this.nextParam()}`,
-          values: [`${this.escapeLikePattern(stringValue)}%`],
-        };
-
-      case FILTER_OPERATORS.EndsWith:
-        return {
-          text: `${columnName} ILIKE $${this.nextParam()}`,
-          values: [`%${this.escapeLikePattern(stringValue)}`],
-        };
-
-      case FILTER_OPERATORS.LIKE:
-        return {
-          text:
-            condition.caseSensitive === true
-              ? `${columnName} LIKE $${this.nextParam()}`
-              : `${columnName} ILIKE $${this.nextParam()}`,
-          values: [value],
-        };
-
-      case FILTER_OPERATORS.ILIKE:
-        return { text: `${columnName} ILIKE $${this.nextParam()}`, values: [value] };
-
-      case FILTER_OPERATORS.IN: {
-        if (!Array.isArray(value) || value.length === 0) {
-          return { text: 'false', values: [] };
-        }
-        const placeholders = value.map(() => `$${this.nextParam()}`).join(', ');
-        return { text: `${columnName} IN (${placeholders})`, values: value };
-      }
-
-      case FILTER_OPERATORS.NotIn: {
-        if (!Array.isArray(value) || value.length === 0) {
-          return undefined;
-        }
-        const placeholders = value.map(() => `$${this.nextParam()}`).join(', ');
-        return { text: `${columnName} NOT IN (${placeholders})`, values: value };
-      }
-
-      case FILTER_OPERATORS.IsNull:
-        return { text: `${columnName} IS NULL`, values: [] };
-
-      case FILTER_OPERATORS.IsNotNull:
-        return { text: `${columnName} IS NOT NULL`, values: [] };
-
-      case FILTER_OPERATORS.BETWEEN:
-        if (typeof value === 'object' && value !== null && 'min' in value && 'max' in value) {
-          return {
-            text: `${columnName} BETWEEN $${this.nextParam()} AND $${this.nextParam()}`,
-            values: [value.min, value.max],
-          };
-        }
-        throw new InvalidFilterError(
-          'BETWEEN operator requires {min, max} value',
-          fieldName,
-          condition.operator,
-        );
-
-      case FILTER_OPERATORS.ArrayContains:
-      case FILTER_OPERATORS.ArrayContainsAny:
-      case FILTER_OPERATORS.FullText:
-      default:
-        throw new InvalidFilterError(
-          `Unsupported operator: ${condition.operator as string}`,
-          fieldName,
-          condition.operator,
-        );
-    }
-  }
-
-  /**
-   * Translate a compound filter (AND/OR/NOT) to SQL.
-   *
-   * @param compound - Compound filter with operator and conditions.
-   * @param depth - Current nesting depth.
-   * @param context - Mutable context tracking total condition count.
-   * @returns SQL fragment combining all child conditions.
-   * @throws {InvalidFilterError} When the logical operator is unknown.
-   */
-  private translateCompound(
-    compound: CompoundFilter<TRecord>,
-    depth: number = 0,
-    context: { conditionCount: number } = { conditionCount: 0 },
-  ): SqlFragment | undefined {
-    const fragments = compound.conditions
-      .map((condition: FilterCondition<TRecord> | CompoundFilter<TRecord>) =>
-        this.translateFilter(condition, depth + 1, context),
-      )
-      .filter(
-        (fragment: SqlFragment | undefined): fragment is SqlFragment => fragment !== undefined,
-      );
-
-    if (fragments.length === 0) {
-      return undefined;
-    }
-
-    const combinedText = fragments
-      .map((fragment: SqlFragment) => `(${fragment.text})`)
-      .join(compound.operator === LOGICAL_OPERATORS.AND ? ' AND ' : ' OR ');
-    const combinedValues = fragments.flatMap((fragment: SqlFragment) => fragment.values);
-
-    switch (compound.operator) {
-      case LOGICAL_OPERATORS.AND:
-        return { text: combinedText, values: combinedValues };
-
-      case LOGICAL_OPERATORS.OR:
-        return { text: combinedText, values: combinedValues };
-
-      case LOGICAL_OPERATORS.NOT:
-        return { text: `NOT (${combinedText})`, values: combinedValues };
-
-      default:
-        throw new InvalidFilterError(`Unknown logical operator: ${String(compound.operator)}`);
-    }
-  }
-
-  // ============================================================================
-  // Private Methods - Order By Building
-  // ============================================================================
-
-  /**
-   * Build an ORDER BY clause from sort configuration.
-   *
-   * @param sort - Array of sort configurations.
-   * @returns SQL ORDER BY clause text (without the ORDER BY keyword).
-   */
   private buildOrderByClause(sort?: SortConfig<TRecord>[]): string {
-    if (sort == null || sort.length === 0) {
-      // Default sort by primary key
-      const pkKey = Array.isArray(this.tableConfig.primaryKey)
-        ? this.tableConfig.primaryKey[0]
-        : this.tableConfig.primaryKey;
-      const pkColumn = pkKey != null && pkKey !== '' ? this.resolveColumnName(pkKey) : undefined;
-      return pkColumn != null && pkColumn !== '' ? `${pkColumn} ASC` : '';
-    }
-
-    return sort
-      .map((s) => {
-        const columnName = this.resolveColumnName(String(s.field));
-        if (columnName == null || columnName === '') return null;
-        return `${columnName} ${s.order === 'desc' ? 'DESC' : 'ASC'}`;
-      })
-      .filter((s): s is string => s !== null)
-      .join(', ');
+    return buildOrderByClause(this.tableConfig, sort);
   }
 
-  // ============================================================================
-  // Private Methods - Cursor Handling
-  // ============================================================================
-
-  /**
-   * Build a cursor condition for keyset pagination.
-   *
-   * @param cursor - Encoded cursor string.
-   * @param sort - Sort configuration used for cursor ordering.
-   * @returns SQL fragment for cursor-based filtering.
-   * @throws {InvalidCursorError} When the cursor format is invalid.
-   */
   private buildCursorCondition(
     cursor: string,
     sort: SortConfig<TRecord>[],
   ): SqlFragment | undefined {
-    try {
-      const decoded = decodeCursor(cursor);
-
-      if (decoded == null) {
-        throw new InvalidCursorError('Invalid cursor format');
-      }
-
-      // For simple single-field cursor
-      const firstSort = sort[0];
-      const sortField = firstSort != null ? String(firstSort.field) : 'id';
-      const sortOrder = firstSort?.order ?? 'asc';
-      const cursorValue = decoded.value;
-
-      const columnName = this.resolveColumnName(sortField);
-      if (columnName == null || columnName === '') {
-        throw new InvalidCursorError(`Unknown sort field in cursor: ${sortField}`);
-      }
-
-      // Forward pagination: get items after cursor
-      const operator = sortOrder === 'desc' ? '<' : '>';
-      return {
-        text: `${columnName} ${operator} $${this.nextParam()}`,
-        values: [cursorValue],
-      };
-    } catch (error) {
-      if (error instanceof InvalidCursorError) {
-        throw error;
-      }
-      throw new InvalidCursorError('Failed to decode cursor');
-    }
+    return buildCursorCondition(cursor, sort, this.tableConfig, () => this.nextParam());
   }
 
-  /**
-   * Create an encoded cursor from a record and sort configuration.
-   *
-   * @param record - Record to create cursor from.
-   * @param sort - Sort configuration for cursor field selection.
-   * @returns Base64-encoded cursor string.
-   */
   private createCursor(record: TRecord, sort: SortConfig<TRecord>[]): string {
-    const firstSort = sort[0];
-    const sortField = firstSort != null ? String(firstSort.field) : 'id';
-    const sortValue = record[sortField];
-    const tieBreaker = String(record['id'] ?? record[sortField]);
-
-    return encodeCursor({
-      value: sortValue as string | number | Date,
-      tieBreaker,
-      sortOrder: firstSort?.order ?? 'asc',
-    });
+    return createCursor(record, sort);
   }
 
-  // ============================================================================
-  // Private Methods - Utilities
-  // ============================================================================
-
-  /**
-   * Escape SQL LIKE metacharacters in user input.
-   * Prevents users from injecting wildcards like % or _ into search patterns.
-   *
-   * @param value - Raw user input string.
-   * @returns Escaped string safe for use in LIKE/ILIKE patterns.
-   * @complexity O(n) where n is the string length.
-   */
-  private escapeLikePattern(value: string): string {
-    // Escape backslash first, then % and _ metacharacters
-    return value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
-  }
-
-  /**
-   * Resolve a field name to its actual column name.
-   * Checks column mappings first, then validates against allowed columns.
-   *
-   * @param field - Field name from the query.
-   * @returns Resolved column name, or undefined if not found.
-   * @complexity O(n) where n is the number of column mappings.
-   */
   private resolveColumnName(field: string): string | undefined {
-    // Check column mappings first
-    const mapping = this.tableConfig.columns.find((c) => c.field === field);
-    if (mapping != null) {
-      return mapping.column;
-    }
-
-    // If no explicit mapping, check if field is in columns list
-    const isKnownColumn = this.tableConfig.columns.some(
-      (c) => c.column === field || c.field === field,
-    );
-
-    // If columns list is empty, assume field is valid (backwards compatibility)
-    if (this.tableConfig.columns.length === 0 || isKnownColumn) {
-      return field;
-    }
-
-    return undefined;
+    return resolveColumnName(this.tableConfig, field);
   }
 
   /**

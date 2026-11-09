@@ -26,16 +26,15 @@ import {
 import { HTTP_STATUS } from '@bslt/shared/constants';
 import { isAppError } from '@bslt/shared/system';
 
-import { deliverWebPush } from './push-dispatch';
-import { buildSendResponse, createInAppNotification, resolveTargetUserIds } from './send';
 import {
   getPreferences,
   isNotificationAllowed,
   readPreferences,
-  subscribe,
-  unsubscribe,
   updatePreferences,
-} from './service';
+} from './preferences';
+import { deliverWebPush } from './push-dispatch';
+import { buildSendResponse, createInAppNotification, resolveTargetUserIds } from './send';
+import { subscribe, unsubscribe } from './subscriptions';
 import { UNSUBSCRIBE_CATEGORIES, unsubscribeUser, validateUnsubscribeToken } from './unsubscribe';
 
 import type { NotificationModuleDeps, NotificationRequest } from './types';

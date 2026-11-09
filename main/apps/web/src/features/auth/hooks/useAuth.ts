@@ -11,7 +11,7 @@
 import { useClientEnvironment } from '@app/ClientEnvironment';
 import { useCallback, useEffect, useState } from 'react';
 
-import type { AuthState, ImpersonationSession } from '@auth/services/AuthService';
+import type { AuthState, ImpersonationSession } from '@auth/services/authHelpers';
 import type {
   CompleteOnboardingRequest,
   EmailVerificationRequest,

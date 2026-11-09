@@ -28,27 +28,15 @@
 // Module types
 export type { NotificationModuleDeps, NotificationRequest } from './types';
 
-// Service - Subscription management
+// Subscriptions & preferences
+export { getSubscriptionCount, subscribe, unsubscribe } from './subscriptions';
 export {
-  cleanupExpiredSubscriptions,
-  clearAllData,
-  createNotificationForEvent,
-  getActiveSubscriptionCount,
-  getAllActiveSubscriptions,
   getPreferences,
-  getSubscriptionById,
-  getSubscriptionCount,
-  getSubscriptionStats,
-  getUserSubscriptions,
   isNotificationAllowed,
-  markSubscriptionsExpired,
   readPreferences,
   shouldSendNotification,
-  subscribe,
-  unsubscribe,
   updatePreferences,
-  type NotificationEventType,
-} from './service';
+} from './preferences';
 
 // Handlers
 export {

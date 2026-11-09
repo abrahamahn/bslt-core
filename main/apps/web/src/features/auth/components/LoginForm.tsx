@@ -1,7 +1,7 @@
 // main/apps/web/src/features/auth/components/LoginForm.tsx
 
 import { isAdvancedAuthEnabled } from '@app/capabilities';
-import { SmsChallengeError, TotpChallengeError } from '@auth/services/AuthService';
+import { SmsChallengeError, TotpChallengeError } from '@auth/services/authHelpers';
 import { Link } from '@bslt/react/router';
 import { AuthFormLayout, Button, Checkbox, Input, PasswordInput, Spinner, Text } from '@bslt/ui';
 import { useCallback, useState } from 'react';
