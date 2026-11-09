@@ -21,7 +21,13 @@ import {
   type PushSubscription,
   type SendResult,
 } from '@bslt/shared/comms/notifications';
-import webpush, { WebPushError, type PushSubscription as WebPushSubscription } from 'web-push';
+import {
+  sendNotification,
+  setVapidDetails,
+  WebPushError,
+  type PushSubscription as WebPushSubscription,
+  type RequestOptions,
+} from 'web-push';
 
 import type {
   PushNotificationProvider,
@@ -68,11 +74,11 @@ function toPushPayload(payload: NotificationPayload): string {
   });
 }
 
-function toRequestOptions(options: SendOptions | undefined): webpush.RequestOptions | undefined {
+function toRequestOptions(options: SendOptions | undefined): RequestOptions | undefined {
   if (options === undefined) {
     return undefined;
   }
-  const requestOptions: webpush.RequestOptions = {};
+  const requestOptions: RequestOptions = {};
   if (options.ttl !== undefined) {
     requestOptions.TTL = options.ttl;
   }
@@ -92,7 +98,7 @@ export class WebPushProvider implements PushNotificationProvider {
   constructor(config?: VapidConfig) {
     this.config = isValidVapid(config) ? config : undefined;
     if (this.config !== undefined) {
-      webpush.setVapidDetails(this.config.subject, this.config.publicKey, this.config.privateKey);
+      setVapidDetails(this.config.subject, this.config.publicKey, this.config.privateKey);
     }
   }
 
@@ -150,7 +156,7 @@ export class WebPushProvider implements PushNotificationProvider {
     }
 
     try {
-      const response = await webpush.sendNotification(
+      const response = await sendNotification(
         toWebPushSubscription(subscription),
         toPushPayload(payload),
         toRequestOptions(options),

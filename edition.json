@@ -488,7 +488,7 @@
     "main/server/comms/src/notifications/providers/factory.ts": "d78d7c1d2a44138023954314b2df9f10e25fc9ebd20075caf9170796b1018ef0",
     "main/server/comms/src/notifications/providers/index.ts": "8de993eba14d22dd56e88f19d800d14ae1fd2fabcde42faf07134d03a16072df",
     "main/server/comms/src/notifications/providers/types.ts": "d02fad38be4b47b5cf115f143c9ce5a240239eac37e710b873a9200c41b2bea4",
-    "main/server/comms/src/notifications/providers/web-push-provider.ts": "29ccbf4d62047e105a7d1d454b0ebaf4f2fcdb1e8bfe8e133b1538e455f4f13e",
+    "main/server/comms/src/notifications/providers/web-push-provider.ts": "e80f6a8536998b7529d0d765f8bb67141d93f67bac948de7df662b349a91283a",
     "main/server/comms/src/sms/console.ts": "0878cf448ee95c04fa777b9a987aa8d154d76b50a2a14dad3a3b5cc822029313",
     "main/server/comms/src/sms/factory.ts": "57665c9408c4f1e0c4f7b3bbc184161c37d7318ba8b36bb5f4e8a1e6f3797a68",
     "main/server/comms/src/sms/index.ts": "8e74cc568c59a1f643deaa113ccd7bb07a5d5fa69e586a5fd1dcd27298cf2b19",
