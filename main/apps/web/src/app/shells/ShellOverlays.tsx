@@ -10,8 +10,6 @@ import { useSidePeek } from '@bslt/react/hooks';
 import { useCapabilities } from '@bslt/web-platform';
 import { Suspense, lazy, useCallback, type ReactElement } from 'react';
 
-import { AccountModal } from '../account';
-
 const SidePeekUILibraryLayout = lazy(async () => {
   const mod = await import('@bslt/devtools/web');
   return { default: mod.SidePeekUILibraryLayout };
@@ -37,7 +35,6 @@ export const ShellOverlays = (): ReactElement => {
         onOpenChange={handleAuthModalOpenChange}
         initialMode={authMode}
       />
-      <AccountModal />
       {showDeveloperChrome && !isAuthLoading && !isAuthenticated ? (
         <Suspense fallback={null}>
           <SidePeekUILibraryLayout open={sidePeekOpen} onClose={closeSidePeek} />

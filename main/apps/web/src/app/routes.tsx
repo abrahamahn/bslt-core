@@ -1,7 +1,7 @@
 // main/apps/web/src/app/routes.tsx
 import { hasAdminModule } from '../generated/modules';
 
-import { ProfileModalRoute, SettingsModalRoute } from './account';
+import { ProfilePage, SettingsLayout, SettingsPage } from './account';
 import { AdminLayout, type AdminSurfaceId } from './admin';
 import { DashboardPage } from './dashboard';
 import { resolveAppRouteFlags, routeFlagsToCapabilities, type AppRouteFlags } from './routeFlags';
@@ -33,6 +33,7 @@ export const appFrameShells: WebShellConfig = Object.freeze({
   appShell: AppShell,
   consoleShell: ConsoleShell,
   adminLayout: AdminLayout,
+  settingsLayout: SettingsLayout,
   lazyModuleRoutePage,
 });
 
@@ -48,7 +49,7 @@ export const appFrameRoutes: readonly FrameRouteContribution<AppRouteFlags>[] = 
     slot: 'before-modules',
     shell: 'app',
     path: 'settings',
-    element: SettingsModalRoute,
+    element: SettingsPage,
     protected: true,
   },
   {
@@ -62,14 +63,14 @@ export const appFrameRoutes: readonly FrameRouteContribution<AppRouteFlags>[] = 
     slot: 'after-modules',
     shell: 'app',
     path: 'profile',
-    element: ProfileModalRoute,
+    element: ProfilePage,
     protected: true,
   },
   {
     slot: 'after-modules',
     shell: 'app',
     path: 'settings/:tab',
-    element: SettingsModalRoute,
+    element: SettingsPage,
     protected: true,
     unlisted: true,
   },

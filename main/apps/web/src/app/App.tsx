@@ -20,7 +20,7 @@ import {
   type Persister,
 } from '@bslt/client-engine';
 import { complianceModule } from '@bslt/compliance/module';
-import { CookieConsentBanner, TosAcceptanceModal } from '@bslt/compliance/web';
+import { consentAllows, CookieConsentBanner, TosAcceptanceModal } from '@bslt/compliance/web';
 import { useAuth } from '@bslt/identity/web';
 import { LiveRegion, QueryCacheProvider, toastStore } from '@bslt/react';
 import { HistoryProvider, useRouteFocusAnnounce } from '@bslt/react/hooks';
@@ -38,6 +38,7 @@ import {
   type ReactElement,
 } from 'react';
 
+import { OptionalAnalyticsTracker } from '../generated/modules';
 import { reportError } from '../lib/errorReporter';
 
 import { getAccessToken } from './authToken';
@@ -398,6 +399,8 @@ export const App = ({ environment }: AppProps): ReactElement => {
     handleDismiss: handleTosDismiss,
   } = useTosAcceptance(environment);
 
+  const canTrackAnalytics = useCallback((): boolean => consentAllows('analytics'), []);
+
   return (
     <ErrorBoundary onError={reportRenderError}>
       <QueryCacheProvider cache={environment.queryCache}>
@@ -412,6 +415,7 @@ export const App = ({ environment }: AppProps): ReactElement => {
                     <div className="h-screen flex flex-col overflow-hidden">
                       <SkipLink />
                       <RouteFocusAnnouncer />
+                      <OptionalAnalyticsTracker canTrack={canTrackAnalytics} />
                       <div className="flex-1 min-h-0 relative">
                         <AppRoutes />
                       </div>

@@ -147,6 +147,10 @@ export function useOptionalJobsList(_options?: {
   };
 }
 
+export function OptionalAnalyticsTracker(_props: { readonly canTrack: () => boolean }): null {
+  return null;
+}
+
 export function useOptionalAdminPlans(): {
   readonly plans: readonly { readonly isActive: boolean }[];
   readonly isLoading: boolean;

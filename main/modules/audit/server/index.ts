@@ -22,7 +22,7 @@ import type { RawDb } from '@bslt/db';
 export { auditRepository, type AuditRepository };
 
 /**
- * Coexistence bridge for pre-Phase-15/16 GDPR user data export (`data-hygiene` / `data-export`).
+ * Export an actor's audit trail for compliance GDPR data export packages.
  */
 export async function listActorAuditTrailForExport(
   db: RawDb,

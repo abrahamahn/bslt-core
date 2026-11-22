@@ -18,6 +18,7 @@ import {
   Badge,
   Button,
   Card,
+  Checkbox,
   EmptyState,
   Heading,
   Select,
@@ -39,9 +40,11 @@ import enUsMessages from '../i18n/en-US.json';
 import { fromServerConsent, toServerConsent, type ConsentDecision } from './consent/model';
 import { hydrateConsent, readConsent, subscribeConsent, writeConsent } from './consent/store';
 import {
+  useAgeAssuranceStatus,
   useConsent,
   useCurrentLegal,
   useDataExport,
+  useStartAgeAssurance,
   useTosStatus,
   useUpdateConsent,
   useUserAgreements,
@@ -568,6 +571,130 @@ export interface DataControlsSectionProps {
   className?: string;
 }
 
+const AgeAssuranceSection = (): ReactElement => {
+  const t = useModuleMessages(enUsMessages);
+  const { status, isLoading, error, refresh } = useAgeAssuranceStatus();
+  const { startCheck, isSubmitting, error: submitError } = useStartAgeAssurance();
+  const [confirmed, setConfirmed] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const handleConfirm = async (): Promise<void> => {
+    if (!confirmed || status === null) return;
+    setSuccessMessage(null);
+    await startCheck({
+      confirmed: true,
+      method: 'attestation',
+      threshold: status.minimumAge,
+    });
+    setConfirmed(false);
+    setSuccessMessage(t('compliance.ageAssurance.successMessage'));
+    await refresh();
+  };
+
+  if (isLoading) {
+    return (
+      <section className="settings-action-panel" aria-label={t('compliance.ageAssurance.loading')}>
+        <Skeleton width="10rem" height="1.25rem" />
+        <Skeleton width="100%" height="2.5rem" />
+      </section>
+    );
+  }
+
+  if (error !== null || status === null) {
+    return (
+      <section className="settings-action-panel">
+        <Text className="font-medium">{t('compliance.ageAssurance.heading')}</Text>
+        {error !== null ? <Alert tone="danger">{error.message}</Alert> : null}
+      </section>
+    );
+  }
+
+  const isVerified = status.ageVerifiedFor !== null && status.ageVerifiedFor >= status.minimumAge;
+  const badgeTone = !status.serviceAvailable
+    ? 'danger'
+    : isVerified
+      ? 'success'
+      : status.requiresAgeAssurance
+        ? 'warning'
+        : 'info';
+  const badgeLabel = !status.serviceAvailable
+    ? t('compliance.ageAssurance.badgeUnavailable')
+    : isVerified
+      ? t('compliance.ageAssurance.badgeVerified').replace('{age}', String(status.ageVerifiedFor))
+      : status.requiresAgeAssurance
+        ? t('compliance.ageAssurance.badgeRequired')
+        : t('compliance.ageAssurance.badgeOptional');
+
+  const summary = t('compliance.ageAssurance.summary')
+    .replace(
+      '{jurisdiction}',
+      status.jurisdiction ?? t('compliance.ageAssurance.jurisdictionDefault'),
+    )
+    .replace('{minimumAge}', String(status.minimumAge));
+
+  return (
+    <section className="settings-action-panel" data-testid="age-assurance-section">
+      <div className="settings-action-panel__header">
+        <div className="settings-action-panel__copy">
+          <Text className="font-medium">{t('compliance.ageAssurance.heading')}</Text>
+          <Text size="sm" tone="muted">
+            {t('compliance.ageAssurance.description')}
+          </Text>
+          <Text size="xs" tone="muted">
+            {summary}
+          </Text>
+        </div>
+        <Badge tone={badgeTone}>{badgeLabel}</Badge>
+      </div>
+
+      {!status.serviceAvailable ? (
+        <Alert tone="danger">{t('compliance.ageAssurance.unavailableCopy')}</Alert>
+      ) : null}
+
+      {submitError !== null ? <Alert tone="danger">{submitError.message}</Alert> : null}
+      {successMessage !== null ? <Alert tone="success">{successMessage}</Alert> : null}
+
+      {status.serviceAvailable && !isVerified ? (
+        <div className="flex flex-col gap-3">
+          <Checkbox
+            checked={confirmed}
+            onChange={(checked) => {
+              setConfirmed(checked);
+            }}
+            label={t('compliance.ageAssurance.attestLabel').replace(
+              '{minimumAge}',
+              String(status.minimumAge),
+            )}
+          />
+          <div className="settings-action-panel__actions">
+            <Button
+              type="button"
+              size="small"
+              disabled={!confirmed || isSubmitting}
+              onClick={() => {
+                void handleConfirm();
+              }}
+            >
+              {isSubmitting
+                ? t('compliance.ageAssurance.submittingButton')
+                : t('compliance.ageAssurance.submitButton')}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {status.checks.length > 0 ? (
+        <Text size="xs" tone="muted">
+          {t('compliance.ageAssurance.historyCount').replace(
+            '{count}',
+            String(status.checks.length),
+          )}
+        </Text>
+      ) : null}
+    </section>
+  );
+};
+
 export const DataControlsSection = ({
   accountStatus = 'active',
   deletionScheduledAt,
@@ -638,6 +765,10 @@ export const DataControlsSection = ({
 
       <div className="settings-data-controls__group">
         <DataExportSection />
+      </div>
+
+      <div className="settings-data-controls__group">
+        <AgeAssuranceSection />
       </div>
     </div>
   );

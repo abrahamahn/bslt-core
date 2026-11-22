@@ -287,16 +287,16 @@ export function AdminDashboardPage(): ReactElement {
             status: getServiceLabel(health.data?.status),
             tone: healthTone,
           } satisfies SurfaceLink,
+          {
+            id: 'users',
+            label: 'Users',
+            detail: 'User listing, roles, locks, verification, and impersonation workflows.',
+            href: '/admin/users',
+            status: `${formatNumber(userTotal)} total`,
+            tone: users.error !== null ? 'danger' : 'info',
+          } satisfies SurfaceLink,
         ]
       : []),
-    {
-      id: 'users',
-      label: 'Users',
-      detail: 'User listing, roles, locks, verification, and impersonation workflows.',
-      href: '/admin/users',
-      status: `${formatNumber(userTotal)} total`,
-      tone: users.error !== null ? 'danger' : 'info',
-    },
     ...(hasOrgsModule
       ? [
           {

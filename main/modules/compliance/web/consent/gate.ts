@@ -11,7 +11,7 @@ export interface ConsentedScriptOptions {
 
 const appendedSrcs = new Set<string>();
 
-function consentAllows(category: ConsentCategory): boolean {
+export function consentAllows(category: ConsentCategory): boolean {
   if (category === 'ads' && readGlobalPrivacyControl()) return false;
   return readConsent()?.[category] === 'granted';
 }

@@ -159,7 +159,7 @@ describe('createWebApp', () => {
         {
           id: 'tasks',
           label: 'tasks.settings',
-          kind: 'modal',
+          kind: 'section',
           aliases: ['work'],
           order: 10,
         },
@@ -171,7 +171,7 @@ describe('createWebApp', () => {
       createWebApp<TestFlags>({
         modules: [mod],
         frame: {
-          settingsSections: [{ id: 'tasks', label: 'Duplicate', kind: 'modal', order: 20 }],
+          settingsSections: [{ id: 'tasks', label: 'Duplicate', kind: 'section', order: 20 }],
         },
       }),
     ).toThrow(/tasks/u);
@@ -181,7 +181,7 @@ describe('createWebApp', () => {
         modules: [mod],
         frame: {
           settingsSections: [
-            { id: 'other', label: 'Other', kind: 'modal', aliases: ['work'], order: 20 },
+            { id: 'other', label: 'Other', kind: 'section', aliases: ['work'], order: 20 },
           ],
         },
       }),
@@ -427,11 +427,11 @@ describe('createWebApp', () => {
       },
     ];
     const frameSettings: readonly FrameSettingsSectionContribution<TestFlags>[] = [
-      { id: 'profile', label: 'Profile', kind: 'modal', order: 10 },
+      { id: 'profile', label: 'Profile', kind: 'section', order: 10 },
       {
         id: 'data-controls',
         label: 'Data Controls',
-        kind: 'modal',
+        kind: 'section',
         aliases: ['privacy'],
         order: 20,
       },
@@ -542,7 +542,7 @@ describe('createWebApp', () => {
 
     const allSettings: readonly ResolvedSettingsSection[] = webApp.settingsSections;
     expect(allSettings.map((s) => s.id)).toEqual(['profile', 'data-controls', 'billing']);
-    expect(webApp.modalSettingsSectionIds).toEqual(['profile', 'data-controls']);
+    expect(webApp.panelSettingsSectionIds).toEqual(['profile', 'data-controls']);
     expect(webApp.getSettingsNavItems(starterFlags).map((s) => s.id)).toEqual([
       'profile',
       'data-controls',
@@ -1160,7 +1160,7 @@ describe('createWebApp', () => {
             order: 100,
           },
         ],
-        settingsSections: [{ id: 'preferences', label: 'Theme', kind: 'modal', order: 50 }],
+        settingsSections: [{ id: 'preferences', label: 'Theme', kind: 'section', order: 50 }],
         sitePages: [{ path: '/', title: 'Home', section: 'product', live: true, order: 10 }],
         dashboardQuickActions: [{ label: 'Settings', to: '/settings', order: 40 }],
       },
@@ -1261,5 +1261,82 @@ describe('createWebApp', () => {
       '/settings/security',
     );
     expect(app.siteSections.map((s) => s.id)).toEqual(['product', 'legal', 'support']);
+  });
+
+  it('wraps module /settings/* app routes in settingsLayout when provided, and leaves non-settings or pending routes unwrapped', () => {
+    const StubSettingsLayout = (): null => null;
+    const StubPending = (): null => null;
+    const StubBillingSettings = (): null => null;
+    const StubTasks = (): null => null;
+
+    const mod = implementWeb(tasksManifest, {
+      routes: [
+        {
+          path: '/settings/billing',
+          shell: 'app',
+          auth: 'user',
+          requires: ['flag:flags.billing'],
+          page: lazyModulePage(async () => ({ StubBillingSettings }), 'StubBillingSettings'),
+          title: 'tasks.billing',
+        },
+        {
+          path: '/tasks',
+          shell: 'app',
+          auth: 'user',
+          page: lazyModulePage(async () => ({ StubTasks }), 'StubTasks'),
+          title: 'tasks.title',
+        },
+      ],
+      messages: {
+        'tasks.billing': 'Billing',
+        'tasks.title': 'Tasks',
+      },
+    });
+
+    const app = createWebApp({ modules: [mod] });
+    const enabledCaps = {
+      ...EMPTY_CAPABILITY_CONTEXT,
+      flags: { 'flags.billing': true },
+    };
+
+    const withLayout = app.getRoutes(
+      {},
+      {
+        shells: { ...SHELLS, settingsLayout: StubSettingsLayout },
+        capabilities: enabledCaps,
+      },
+    );
+    const appChildren = withLayout.find((r) => r.element === StubAppShell)?.children ?? [];
+    const billingRoute = appChildren.find((r) => r.path === 'settings/billing');
+    const tasksRoute = appChildren.find((r) => r.path === 'tasks');
+
+    expect(billingRoute?.element).toBe(StubSettingsLayout);
+    expect(billingRoute?.protected).toBe(true);
+    expect(billingRoute?.children).toHaveLength(1);
+    expect(billingRoute?.children?.[0]?.index).toBe(true);
+    expect(tasksRoute?.element).not.toBe(StubSettingsLayout);
+    expect(tasksRoute?.children).toBeUndefined();
+
+    // Pending capability routes stay unwrapped as pending
+    const pendingRoutes = app.getRoutes(
+      {},
+      {
+        shells: { ...SHELLS, settingsLayout: StubSettingsLayout },
+        pending: StubPending,
+      },
+    );
+    const pendingAppChildren =
+      pendingRoutes.find((r) => r.element === StubAppShell)?.children ?? [];
+    const pendingBilling = pendingAppChildren.find((r) => r.path === 'settings/billing');
+    expect(pendingBilling?.element).toBe(StubPending);
+    expect(pendingBilling?.children).toBeUndefined();
+
+    // Without settingsLayout, /settings/billing renders directly without wrapper
+    const withoutLayout = app.getRoutes({}, { shells: SHELLS, capabilities: enabledCaps });
+    const unwrappedBilling = withoutLayout
+      .find((r) => r.element === StubAppShell)
+      ?.children?.find((r) => r.path === 'settings/billing');
+    expect(unwrappedBilling?.element).not.toBe(StubSettingsLayout);
+    expect(unwrappedBilling?.children).toBeUndefined();
   });
 });

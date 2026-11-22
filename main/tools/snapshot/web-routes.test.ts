@@ -305,11 +305,13 @@ describe('bslt snapshot web-routes', () => {
         'feature-flags',
         'webhooks',
         'webhook-endpoints',
+        'entitlements',
         'legal',
+        'compliance',
         'notifications',
       ]);
     } else {
-      expect(adminNavIds).toEqual(['dashboard', 'security', 'audit', 'legal']);
+      expect(adminNavIds).toEqual(['dashboard', 'security', 'audit', 'legal', 'compliance']);
     }
     expect(everything.admin.find((entry) => entry.id === 'route-manifest')).toMatchObject({
       href: '/admin/routes',

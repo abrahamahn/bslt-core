@@ -1,8 +1,8 @@
 // main/apps/web/src/app/frame.ts
 /**
  * App-frame metadata (`AppFrameConfig`) for application-level surfaces not
- * owned by a domain `WebModule` (landing home, dashboard hub, preferences
- * modal tab, theme toggle action, and the composite admin dashboard).
+ * owned by a domain `WebModule` (landing home, dashboard hub, theme preferences
+ * settings section, theme toggle action, and the composite admin dashboard).
  *
  * Kept free of React/UI imports so `webApp.ts` remains cycle-free.
  */
@@ -120,7 +120,7 @@ export const appFrame: AppFrameConfig<AppRouteFlags, DocumentType> = Object.free
     {
       id: 'preferences',
       label: 'Theme',
-      kind: 'modal',
+      kind: 'section',
       order: 50,
     },
   ],

@@ -80,8 +80,8 @@ test.describe('Terms of Service — E2E', () => {
 
     // Look for any ToS-related dialog/modal that might be present
     // This test validates the UI structure exists for the flow
-    // By name: settings is itself a modal dialog, so "any dialog" is not the
-    // ToS modal.
+    // Match by dialog title so any unrelated confirmation dialog is not mistaken
+    // for the ToS modal.
     const tosDialog = page.getByRole('dialog', { name: 'Terms of Service Updated' });
     const tosButton = tosDialog.getByRole('button', { name: /accept|agree|i agree/i });
 

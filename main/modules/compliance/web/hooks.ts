@@ -15,12 +15,20 @@ import { complianceModule } from '../module';
 
 import type {
   AcceptTosResponse,
+  AgeAssuranceCheckItem,
+  AgeAssuranceStatusResponse,
   DataExportFormat,
   DataExportRequestItem,
+  JurisdictionRuleItem,
   LegalDocumentItem,
+  LegalHoldItem,
+  ListLegalHoldsQuery,
+  PlaceLegalHoldBody,
   PublishLegalDocumentBody,
   PublishLegalDocumentResponse,
+  StartAgeAssuranceBody,
   TosStatusResponse,
+  UpsertJurisdictionRuleBody,
   UserAgreementItem,
 } from '../contract';
 
@@ -362,5 +370,136 @@ export function useDataExport(): UseDataExportResult {
     downloadExport,
     isDownloading,
     refetch: fetchExportStatus,
+  };
+}
+
+export function useAgeAssuranceStatus(): {
+  readonly status: AgeAssuranceStatusResponse | null;
+  readonly isLoading: boolean;
+  readonly error: Error | null;
+  readonly refresh: () => Promise<void>;
+} {
+  const transport = useTransport();
+  const queryCache = useQueryCache();
+  const client = useMemo(() => createEndpointClient(complianceModule, transport), [transport]);
+  const queryKey = useMemo(() => endpointQueryKey(client.getAgeAssuranceStatus), [client]);
+  const query = useEndpoint(client.getAgeAssuranceStatus, undefined, { retry: 0 });
+
+  return {
+    status: query.data ?? null,
+    isLoading: query.isLoading,
+    error: query.error,
+    refresh: () => {
+      queryCache.invalidateQuery(queryKey);
+      return Promise.resolve();
+    },
+  };
+}
+
+export function useStartAgeAssurance(): {
+  readonly startCheck: (body: StartAgeAssuranceBody) => Promise<{ check: AgeAssuranceCheckItem }>;
+  readonly isSubmitting: boolean;
+  readonly error: Error | null;
+} {
+  const transport = useTransport();
+  const client = useMemo(() => createEndpointClient(complianceModule, transport), [transport]);
+  const mutation = useEndpointMutation(client.startAgeAssurance);
+
+  return {
+    startCheck: (body) => mutation.mutateAsync({ body }),
+    isSubmitting: mutation.isLoading,
+    error: mutation.error,
+  };
+}
+
+export function useLegalHolds(query: ListLegalHoldsQuery = {}): {
+  readonly holds: readonly LegalHoldItem[];
+  readonly isLoading: boolean;
+  readonly error: Error | null;
+  readonly refresh: () => Promise<void>;
+} {
+  const transport = useTransport();
+  const queryCache = useQueryCache();
+  const client = useMemo(() => createEndpointClient(complianceModule, transport), [transport]);
+  const args = useMemo(() => ({ query }), [query]);
+  const queryKey = useMemo(() => endpointQueryKey(client.listLegalHolds, args), [args, client]);
+  const result = useEndpoint(client.listLegalHolds, args, { retry: 0 });
+
+  return {
+    holds: result.data?.holds ?? [],
+    isLoading: result.isLoading,
+    error: result.error,
+    refresh: () => {
+      queryCache.invalidateQuery(queryKey);
+      return Promise.resolve();
+    },
+  };
+}
+
+export function usePlaceLegalHold(): {
+  readonly placeHold: (body: PlaceLegalHoldBody) => Promise<{ hold: LegalHoldItem }>;
+  readonly isPlacing: boolean;
+  readonly error: Error | null;
+} {
+  const transport = useTransport();
+  const client = useMemo(() => createEndpointClient(complianceModule, transport), [transport]);
+  const mutation = useEndpointMutation(client.placeLegalHold);
+
+  return {
+    placeHold: (body) => mutation.mutateAsync({ body }),
+    isPlacing: mutation.isLoading,
+    error: mutation.error,
+  };
+}
+
+export function useReleaseLegalHold(): {
+  readonly releaseHold: (id: string) => Promise<{ hold: LegalHoldItem }>;
+  readonly isReleasing: boolean;
+  readonly error: Error | null;
+} {
+  const transport = useTransport();
+  const client = useMemo(() => createEndpointClient(complianceModule, transport), [transport]);
+  const mutation = useEndpointMutation(client.releaseLegalHold);
+
+  return {
+    releaseHold: (id) => mutation.mutateAsync({ params: { id }, body: {} }),
+    isReleasing: mutation.isLoading,
+    error: mutation.error,
+  };
+}
+
+export function useUpsertJurisdictionRule(): {
+  readonly upsertRule: (
+    body: UpsertJurisdictionRuleBody,
+  ) => Promise<{ rule: JurisdictionRuleItem }>;
+  readonly isSaving: boolean;
+  readonly error: Error | null;
+} {
+  const transport = useTransport();
+  const client = useMemo(() => createEndpointClient(complianceModule, transport), [transport]);
+  const mutation = useEndpointMutation(client.upsertJurisdictionRule);
+
+  return {
+    upsertRule: (body) => mutation.mutateAsync({ body }),
+    isSaving: mutation.isLoading,
+    error: mutation.error,
+  };
+}
+
+export function useEraseUserData(): {
+  readonly eraseUser: (
+    userId: string,
+  ) => Promise<{ userId: string; erasedModules: readonly string[] }>;
+  readonly isErasing: boolean;
+  readonly error: Error | null;
+} {
+  const transport = useTransport();
+  const client = useMemo(() => createEndpointClient(complianceModule, transport), [transport]);
+  const mutation = useEndpointMutation(client.eraseUserData);
+
+  return {
+    eraseUser: (userId) => mutation.mutateAsync({ params: { userId }, body: {} }),
+    isErasing: mutation.isLoading,
+    error: mutation.error,
   };
 }

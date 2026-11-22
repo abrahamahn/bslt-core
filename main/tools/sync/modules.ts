@@ -764,6 +764,8 @@ function emitWebGeneratedModules(workspace: ParsedModulesWorkspace): string {
 
   const installedSet = new Set(workspace.installedIds);
   const hasAdmin = installedSet.has('admin') && workspace.modules.get('admin')?.web === true;
+  const hasAnalytics =
+    installedSet.has('analytics') && workspace.modules.get('analytics')?.web === true;
   const hasBilling = installedSet.has('billing') && workspace.modules.get('billing')?.web === true;
   const hasFiles = installedSet.has('files') && workspace.modules.get('files')?.web === true;
   const hasNotifications =
@@ -800,6 +802,8 @@ function emitWebGeneratedModules(workspace: ParsedModulesWorkspace): string {
           'useJobsList as useOptionalJobsList',
           'useQueueStats as useOptionalQueueStats',
         );
+      } else if (id === 'analytics' && hasAnalytics) {
+        extraSpecifiers.push('AnalyticsTracker as OptionalAnalyticsTracker');
       } else if (id === 'billing' && hasBilling) {
         extraSpecifiers.push('useAdminPlans as useOptionalAdminPlans');
       } else if (id === 'files' && hasFiles) {
@@ -990,6 +994,17 @@ function emitWebGeneratedModules(workspace: ParsedModulesWorkspace): string {
       '    error: null,',
       '    refetch: () => Promise.resolve(),',
       '  };',
+      '}',
+      '',
+    );
+  }
+
+  if (hasAnalytics) {
+    optionalLines.push('export { OptionalAnalyticsTracker };', '');
+  } else {
+    optionalLines.push(
+      'export function OptionalAnalyticsTracker(_props: { readonly canTrack: () => boolean }): null {',
+      '  return null;',
       '}',
       '',
     );

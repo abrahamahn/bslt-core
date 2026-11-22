@@ -642,6 +642,31 @@ export function useAdminUsers(initialFilters: AdminUserListFilters = {}): UseAdm
     async (currentFilters: AdminUserListFilters) => {
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
       try {
+        const trimmedSearch = currentFilters.search?.trim() ?? '';
+        const useDedicatedSearch =
+          trimmedSearch.length > 0 &&
+          currentFilters.role === undefined &&
+          currentFilters.status === undefined;
+        if (useDedicatedSearch) {
+          const limit = currentFilters.limit ?? ADMIN_DEFAULT_LIMIT;
+          const page = currentFilters.page ?? 1;
+          const offset = Math.max(0, (page - 1) * limit);
+          const searched = await client.adminSearchUsers({
+            query: { q: trimmedSearch, limit, offset },
+          });
+          const totalPages = Math.max(1, Math.ceil(searched.total / limit));
+          setState({
+            users: searched.users,
+            total: searched.total,
+            page,
+            totalPages,
+            hasNext: offset + searched.users.length < searched.total,
+            hasPrev: page > 1,
+            isLoading: false,
+            error: null,
+          });
+          return;
+        }
         const result = await client.adminListUsers({ query: currentFilters });
         setState({
           users: result.data,

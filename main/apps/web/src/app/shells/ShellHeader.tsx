@@ -27,7 +27,6 @@ import {
 import { useResolvedPrimaryNav } from './PrimaryNavMenu';
 import './Shells.css';
 
-import { openAccountModal } from '#app/app/account';
 import { getAccessToken } from '#app/app/authToken';
 import { webApp } from '#app/app/webApp';
 import { clientConfig } from '#app/config';
@@ -251,7 +250,7 @@ export const ShellHeader = ({
                   className="shell-header__account-item"
                   onClick={() => {
                     close();
-                    openAccountModal('profile');
+                    navigate('/profile');
                   }}
                 >
                   Profile
@@ -260,7 +259,7 @@ export const ShellHeader = ({
                   className="shell-header__account-item"
                   onClick={() => {
                     close();
-                    openAccountModal('security');
+                    navigate('/settings/security');
                   }}
                 >
                   Settings

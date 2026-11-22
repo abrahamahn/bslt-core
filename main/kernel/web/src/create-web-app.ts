@@ -30,6 +30,7 @@ export interface WebShellConfig {
   readonly appShell: ElementType;
   readonly consoleShell: ElementType;
   readonly adminLayout?: ElementType | undefined;
+  readonly settingsLayout?: ElementType | undefined;
   readonly lazyModuleRoutePage: (descriptor: LazyPageDescriptor) => ElementType;
 }
 
@@ -130,7 +131,7 @@ export interface ResolvedAdminSurface {
 export interface FrameSettingsSectionContribution<Flags = Record<string, never>> {
   readonly id: string;
   readonly label: string;
-  readonly kind: 'modal' | 'route';
+  readonly kind: 'section' | 'route';
   readonly to?: `/${string}`;
   readonly aliases?: readonly string[];
   readonly order: number;
@@ -140,7 +141,7 @@ export interface FrameSettingsSectionContribution<Flags = Record<string, never>>
 export interface ResolvedSettingsSection {
   readonly id: string;
   readonly label: string;
-  readonly kind: 'modal' | 'route';
+  readonly kind: 'section' | 'route';
   readonly to?: `/${string}`;
   readonly order: number;
 }
@@ -242,7 +243,7 @@ export interface WebApp<Flags = Record<string, never>, DocType extends string = 
     capabilities?: CapabilityContext,
   ): readonly ResolvedAdminSurface[];
   readonly settingsSections: readonly ResolvedSettingsSection[];
-  readonly modalSettingsSectionIds: readonly string[];
+  readonly panelSettingsSectionIds: readonly string[];
   getSettingsNavItems(
     flags: Flags,
     capabilities?: CapabilityContext,
@@ -591,9 +592,9 @@ export function createWebApp<
   const resolvedSettingsSections: readonly ResolvedSettingsSection[] = Object.freeze(
     allSettingsInternal.map((entry) => entry.resolved),
   );
-  const modalSettingsSectionIds: readonly string[] = Object.freeze(
+  const panelSettingsSectionIds: readonly string[] = Object.freeze(
     allSettingsInternal
-      .filter((entry) => entry.resolved.kind === 'modal')
+      .filter((entry) => entry.resolved.kind === 'section')
       .map((entry) => entry.resolved.id),
   );
 
@@ -765,17 +766,36 @@ export function createWebApp<
           };
         });
 
-      const buildModuleShellChildren = (shellRoutes: readonly WebRoute[]): ComposedAppRoute[] =>
+      const buildModuleShellChildren = (
+        shellName: 'public' | 'auth' | 'app',
+        shellRoutes: readonly WebRoute[],
+      ): ComposedAppRoute[] =>
         shellRoutes.flatMap((route): ComposedAppRoute[] => {
           const relativePath = route.path.replace(/^\/+/u, '');
           if (isModuleRoutePending(route) && pending !== undefined) {
             return [{ path: relativePath, element: pending }];
           }
           if (isModuleRouteAllowed(route)) {
+            const pageElement = shells.lazyModuleRoutePage(route.page);
+            if (
+              shellName === 'app' &&
+              shells.settingsLayout !== undefined &&
+              route.path.startsWith('/settings/')
+            ) {
+              return [
+                {
+                  path: relativePath,
+                  element: shells.settingsLayout,
+                  ...(route.auth !== 'public' ? { protected: true } : {}),
+                  ...(route.publicOnly === true ? { publicOnly: true } : {}),
+                  children: [{ index: true, element: pageElement }],
+                },
+              ];
+            }
             return [
               {
                 path: relativePath,
-                element: shells.lazyModuleRoutePage(route.page),
+                element: pageElement,
                 ...(route.auth !== 'public' ? { protected: true } : {}),
                 ...(route.publicOnly === true ? { publicOnly: true } : {}),
               },
@@ -819,7 +839,7 @@ export function createWebApp<
           .map((route) => toComposedChild(route));
         return [
           ...before,
-          ...buildModuleShellChildren(moduleRoutes),
+          ...buildModuleShellChildren(shellName, moduleRoutes),
           ...afterNonWildcard,
           ...afterWildcard,
         ];
@@ -1178,7 +1198,7 @@ export function createWebApp<
 
     settingsSections: resolvedSettingsSections,
 
-    modalSettingsSectionIds,
+    panelSettingsSectionIds,
 
     getSettingsNavItems(
       flags: Flags,

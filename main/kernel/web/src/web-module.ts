@@ -89,7 +89,7 @@ export interface WebNavItem {
 export interface ModuleSettingsSection {
   readonly id: string;
   readonly label: string;
-  readonly kind: 'modal' | 'route';
+  readonly kind: 'section' | 'route';
   readonly to?: `/${string}`;
   readonly aliases?: readonly string[];
   readonly requires?: readonly Requirement[];

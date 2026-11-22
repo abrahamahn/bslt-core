@@ -16,13 +16,14 @@ describe('complianceWeb', () => {
       '/acceptable-use',
       '/disclaimer',
       '/admin/legal',
+      '/admin/compliance',
     ]);
 
     const unlisted = complianceWeb.routes.filter((r) => r.unlisted === true).map((r) => r.path);
     expect(unlisted).toEqual(['/terms-of-service', '/privacy-policy', '/cookie-policy']);
 
-    expect(complianceWeb.admin).toHaveLength(1);
-    expect(complianceWeb.admin?.[0]?.id).toBe('legal');
+    expect(complianceWeb.admin).toHaveLength(2);
+    expect(complianceWeb.admin?.map((a) => a.id)).toEqual(['legal', 'compliance']);
 
     const termsSitePage = complianceWeb.sitePages?.find((p) => p.path === '/terms');
     expect(termsSitePage?.document).toBe('terms_of_service');
@@ -32,13 +33,13 @@ describe('complianceWeb', () => {
     expect(complianceWeb.settings).toEqual([
       expect.objectContaining({
         id: 'data-controls',
-        kind: 'modal',
+        kind: 'section',
         aliases: ['data', 'privacy'],
         order: 70,
       }),
       expect.objectContaining({
         id: 'legal',
-        kind: 'modal',
+        kind: 'section',
         order: 100,
       }),
     ]);

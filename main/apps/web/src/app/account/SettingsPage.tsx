@@ -1,4 +1,4 @@
-// main/apps/web/src/app/account/AccountModal.tsx
+// main/apps/web/src/app/account/SettingsPage.tsx
 import { DataControlsSection, LegalDocumentsSection } from '@bslt/compliance/web';
 import { getAccountStatus, type User } from '@bslt/identity/contract';
 import {
@@ -23,7 +23,7 @@ import {
   UsernameForm,
 } from '@bslt/identity/web';
 import { useLocation, useNavigate } from '@bslt/react/router';
-import { Alert, Button, Dialog, Heading, Skeleton, Text } from '@bslt/ui';
+import { Alert, Heading, Skeleton, Text } from '@bslt/ui';
 import { useCapabilities } from '@bslt/web-platform';
 import {
   useCallback,
@@ -35,6 +35,7 @@ import {
 } from 'react';
 
 import {
+  hasBillingModule,
   hasFilesModule,
   OptionalAvatarUpload,
   OptionalNotificationPreferencesForm,
@@ -42,17 +43,9 @@ import {
 import { getAccessToken } from '../authToken';
 import { useClientEnvironment } from '../ClientEnvironment';
 
-import {
-  closeAccountModal,
-  isAccountModalSection,
-  setAccountModalSection,
-  useAccountModal,
-  type AccountModalSection,
-} from './accountModalStore';
 import { PreferencesSection } from './PreferencesSection';
-import { getSettingsNavItems, type SettingsNavItem } from './settingsTabs';
-
-import './AccountModal.css';
+import { SettingsLayout } from './SettingsLayout';
+import { getActiveSettingsTab, getSettingsNavItems } from './settingsTabs';
 
 type SettingsSectionProps = {
   action?: ReactNode;
@@ -289,44 +282,11 @@ const LegalTab = (): ReactElement => {
   );
 };
 
-export const AccountModal = (): ReactElement | null => {
-  const { open, section } = useAccountModal();
-  if (!open) return null;
-  return <AccountModalBody section={section} />;
-};
-
-const AccountModalBody = ({ section }: { section: AccountModalSection }): ReactElement => {
+const SettingsPanelContent = ({ section }: { readonly section: string }): ReactElement => {
   const { auth, config, queryCache } = useClientEnvironment();
   const { user } = useAuth();
-  const { pathname } = useLocation();
-  const navigate = useNavigate();
-  const { hasAuthStrategy, isFlagEnabled } = useCapabilities();
+  const { hasAuthStrategy } = useCapabilities();
   const advancedAuthEnabled = hasAuthStrategy('magic');
-  const billingEnabled = isFlagEnabled('flags.billing');
-
-  const onAccountSurface = pathname === '/profile' || pathname.startsWith('/settings');
-
-  const handleClose = useCallback((): void => {
-    closeAccountModal();
-    if (onAccountSurface) navigate('/dashboard');
-  }, [navigate, onAccountSurface]);
-
-  const handleSelect = useCallback(
-    (item: SettingsNavItem): void => {
-      if (item.kind === 'route' && item.to !== undefined) {
-        if (item.id === 'billing' && !billingEnabled) return;
-        closeAccountModal();
-        navigate(item.to);
-        return;
-      }
-      if (!isAccountModalSection(item.id)) return;
-      setAccountModalSection(item.id);
-      if (pathname.startsWith('/settings') || pathname === '/profile') {
-        navigate(`/settings?tab=${encodeURIComponent(item.id)}`, { replace: true });
-      }
-    },
-    [billingEnabled, navigate, pathname],
-  );
 
   const refreshProfileFromServer = useCallback((): void => {
     queryCache.invalidateQuery(['user', 'me']);
@@ -392,59 +352,52 @@ const AccountModalBody = ({ section }: { section: AccountModalSection }): ReactE
       case 'legal':
         return <LegalTab />;
       default:
-        return null;
+        return <ProfileTab user={user} onProfileSaved={refreshProfileFromServer} />;
     }
   }, [advancedAuthEnabled, config.apiUrl, refreshProfileFromServer, section, user]);
 
-  const navItems = useMemo(() => getSettingsNavItems({ billingEnabled }), [billingEnabled]);
-  const activeLabel = navItems.find((item) => item.id === section)?.label ?? 'Settings';
-
-  return (
-    <Dialog.Root open onClose={handleClose} size="xl" heightMode="tall">
-      <div className="account-modal">
-        <aside className="account-modal__sidebar" aria-label="Settings control center">
-          <div className="account-modal__sidebar-header">
-            <Heading as="h2" size="md">
-              Settings
-            </Heading>
-            <Text size="xs" tone="muted">
-              Control Center
-            </Text>
-          </div>
-          <nav className="account-modal__nav" aria-label="Settings sections">
-            {navItems.map((item) => {
-              const isActive = item.id === section;
-              return (
-                <Button
-                  key={item.id}
-                  type="button"
-                  variant={isActive ? 'secondary' : 'text'}
-                  className="account-modal__nav-button"
-                  aria-current={isActive ? 'page' : undefined}
-                  data-active={isActive ? 'true' : 'false'}
-                  onClick={() => {
-                    handleSelect(item);
-                  }}
-                >
-                  {item.label}
-                </Button>
-              );
-            })}
-          </nav>
-        </aside>
-        <div className="account-modal__main settings-page">
-          <div
-            id={`settings-panel-${section}`}
-            className="settings-page__content-panel"
-            role="tabpanel"
-            tabIndex={0}
-            data-active-tab={section}
-            aria-label={`${activeLabel} settings`}
-          >
-            {content}
-          </div>
-        </div>
-      </div>
-    </Dialog.Root>
-  );
+  return <SettingsLayout activeSection={section}>{content}</SettingsLayout>;
 };
+
+export const SettingsPage = (): ReactElement => {
+  const { hash, pathname, search } = useLocation();
+  const navigate = useNavigate();
+  const { isFlagEnabled, status } = useCapabilities();
+  const billingEnabled = isFlagEnabled('flags.billing');
+
+  const section = getActiveSettingsTab({ hash, pathname, search });
+  const matched = useMemo(
+    () => getSettingsNavItems({ billingEnabled }).find((item) => item.id === section),
+    [billingEnabled, section],
+  );
+  const isRouteRedirect =
+    section === 'billing' || (matched?.kind === 'route' && matched.to !== undefined);
+
+  useEffect(() => {
+    if (section === 'billing') {
+      if (status === 'loading') return;
+      navigate(hasBillingModule && billingEnabled ? '/settings/billing' : '/settings', {
+        replace: true,
+      });
+      return;
+    }
+    if (matched?.kind === 'route' && matched.to !== undefined) {
+      navigate(matched.to, { replace: true });
+    }
+  }, [billingEnabled, matched, navigate, section, status]);
+
+  if (isRouteRedirect) {
+    return (
+      <SettingsLayout activeSection={section}>
+        <div className="settings-stack" aria-label="Loading settings">
+          <Skeleton height="1.5rem" width="8rem" />
+          <Skeleton height="12rem" className="w-full rounded-md" />
+        </div>
+      </SettingsLayout>
+    );
+  }
+
+  return <SettingsPanelContent section={section} />;
+};
+
+export const ProfilePage = (): ReactElement => <SettingsPanelContent section="profile" />;

@@ -153,7 +153,7 @@ describe('web-module', () => {
     expect(() =>
       implementWeb(tasksManifest, {
         routes: [],
-        settings: [{ id: '', label: 'tasks.settings', kind: 'modal', order: 10 }],
+        settings: [{ id: '', label: 'tasks.settings', kind: 'section', order: 10 }],
         messages: { 'tasks.settings': 'Tasks' },
       }),
     ).toThrow(/settings section id/u);
@@ -256,7 +256,7 @@ describe('web-module', () => {
     const settingsSection: ModuleSettingsSection = {
       id: 'tasks',
       label: 'tasks.nav',
-      kind: 'modal',
+      kind: 'section',
       aliases: ['todo'],
       order: 50,
     };

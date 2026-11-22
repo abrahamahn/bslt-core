@@ -1,6 +1,7 @@
 // main/apps/web/src/app/shells/ShellHeader.test.tsx
 import { openAuthModal } from '@bslt/identity/web';
 import { toastStore } from '@bslt/react';
+import { useLocation } from '@bslt/react/router';
 import { EMPTY_CAPABILITY_CONTEXT } from '@bslt/web-platform';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
@@ -13,6 +14,8 @@ import {
 } from '../../__tests__/utils';
 
 import { ShellHeader } from './ShellHeader';
+
+import type { ReactElement } from 'react';
 
 vi.mock('@bslt/identity/web', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@bslt/identity/web')>();
@@ -67,6 +70,31 @@ describe('ShellHeader', () => {
     const searchForm = screen.getByRole('search', { name: 'Site search' });
     fireEvent.submit(searchForm);
     expect(screen.getByRole('searchbox', { name: 'Search' })).toHaveValue('');
+  });
+
+  it('navigates directly to /profile and /settings/security from the account menu without modals', () => {
+    const LocationEcho = (): ReactElement => {
+      const { pathname } = useLocation();
+      return <output data-testid="current-path">{pathname}</output>;
+    };
+    const environment = createMockEnvironment({ user: mockUser, isAuthenticated: true });
+    renderWithProviders(
+      <>
+        <ShellHeader variant="app" />
+        <LocationEcho />
+      </>,
+      { environment, route: '/dashboard' },
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Account menu' }));
+    fireEvent.click(screen.getByText('Profile'));
+    expect(screen.getByTestId('current-path')).toHaveTextContent('/profile');
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Account menu' }));
+    fireEvent.click(screen.getByText('Settings'));
+    expect(screen.getByTestId('current-path')).toHaveTextContent('/settings/security');
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('surfaces a failure toast when logout rejects', async () => {

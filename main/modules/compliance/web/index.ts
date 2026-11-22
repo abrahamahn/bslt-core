@@ -17,6 +17,7 @@ export {
   type DoNotSellControlProps,
 } from './ComplianceSettings';
 export {
+  consentAllows,
   loadConsentedScript,
   resetConsentedScripts,
   type ConsentedScriptOptions,
@@ -130,19 +131,26 @@ export const complianceWeb = implementWeb(complianceModule, {
       page: lazyModulePage(() => import('./LegalDocumentsPage'), 'LegalDocumentsPage'),
       title: 'compliance.adminTitle',
     },
+    {
+      path: '/admin/compliance',
+      shell: 'console',
+      auth: 'admin',
+      page: lazyModulePage(() => import('./ComplianceAdminPage'), 'ComplianceAdminPage'),
+      title: 'compliance.adminComplianceTitle',
+    },
   ],
   settings: [
     {
       id: 'data-controls',
       label: 'compliance.settings.dataControlsNav',
-      kind: 'modal',
+      kind: 'section',
       aliases: ['data', 'privacy'],
       order: 70,
     },
     {
       id: 'legal',
       label: 'compliance.settings.legalNav',
-      kind: 'modal',
+      kind: 'section',
       order: 100,
     },
   ],
@@ -153,6 +161,13 @@ export const complianceWeb = implementWeb(complianceModule, {
       href: '/admin/legal',
       routePath: 'legal',
       order: 130,
+    },
+    {
+      id: 'compliance',
+      label: 'compliance.adminComplianceNav',
+      href: '/admin/compliance',
+      routePath: 'compliance',
+      order: 132,
     },
   ],
   sitePages: [

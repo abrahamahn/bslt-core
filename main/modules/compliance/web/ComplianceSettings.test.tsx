@@ -74,6 +74,27 @@ const mocks = vi.hoisted(() => ({
     isLoading: false,
     error: null as Error | null,
   },
+  ageAssurance: {
+    status: {
+      ageVerifiedFor: null as number | null,
+      minimumAge: 16,
+      jurisdiction: 'DE' as string | null,
+      requiresAgeAssurance: true,
+      serviceAvailable: true,
+      checks: [] as Array<{ id: string }>,
+    } as {
+      ageVerifiedFor: number | null;
+      minimumAge: number;
+      jurisdiction: string | null;
+      requiresAgeAssurance: boolean;
+      serviceAvailable: boolean;
+      checks: Array<{ id: string }>;
+    } | null,
+    isLoading: false,
+    error: null as Error | null,
+    refresh: vi.fn().mockResolvedValue(undefined),
+  },
+  startAgeAssurance: vi.fn(),
 }));
 
 vi.mock('@bslt/react/hooks', async (importOriginal) => {
@@ -97,6 +118,12 @@ vi.mock('@bslt/identity/web', () => ({
 }));
 
 vi.mock('./hooks', () => ({
+  useAgeAssuranceStatus: () => mocks.ageAssurance,
+  useStartAgeAssurance: () => ({
+    startCheck: mocks.startAgeAssurance,
+    isSubmitting: false,
+    error: null,
+  }),
   useConsent: () => mocks.consent,
   useUpdateConsent: () => ({
     updateConsent: mocks.updateConsent,
@@ -192,5 +219,26 @@ describe('ComplianceSettings', () => {
     );
     expect(screen.getByTestId('account-status-badge').textContent).toBe('Pending Deletion');
     expect(screen.getByTestId('deletion-countdown')).toBeTruthy();
+  });
+
+  it('gates age assurance confirmation until attested and submits check when confirmed', async () => {
+    mocks.startAgeAssurance.mockResolvedValue({ check: { id: 'chk-1' } });
+    render(<DataControlsSection />);
+
+    const confirmBtn = screen.getByRole('button', { name: 'Confirm Age' }) as HTMLButtonElement;
+    expect(confirmBtn.disabled).toBe(true);
+    expect(mocks.startAgeAssurance).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('checkbox'));
+    expect(confirmBtn.disabled).toBe(false);
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(mocks.startAgeAssurance).toHaveBeenCalledWith({
+        confirmed: true,
+        method: 'attestation',
+        threshold: 16,
+      });
+    });
   });
 });

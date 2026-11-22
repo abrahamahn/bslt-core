@@ -2,7 +2,7 @@
 
 # Web Routes & Navigation Reference
 
-Every client/SSR route (40), navigation link, and admin console surface attributed to its owning module or `kernel`.
+Every client/SSR route (41), navigation link, and admin console surface attributed to its owning module or `kernel`.
 
 ## Web Routes
 
@@ -14,6 +14,7 @@ Every client/SSR route (40), navigation link, and admin console surface attribut
 | `/activities`                | `audit`      | `ActivityFeedPage`        | `protected`  | `AppShell`                    |
 | `/admin`                     | `kernel`     | `AdminDashboardPage`      | `none`       | `ConsoleShell`, `AdminLayout` |
 | `/admin/audit`               | `audit`      | `AuditEventsPage`         | `none`       | `ConsoleShell`, `AdminLayout` |
+| `/admin/compliance`          | `compliance` | `ComplianceAdminPage`     | `none`       | `ConsoleShell`, `AdminLayout` |
 | `/admin/dashboard`           | `kernel`     | `AdminDashboardPage`      | `none`       | `ConsoleShell`, `AdminLayout` |
 | `/admin/legal`               | `compliance` | `LegalDocumentsPage`      | `none`       | `ConsoleShell`, `AdminLayout` |
 | `/admin/routes`              | `devtools`   | `RouteManifestPage`       | `none`       | `ConsoleShell`, `AdminLayout` |
@@ -37,12 +38,12 @@ Every client/SSR route (40), navigation link, and admin console surface attribut
 | `/login`                     | `identity`   | `LoginModalRoute`         | `none`       | `AuthShell`                   |
 | `/privacy`                   | `compliance` | `PrivacyPolicyPage`       | `none`       | `PublicShell`                 |
 | `/privacy-policy`            | `compliance` | `PrivacyPolicyPage`       | `none`       | `PublicShell`                 |
-| `/profile`                   | `identity`   | `ProfileModalRoute`       | `protected`  | `AppShell`                    |
+| `/profile`                   | `identity`   | `ProfilePage`             | `protected`  | `AppShell`                    |
 | `/reactivate`                | `identity`   | `ReactivatePromptPage`    | `protected`  | `AuthShell`                   |
 | `/register`                  | `identity`   | `RegisterModalRoute`      | `none`       | `AuthShell`                   |
-| `/settings`                  | `kernel`     | `SettingsModalRoute`      | `protected`  | `AppShell`                    |
-| `/settings/:tab`             | `kernel`     | `SettingsModalRoute`      | `protected`  | `AppShell`                    |
-| `/settings/accounts`         | `identity`   | `ConnectedAccountsPage`   | `protected`  | `AppShell`                    |
+| `/settings`                  | `kernel`     | `SettingsPage`            | `protected`  | `AppShell`                    |
+| `/settings/:tab`             | `kernel`     | `SettingsPage`            | `protected`  | `AppShell`                    |
+| `/settings/accounts`         | `identity`   | `ConnectedAccountsPage`   | `protected`  | `AppShell`, `SettingsLayout`  |
 | `/side-peek-ui-library`      | `devtools`   | `SidePeekUILibraryPage`   | `publicOnly` | —                             |
 | `/terms`                     | `compliance` | `TermsPage`               | `none`       | `PublicShell`                 |
 | `/terms-of-service`          | `compliance` | `TermsPage`               | `none`       | `PublicShell`                 |
@@ -72,10 +73,11 @@ Every client/SSR route (40), navigation link, and admin console surface attribut
 
 ## Console Admin Surfaces
 
-| Surface ID       | Label      | Path               | Owner        | In Nav |
-| ---------------- | ---------- | ------------------ | ------------ | ------ |
-| `dashboard`      | Dashboard  | `/admin/dashboard` | `kernel`     | yes    |
-| `security`       | Security   | `/admin/security`  | `audit`      | yes    |
-| `audit`          | Audit Log  | `/admin/audit`     | `audit`      | yes    |
-| `legal`          | Legal      | `/admin/legal`     | `compliance` | yes    |
-| `route-manifest` | API Routes | `/admin/routes`    | `devtools`   | no     |
+| Surface ID       | Label      | Path                | Owner        | In Nav |
+| ---------------- | ---------- | ------------------- | ------------ | ------ |
+| `dashboard`      | Dashboard  | `/admin/dashboard`  | `kernel`     | yes    |
+| `security`       | Security   | `/admin/security`   | `audit`      | yes    |
+| `audit`          | Audit Log  | `/admin/audit`      | `audit`      | yes    |
+| `legal`          | Legal      | `/admin/legal`      | `compliance` | yes    |
+| `compliance`     | Compliance | `/admin/compliance` | `kernel`     | yes    |
+| `route-manifest` | API Routes | `/admin/routes`     | `devtools`   | no     |

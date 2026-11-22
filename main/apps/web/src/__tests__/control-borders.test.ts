@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 const SRC = path.resolve(__dirname, '..');
 
 /** Stylesheet (relative to `src`) and selector of each control the app styles. */
-const CONTROLS = [['app/account/AccountModal.css', '.settings-preferences__theme-option']] as const;
+const CONTROLS = [['app/account/SettingsPage.css', '.settings-preferences__theme-option']] as const;
 
 function ruleBody(sheet: string, selector: string): string {
   const css = readFileSync(path.join(SRC, sheet), 'utf8').replace(/\/\*[\s\S]*?\*\//gu, '');
