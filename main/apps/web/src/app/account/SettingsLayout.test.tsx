@@ -30,13 +30,16 @@ beforeEach(() => {
 describe('SettingsLayout', () => {
   it('renders child content inside the settings content panel and marks the active nav button', () => {
     render(
-      <SettingsLayout activeSection="security">
+      <SettingsLayout activeSection="security" description="Manage authentication methods.">
         <div data-testid="custom-settings-child" />
       </SettingsLayout>,
     );
 
     expect(screen.getByTestId('custom-settings-child')).toBeInTheDocument();
     expect(screen.queryByTestId('settings-route-outlet')).toBeNull();
+    expect(screen.getByRole('heading', { level: 1, name: 'Security' })).toBeInTheDocument();
+    expect(screen.getByText('Manage authentication methods.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Settings' })).toBeInTheDocument();
     expect(screen.getByRole('tabpanel').getAttribute('data-active-tab')).toBe('security');
     expect(screen.getByRole('button', { name: 'Security' }).getAttribute('aria-current')).toBe(
       'page',
@@ -62,6 +65,9 @@ describe('SettingsLayout', () => {
     );
 
     expect(screen.getByTestId('settings-route-outlet')).toBeInTheDocument();
+    // Outlet pages render their own h1; SettingsLayout keeps the sidebar heading at h2.
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull();
+    expect(screen.getByRole('heading', { level: 2, name: 'Settings' })).toBeInTheDocument();
     if (hasBillingModule) {
       expect(screen.getByRole('button', { name: 'Billing' }).getAttribute('aria-current')).toBe(
         'page',

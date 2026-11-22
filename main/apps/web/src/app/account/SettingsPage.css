@@ -52,6 +52,18 @@
   min-width: 0;
 }
 
+.settings-layout__main .page-container {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.settings-layout__panel-header {
+  margin-bottom: var(--ui-gap-xl);
+  padding-bottom: var(--ui-gap-md);
+  border-bottom: 1px solid var(--ui-color-border);
+}
+
 .settings-page {
   container: settings-page / inline-size;
   width: 100%;

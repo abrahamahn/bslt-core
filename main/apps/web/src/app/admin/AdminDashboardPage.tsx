@@ -367,6 +367,14 @@ export function AdminDashboardPage(): ReactElement {
       status: 'Ready',
       tone: 'info',
     },
+    {
+      id: 'compliance',
+      label: 'Compliance Operations',
+      detail: 'Manage legal holds, jurisdiction age rules, and orchestrated GDPR erasure.',
+      href: '/admin/compliance',
+      status: 'Ready',
+      tone: 'info',
+    },
   ];
 
   const handleRefreshAll = (): void => {

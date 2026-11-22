@@ -68,7 +68,7 @@ const SettingsSection = ({
     <section className={sectionClassName}>
       <div className="settings-section__header">
         <div className="settings-section__title-block">
-          <Heading as="h3" size="md">
+          <Heading as="h2" size="md">
             {title}
           </Heading>
           {description !== undefined ? (
@@ -271,15 +271,10 @@ const AccountTab = (): ReactElement => {
   );
 };
 
-const LegalTab = (): ReactElement => {
-  return (
-    <SettingsSection
-      title="Legal"
-      description="Review current documents and your account agreements."
-    >
-      <LegalDocumentsSection />
-    </SettingsSection>
-  );
+const SECTION_DESCRIPTIONS: Readonly<Record<string, string>> = {
+  'api-keys': 'Create and revoke personal API keys for programmatic access to your account.',
+  'data-controls': 'Manage your account status and personal data.',
+  legal: 'Review current documents and your account agreements.',
 };
 
 const SettingsPanelContent = ({ section }: { readonly section: string }): ReactElement => {
@@ -332,31 +327,21 @@ const SettingsPanelContent = ({ section }: { readonly section: string }): ReactE
       case 'account':
         return <AccountTab />;
       case 'data-controls':
-        return (
-          <SettingsSection
-            title="Data Controls"
-            description="Manage your account status and personal data."
-          >
-            <DataControlsSection />
-          </SettingsSection>
-        );
+        return <DataControlsSection />;
       case 'api-keys':
-        return (
-          <SettingsSection
-            title="API Keys"
-            description="Create and revoke personal API keys for programmatic access to your account."
-          >
-            <ApiKeysSection />
-          </SettingsSection>
-        );
+        return <ApiKeysSection />;
       case 'legal':
-        return <LegalTab />;
+        return <LegalDocumentsSection />;
       default:
         return <ProfileTab user={user} onProfileSaved={refreshProfileFromServer} />;
     }
   }, [advancedAuthEnabled, config.apiUrl, refreshProfileFromServer, section, user]);
 
-  return <SettingsLayout activeSection={section}>{content}</SettingsLayout>;
+  return (
+    <SettingsLayout activeSection={section} description={SECTION_DESCRIPTIONS[section]}>
+      {content}
+    </SettingsLayout>
+  );
 };
 
 export const SettingsPage = (): ReactElement => {

@@ -385,6 +385,7 @@ describe('AdminDashboardPage', () => {
     expect(screen.getAllByText('Security').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Jobs').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Billing Plans').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole('button', { name: /compliance operations/i })).toBeInTheDocument();
     expect(screen.queryByText('API route manifest')).toBeNull();
     expect(screen.queryByText('Feature Flags')).toBeNull();
     expect(screen.queryByText('Notifications')).toBeNull();

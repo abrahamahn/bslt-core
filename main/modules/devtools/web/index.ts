@@ -31,7 +31,6 @@ export {
   type ApiRouteCoverage,
   type ApiRouteDefinition,
 } from './routeInventory';
-export { RouteManifestPage } from './RouteManifestPage';
 export {
   SidePeekUILibraryContent,
   SidePeekUILibraryLayout,
