@@ -18,6 +18,7 @@ export interface PrimaryNavState {
   readonly authenticated: boolean;
   readonly admin: boolean;
   readonly developerToolsEnabled: boolean;
+  readonly teamsEnabled?: boolean;
 }
 
 export function getPrimaryNavHints(): Readonly<Record<string, PrimaryNavHint>> {
@@ -30,7 +31,7 @@ export function getPrimaryNavLinks(state: PrimaryNavState): PrimaryNavLink[] {
     advancedAuthEnabled: false,
     billingEnabled: false,
     developerToolsEnabled: state.developerToolsEnabled,
-    teamsEnabled: false,
+    teamsEnabled: state.teamsEnabled ?? false,
   };
   return webApp.getPrimaryNavLinks({
     authenticated: state.authenticated,

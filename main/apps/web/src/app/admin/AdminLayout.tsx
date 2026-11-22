@@ -2,7 +2,7 @@
 import { useAuth } from '@bslt/identity/web';
 import { Navigate, Outlet, useLocation, useNavigate } from '@bslt/react/router';
 import { Button, Heading, Text } from '@bslt/ui';
-import { useAppRightSidebar, useCapabilities } from '@bslt/web-platform';
+import { useCapabilities } from '@bslt/web-platform';
 import { useMemo, type ReactElement, type ReactNode } from 'react';
 
 import { hasAdminModule } from '../../generated/modules';
@@ -13,6 +13,60 @@ interface NavItem {
   id: AdminSurfaceId;
   label: string;
   path: string;
+}
+
+interface AdminNavGroup {
+  readonly id: string;
+  readonly label: string;
+  readonly items: readonly NavItem[];
+}
+
+const ADMIN_GROUP_ORDER: ReadonlyArray<{
+  readonly id: string;
+  readonly label: string;
+  readonly surfaceIds: readonly string[];
+}> = [
+  {
+    id: 'operations',
+    label: 'Operations',
+    surfaceIds: ['dashboard', 'health', 'jobs', 'feature-flags'],
+  },
+  {
+    id: 'directory',
+    label: 'Users & Orgs',
+    surfaceIds: ['users', 'tenants', 'notifications'],
+  },
+  {
+    id: 'trust',
+    label: 'Trust & Compliance',
+    surfaceIds: ['security', 'audit', 'moderation', 'support', 'legal', 'compliance'],
+  },
+  {
+    id: 'platform',
+    label: 'Billing & Webhooks',
+    surfaceIds: ['billing', 'entitlements', 'webhooks', 'webhook-endpoints'],
+  },
+];
+
+function groupAdminNavItems(items: readonly NavItem[]): AdminNavGroup[] {
+  const assigned = new Set<string>();
+  const groups: AdminNavGroup[] = [];
+
+  for (const spec of ADMIN_GROUP_ORDER) {
+    const memberSet = new Set(spec.surfaceIds);
+    const matched = items.filter((item) => memberSet.has(item.id));
+    if (matched.length > 0) {
+      for (const item of matched) assigned.add(item.id);
+      groups.push({ id: spec.id, label: spec.label, items: matched });
+    }
+  }
+
+  const remaining = items.filter((item) => !assigned.has(item.id));
+  if (remaining.length > 0) {
+    groups.push({ id: 'modules', label: 'Modules', items: remaining });
+  }
+
+  return groups;
 }
 
 interface AdminLayoutProps {
@@ -50,15 +104,14 @@ const NavButton = ({
 const AdminSidebar = ({ advancedAdminEnabled }: AdminSidebarProps): ReactElement => {
   const location = useLocation();
   const navigate = useNavigate();
-  const navItems = useMemo(
-    () =>
-      getAdminNavSurfaces({ advancedAdminEnabled }).map((surface) => ({
-        id: surface.id,
-        label: surface.label,
-        path: surface.href,
-      })),
-    [advancedAdminEnabled],
-  );
+  const navGroups = useMemo(() => {
+    const navItems: NavItem[] = getAdminNavSurfaces({ advancedAdminEnabled }).map((surface) => ({
+      id: surface.id,
+      label: surface.label,
+      path: surface.href,
+    }));
+    return groupAdminNavItems(navItems);
+  }, [advancedAdminEnabled]);
 
   const isNavItemActive = (item: NavItem): boolean => {
     if (
@@ -81,15 +134,24 @@ const AdminSidebar = ({ advancedAdminEnabled }: AdminSidebarProps): ReactElement
         </Text>
       </div>
       <nav className="control-center-sidebar__nav" aria-label="Admin sections">
-        {navItems.map((item) => (
-          <NavButton
-            key={item.path}
-            item={item}
-            isActive={isNavItemActive(item)}
-            onClick={() => {
-              navigate(item.path);
-            }}
-          />
+        {navGroups.map((group) => (
+          <div key={group.id} className="control-center-sidebar__group">
+            <Text as="span" size="xs" tone="muted" className="control-center-sidebar__group-label">
+              {group.label}
+            </Text>
+            <div className="control-center-sidebar__group-items">
+              {group.items.map((item) => (
+                <NavButton
+                  key={item.path}
+                  item={item}
+                  isActive={isNavItemActive(item)}
+                  onClick={() => {
+                    navigate(item.path);
+                  }}
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
     </aside>
@@ -103,11 +165,6 @@ export const AdminLayout = ({ children }: AdminLayoutProps): ReactElement => {
   const location = useLocation();
   const { isFlagEnabled } = useCapabilities();
   const advancedAdminEnabled = isFlagEnabled('flags.advanced_admin');
-  const adminSidebar = useMemo(
-    () => <AdminSidebar advancedAdminEnabled={advancedAdminEnabled} />,
-    [advancedAdminEnabled],
-  );
-  useAppRightSidebar(isAuthenticated && user?.role === 'admin' ? adminSidebar : null);
 
   if (isLoading && !isAuthenticated) {
     return (
@@ -145,5 +202,12 @@ export const AdminLayout = ({ children }: AdminLayoutProps): ReactElement => {
     );
   }
 
-  return <div data-testid="admin-layout-content">{children ?? <Outlet />}</div>;
+  return (
+    <div className="admin-layout">
+      <AdminSidebar advancedAdminEnabled={advancedAdminEnabled} />
+      <div className="admin-layout__main" data-testid="admin-layout-content">
+        {children ?? <Outlet />}
+      </div>
+    </div>
+  );
 };

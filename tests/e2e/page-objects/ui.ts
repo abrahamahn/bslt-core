@@ -78,8 +78,7 @@ const BRAND_HIDDEN_MAX_WIDTH_PX = 480;
 export async function expectAppShell(page: Page): Promise<void> {
   const topPanel = page.getByTestId('app-top-panel');
   await expect(topPanel).toBeVisible();
-  const brand = topPanel.getByRole('heading', {
-    level: 1,
+  const brand = topPanel.getByRole('link', {
     name: configuredAppName(),
     exact: true,
     includeHidden: true,

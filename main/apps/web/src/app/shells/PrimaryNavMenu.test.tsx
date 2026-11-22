@@ -31,6 +31,15 @@ describe('PrimaryNavMenu & MobilePrimaryBar', () => {
     expect(nav.queryByRole('link', { name: 'Home' })).toBeNull();
   });
 
+  it('marks Settings active when visiting /profile so sidebar stays deduplicated', () => {
+    const environment = createMockEnvironment({ user: mockUser, isAuthenticated: true });
+    renderWithProviders(<PrimaryNavMenu />, { environment, route: '/profile' });
+
+    const nav = within(screen.getByRole('navigation', { name: 'Primary' }));
+    expect(nav.getByRole('link', { name: 'Settings' })).toHaveAttribute('aria-current', 'page');
+    expect(nav.queryByRole('link', { name: 'Profile' })).toBeNull();
+  });
+
   it('renders MobilePrimaryBar from app.primary links and includes Admin for admin users', () => {
     const environment = createMockEnvironment({ user: mockAdminUser, isAuthenticated: true });
     renderWithProviders(<MobilePrimaryBar />, { environment, route: '/dashboard' });

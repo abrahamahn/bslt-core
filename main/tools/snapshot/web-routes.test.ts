@@ -265,12 +265,18 @@ describe('bslt snapshot web-routes', () => {
 
     expect(starter.navigation.primary.signedOut).toEqual([{ label: 'Home', to: '/' }]);
     const signedInLinks = starter.navigation.primary.signedIn.map((link) => link.to);
-    expect(signedInLinks.slice(0, 2)).toEqual(['/dashboard', '/profile']);
+    expect(signedInLinks[0]).toBe('/dashboard');
+    expect(signedInLinks).not.toContain('/profile');
     if (hasTasks) expect(signedInLinks).toContain('/tasks');
     if (hasFiles) expect(signedInLinks).toContain('/files');
     expect(signedInLinks.slice(-2)).toEqual(['/activities', '/settings']);
     expect(starter.navigation.primary.admin.at(-1)).toEqual({ label: 'Admin', to: '/admin' });
     expect(everything.navigation.primary.signedIn.map((link) => link.to)).toContain('/activities');
+    if (hasOrgs) {
+      expect(everything.navigation.primary.signedIn.map((link) => link.to)).toContain(
+        '/organization',
+      );
+    }
     expect(starter.navigation.footer.flatMap((section) => section.links)).toContainEqual({
       title: 'Terms of Service',
       path: '/terms',
@@ -294,25 +300,26 @@ describe('bslt snapshot web-routes', () => {
     const adminNavIds = starter.admin
       .filter((entry) => entry.inNavigation)
       .map((entry) => entry.id);
-    if (hasAdmin) {
-      expect(adminNavIds).toEqual([
-        'health',
-        'users',
-        'security',
-        'audit',
-        'support',
-        'moderation',
-        'feature-flags',
-        'webhooks',
-        'webhook-endpoints',
-        'entitlements',
-        'legal',
-        'compliance',
-        'notifications',
-      ]);
-    } else {
-      expect(adminNavIds).toEqual(['dashboard', 'security', 'audit', 'legal', 'compliance']);
-    }
+    const hasSupport = existsSync(repoPath('main/modules/support/module.ts'));
+    const hasModeration = existsSync(repoPath('main/modules/moderation/module.ts'));
+    const hasFlags = existsSync(repoPath('main/modules/flags/module.ts'));
+    const hasWebhooks = existsSync(repoPath('main/modules/webhooks/module.ts'));
+    const hasEntitlements = existsSync(repoPath('main/modules/entitlements/module.ts'));
+    const hasNotifications = existsSync(repoPath('main/modules/notifications/module.ts'));
+    const expectedAdminNavIds = [
+      ...(hasAdmin ? ['health', 'users'] : ['dashboard']),
+      'security',
+      'audit',
+      ...(hasSupport ? ['support'] : []),
+      ...(hasModeration ? ['moderation'] : []),
+      ...(hasFlags ? ['feature-flags'] : []),
+      ...(hasWebhooks ? ['webhooks', 'webhook-endpoints'] : []),
+      ...(hasEntitlements ? ['entitlements'] : []),
+      'legal',
+      'compliance',
+      ...(hasNotifications ? ['notifications'] : []),
+    ];
+    expect(adminNavIds).toEqual(expectedAdminNavIds);
     expect(everything.admin.find((entry) => entry.id === 'route-manifest')).toMatchObject({
       href: '/admin/routes',
       inNavigation: false,

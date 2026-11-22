@@ -18,15 +18,19 @@
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: var(--ui-gap-lg);
-  padding-right: var(--ui-gap-lg);
-  border-right: 1px solid var(--ui-color-border);
+  gap: var(--ui-gap-md);
+  padding: var(--ui-gap-md);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-color-bg);
+  box-shadow: var(--ui-elevation-xs);
 }
 
 .settings-layout__sidebar-header {
   display: grid;
   gap: var(--ui-gap-xs);
-  padding: var(--ui-gap-sm) var(--ui-gap-sm) 0;
+  padding: 0 var(--ui-gap-sm) var(--ui-gap-md);
+  border-bottom: 1px solid var(--ui-color-border);
 }
 
 .settings-layout__nav {
@@ -78,10 +82,7 @@
 
   .settings-layout__sidebar {
     position: static;
-    padding-right: 0;
-    padding-bottom: var(--ui-gap-sm);
-    border-right: 0;
-    border-bottom: 1px solid var(--ui-color-border);
+    padding: var(--ui-gap-md);
   }
 
   .settings-layout__nav {
@@ -102,8 +103,9 @@
   min-width: 0;
   padding: clamp(var(--ui-gap-lg), 2vw, var(--ui-gap-xl));
   border: 1px solid var(--ui-color-border);
-  border-radius: var(--ui-radius-md);
+  border-radius: var(--ui-radius-lg);
   background: var(--ui-color-bg);
+  box-shadow: var(--ui-elevation-xs);
 }
 
 .settings-page .card {

@@ -31,17 +31,6 @@ export const appFrame: AppFrameConfig<AppRouteFlags, DocumentType> = Object.free
       order: 10,
     },
     {
-      to: '/profile',
-      label: 'Profile',
-      audience: 'authenticated',
-      order: 20,
-      hint: {
-        featureKey: 'profile',
-        title: 'Profile',
-        description: 'Review your saved account profile',
-      },
-    },
-    {
       to: '/settings',
       label: 'Settings',
       audience: 'authenticated',
@@ -74,12 +63,21 @@ export const appFrame: AppFrameConfig<AppRouteFlags, DocumentType> = Object.free
       order: 10,
     },
     {
+      id: 'nav-profile',
+      label: 'Go to Profile',
+      description: 'Edit your profile, avatar, and handle',
+      category: 'navigation',
+      to: '/profile',
+      keywords: ['avatar', 'username', 'bio', 'me'],
+      order: 15,
+    },
+    {
       id: 'nav-settings',
       label: 'Go to Settings',
       description: 'Navigate to account settings',
       category: 'navigation',
       to: '/settings',
-      keywords: ['profile', 'account', 'preferences'],
+      keywords: ['profile', 'account', 'preferences', 'security'],
       order: 20,
     },
     ...(hasAdminModule
@@ -119,7 +117,7 @@ export const appFrame: AppFrameConfig<AppRouteFlags, DocumentType> = Object.free
   settingsSections: [
     {
       id: 'preferences',
-      label: 'Theme',
+      label: 'Preferences',
       kind: 'section',
       order: 50,
     },

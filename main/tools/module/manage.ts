@@ -421,7 +421,21 @@ async function syncWorkspaceAfterModuleMutation(root: string, runInstall: boolea
   }
   syncHeaders({ root, quiet: true });
   if (runInstall) {
-    execFileSync('pnpm', ['install'], { cwd: root, stdio: 'inherit' });
+    const env = { ...process.env, NODE_OPTIONS: '--max-old-space-size=4096' };
+    execFileSync('pnpm', ['install', '--no-frozen-lockfile'], { cwd: root, stdio: 'inherit', env });
+    if (existsSync(path.join(root, 'main/tools/snapshots'))) {
+      execFileSync('pnpm', ['bslt', 'snapshot', 'api'], { cwd: root, stdio: 'inherit', env });
+      execFileSync('pnpm', ['bslt', 'snapshot', 'web-routes'], {
+        cwd: root,
+        stdio: 'inherit',
+        env,
+      });
+    }
+    if (existsSync(path.join(root, 'docs/reference'))) {
+      execFileSync('pnpm', ['bslt', 'sync', 'openapi'], { cwd: root, stdio: 'inherit', env });
+      execFileSync('pnpm', ['bslt', 'sync', 'docs'], { cwd: root, stdio: 'inherit', env });
+    }
+    execFileSync('pnpm', ['format'], { cwd: root, stdio: 'inherit', env });
   }
 }
 

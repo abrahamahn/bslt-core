@@ -426,7 +426,9 @@ describe('App', () => {
     it('does not hold the landing page while the context loads', async () => {
       renderLiveApp('/', signedOut);
 
-      expect(await screen.findByText(/A small, production-ready SaaS shell/u)).toBeInTheDocument();
+      expect(
+        await screen.findByText(/A self-owned, production-ready SaaS foundation/u),
+      ).toBeInTheDocument();
       expect(document.querySelector(`[${ROUTE_PENDING_ATTRIBUTE}]`)).toBeNull();
     });
 

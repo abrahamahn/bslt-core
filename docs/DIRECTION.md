@@ -80,23 +80,24 @@ BSLT completed its 21-phase modular restructure (`Phases 0–20`) and is tagged 
 | `tasks`         | Reference vertical slice: CRUD endpoints, `owner_user` RLS table, optimistic mutations, realtime invalidation, outbox events                                                                                               |
 | `support`       | Public & authenticated contact tickets, admin triage inbox & status workflow                                                                                                                                               |
 | `status`        | Public cacheable health & component status page (`cache.public`), incident management                                                                                                                                      |
-| `search`        | PostgreSQL full-text search indexing & ranked query API (`web: false`)                                                                                                                                                     |
-| `analytics`     | Partitioned event ingestion, retention cron, projection subscriber (`web: false`)                                                                                                                                          |
+| `search`        | PostgreSQL full-text search indexing & ranked query API, plus platform-admin workspace search console (`/admin/search`)                                                                                                    |
+| `analytics`     | Partitioned event ingestion, retention cron, projection subscriber, and consent-gated client event tracker (`AnalyticsTracker`)                                                                                            |
 | `audit`         | Append-only `audit_log` (`REVOKE UPDATE/DELETE` + trigger) & `audit_activity` projections across security, compliance, and domain events                                                                                   |
 | `notifications` | Unified `notify()` pipeline, in-app inbox, quiet hours, email & RFC 8291 WebPush delivery, realtime invalidation                                                                                                           |
 | `files`         | Resumable multipart uploads, magic-byte & size scanner, `ffmpeg` media worker (orientation + metadata strip), `sys_apply_audience`, signed delivery, avatars                                                               |
 | `moderation`    | Abuse/DSA notice reports, moderation cases, statements of reasons, appeals, plug-in enforcement actions (`files.quarantine`)                                                                                               |
-| `compliance`    | DB-versioned Terms/Privacy acceptance gate, cookie/consent preferences, GDPR export & anonymization orchestrator, legal holds, age attestation & geo gate                                                                  |
+| `compliance`    | DB-versioned Terms/Privacy acceptance gate, cookie/consent preferences, GDPR export & anonymization orchestrator, legal holds, age attestation & geo gate, plus `/admin/compliance` console                                |
+| `webhooks`      | Outbound org-owned webhook endpoints, delivery queue, retry cron, and admin monitor                                                                                                                                        |
 | `admin`         | Platform overview, user/account administration, dead-job inspection, security & ops console                                                                                                                                |
-| `devtools`      | Dev-only (`devOnly` in `bslt.config.ts`) route explorer and generated `@bslt/ui` component library (`/ui-library`)                                                                                                         |
+| `devtools`      | Dev-only (`devOnly` in `bslt.config.ts`) route explorer (`/developer/api-routes`) and generated `@bslt/ui` component library (`/ui-library`)                                                                               |
 
 ---
 
 ## 4. Verification & Ratchet Health
 
-All merge-time invariants are enforced by `pnpm bslt gate merge --concurrency=2` (**49** gates):
+All merge-time invariants are enforced by `pnpm bslt gate merge --concurrency=2` (**50** gates):
 
-- **Static & boundary gates:** `headers`, `ts-references`, `client-surfaces`, `web-feature-surfaces`, `api-client-surfaces`, `generated-artifacts`, `esm-dist`, `package-exports`, `declared-dependencies`, `deps-allowlist`, `env-examples`, `version-pins`, `vite-build-args`, `route-contract-coverage`, `module-shape`, `module-graph`, `events`, `ssr-public-only`, `db-audit`, `web-assets`, `i18n`, `docs-links`, `css-tokens`, `responsive`, `dead-classes`, `undefined-tokens`, `gate-coverage`, `tombstones`, `test-pairs`.
+- **Static & boundary gates:** `headers`, `ts-references`, `client-surfaces`, `web-feature-surfaces`, `api-client-surfaces`, `generated-artifacts`, `esm-dist`, `package-exports`, `declared-dependencies`, `deps-allowlist`, `env-examples`, `version-pins`, `vite-build-args`, `route-contract-coverage`, `module-shape`, `module-graph`, `optional-module-isolation`, `events`, `ssr-public-only`, `db-audit`, `web-assets`, `i18n`, `docs-links`, `css-tokens`, `responsive`, `dead-classes`, `undefined-tokens`, `gate-coverage`, `tombstones`, `test-pairs`.
 - **Snapshot & generator gates:** `snapshot-api`, `snapshot-web-routes`, `generated-rows`, `generated-modules`, `generated-icons`, `generated-stories`, `generated-openapi`, `generated-csp`, `generated-docs`, `lockfile`.
 - **Ratchet budgets (`main/tools/gates/ratchets/budgets.json`):**
   - `swallowed-catch`: **0**

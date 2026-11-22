@@ -18,7 +18,8 @@ const MODULE_NAV_ENTRIES: ReadonlyArray<{ readonly order: number; readonly link:
         .filter(
           (item) =>
             item.slot === 'app.primary' &&
-            (item.audience === undefined || item.audience === 'authenticated'),
+            (item.audience === undefined || item.audience === 'authenticated') &&
+            item.requires === undefined,
         )
         .map((item) => ({
           order: item.order,
@@ -64,12 +65,17 @@ describe('getPrimaryNavLinks', () => {
     expect(POST_MEDIA_MODULE_LINKS).toContainEqual({ label: 'Activities', to: '/activities' });
     expect(getPrimaryNavLinks({ ...SIGNED_IN, developerToolsEnabled: true })).toEqual([
       { label: 'Dashboard', to: '/dashboard' },
-      { label: 'Profile', to: '/profile' },
       ...PRE_FILES_MODULE_LINKS,
       ...(hasFilesModule ? [{ label: 'Files', to: '/files' }] : []),
       ...POST_MEDIA_MODULE_LINKS,
       { label: 'Settings', to: '/settings' },
     ]);
+    if (installedModules.some((m) => m.id === 'orgs')) {
+      expect(getPrimaryNavLinks({ ...SIGNED_IN, teamsEnabled: true })).toContainEqual({
+        label: 'Organization',
+        to: '/organization',
+      });
+    }
   });
 
   it('adds Admin last for an authenticated admin and omits it when unauthenticated', () => {

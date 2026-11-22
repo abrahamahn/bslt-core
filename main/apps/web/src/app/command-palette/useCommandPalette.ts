@@ -12,11 +12,20 @@ import { useKeyboardShortcuts } from '@bslt/react/hooks';
 import { useNavigate } from '@bslt/react/router';
 import { useTheme } from '@bslt/ui';
 import { useCapabilities } from '@bslt/web-platform';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { createCommands, filterCommands } from './commands';
 
 import type { Command } from './commands';
+
+const openListeners = new Set<() => void>();
+
+/** Imperatively opens any mounted CommandPalette instance (e.g. from the header trigger). */
+export function openCommandPalette(): void {
+  for (const listener of openListeners) {
+    listener();
+  }
+}
 
 // ============================================================================
 // Types
@@ -68,6 +77,7 @@ export function useCommandPalette(): UseCommandPaletteResult {
   const { user, isAuthenticated } = useAuth();
   const signedOut = !isAuthenticated;
   const billingEnabled = isFlagEnabled('flags.billing');
+  const teamsEnabled = isFlagEnabled('orgs.teams');
 
   // Build commands with injected dependencies
   const commands = useMemo(
@@ -82,9 +92,10 @@ export function useCommandPalette(): UseCommandPaletteResult {
             {
               adminEnabled: user !== null && isAdmin(user.role),
               billingEnabled,
+              teamsEnabled,
             },
           ),
-    [signedOut, navigate, cycleMode, user, billingEnabled],
+    [signedOut, navigate, cycleMode, user, billingEnabled, teamsEnabled],
   );
 
   // Filter commands based on query
@@ -96,6 +107,13 @@ export function useCommandPalette(): UseCommandPaletteResult {
     setQuery('');
     setSelectedIndex(0);
   }, [signedOut]);
+
+  useEffect((): (() => void) => {
+    openListeners.add(open);
+    return (): void => {
+      openListeners.delete(open);
+    };
+  }, [open]);
 
   const close = useCallback((): void => {
     setIsOpen(false);

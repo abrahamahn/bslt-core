@@ -232,11 +232,11 @@ describe('useCommandPalette', () => {
     act(() => {
       result.current.open();
     });
-    // Execute the second command (settings)
+    // Execute the second command (profile)
     act(() => {
       result.current.executeCommand(1);
     });
-    expect(mockNavigate).toHaveBeenCalledWith('/settings');
+    expect(mockNavigate).toHaveBeenCalledWith('/profile');
     expect(result.current.isOpen).toBe(false);
   });
 

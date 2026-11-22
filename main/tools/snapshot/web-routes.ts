@@ -263,6 +263,7 @@ interface WebModules {
       authenticated: boolean;
       admin: boolean;
       developerToolsEnabled: boolean;
+      teamsEnabled?: boolean;
     }): NavLink[];
   };
   readonly siteMap: {
@@ -274,7 +275,7 @@ interface WebModules {
   readonly commands: {
     createCommands(
       deps: { navigate: (to: unknown) => void; cycleTheme: () => void },
-      options: { adminEnabled: boolean; billingEnabled: boolean },
+      options: { adminEnabled: boolean; billingEnabled: boolean; teamsEnabled?: boolean },
     ): ReadonlyArray<{
       readonly id: string;
       readonly label: string;
@@ -348,6 +349,7 @@ function surfaceOf(
   const mediaEnabled = modules.installedModules.installedModules.some((m) => m.id === 'media');
   const navState = {
     developerToolsEnabled: configured.developerToolsEnabled,
+    teamsEnabled: configured.teamsEnabled,
   };
   const inAdminNavigation = new Set(
     modules.adminSurface
@@ -366,6 +368,7 @@ function surfaceOf(
     {
       adminEnabled: true,
       billingEnabled: configured.billingEnabled,
+      teamsEnabled: configured.teamsEnabled,
     },
   );
 

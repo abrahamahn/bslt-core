@@ -8,8 +8,8 @@ import {
   Button,
   Divider,
   Dropdown,
-  Heading,
   Input,
+  Kbd,
   MenuItem,
   Skeleton,
   Text,
@@ -23,6 +23,7 @@ import {
   OptionalOrgSwitcher,
   useOptionalMyAvatar,
 } from '../../generated/modules';
+import { openCommandPalette } from '../command-palette';
 
 import { useResolvedPrimaryNav } from './PrimaryNavMenu';
 import './Shells.css';
@@ -150,9 +151,14 @@ export const ShellHeader = ({
         </Button>
       ) : null}
       <Link to={isAuthenticated ? '/dashboard' : '/'} className="shell-header__brand-link">
-        <Heading as="h1" size="lg" className="shell-header__title">
-          {clientConfig.appName}
-        </Heading>
+        <span className="shell-header__brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none">
+            <path d="m16 2 12 7v14l-12 7-12-7V9Z" fill="currentColor" />
+            <path d="m4 9 12 7 12-7M16 16v14" stroke="var(--ui-color-bg)" strokeWidth="1.5" />
+            <path d="m10 5.5 12 7" stroke="var(--ui-color-bg)" strokeWidth="1.5" />
+          </svg>
+        </span>
+        <span className="shell-header__title">{clientConfig.appName}</span>
       </Link>
     </div>
   );
@@ -189,6 +195,17 @@ export const ShellHeader = ({
         </>
       ) : isAuthenticated ? (
         <>
+          <Button
+            type="button"
+            variant="secondary"
+            size="small"
+            className="hide-mobile shell-header__cmd-trigger"
+            title="Open command palette (⌘K)"
+            onClick={openCommandPalette}
+          >
+            <span className="shell-header__cmd-label">Jump to…</span>
+            <Kbd aria-hidden="true">⌘K</Kbd>
+          </Button>
           {showSearch ? (
             <form
               onSubmit={handleSearchSubmit}
@@ -263,6 +280,15 @@ export const ShellHeader = ({
                   }}
                 >
                   Settings
+                </MenuItem>
+                <MenuItem
+                  className="shell-header__account-item"
+                  onClick={() => {
+                    close();
+                    navigate('/settings/preferences');
+                  }}
+                >
+                  Preferences
                 </MenuItem>
                 <Divider />
                 <MenuItem

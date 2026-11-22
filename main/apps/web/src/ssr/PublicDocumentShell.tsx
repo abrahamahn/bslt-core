@@ -52,9 +52,14 @@ export const PublicDocumentShell = ({ children }: PublicDocumentShellProps): Rea
   const leftSection = (
     <div className="shell-header__left">
       <Link to="/" className="shell-header__brand-link">
-        <Heading as="h1" size="lg" className="shell-header__title">
-          {clientConfig.appName}
-        </Heading>
+        <span className="shell-header__brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none">
+            <path d="m16 2 12 7v14l-12 7-12-7V9Z" fill="currentColor" />
+            <path d="m4 9 12 7 12-7M16 16v14" stroke="var(--ui-color-bg)" strokeWidth="1.5" />
+            <path d="m10 5.5 12 7" stroke="var(--ui-color-bg)" strokeWidth="1.5" />
+          </svg>
+        </span>
+        <span className="shell-header__title">{clientConfig.appName}</span>
       </Link>
     </div>
   );

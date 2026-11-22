@@ -35,16 +35,16 @@ describe('appFrame', () => {
     const navPaths = (appFrame.primaryNav ?? []).map((entry) => entry.to);
     expect(navPaths).toEqual(
       hasAdminModule
-        ? ['/', '/dashboard', '/profile', '/settings']
-        : ['/', '/dashboard', '/profile', '/settings', '/admin'],
+        ? ['/', '/dashboard', '/settings']
+        : ['/', '/dashboard', '/settings', '/admin'],
     );
     expect(navPaths).not.toContain('/clean?doc=readme');
 
     const paletteIds = (appFrame.palette ?? []).map((entry) => entry.id);
     expect(paletteIds).toEqual(
       hasAdminModule
-        ? ['nav-dashboard', 'nav-settings', 'action-change-theme']
-        : ['nav-dashboard', 'nav-settings', 'nav-admin', 'action-change-theme'],
+        ? ['nav-dashboard', 'nav-profile', 'nav-settings', 'action-change-theme']
+        : ['nav-dashboard', 'nav-profile', 'nav-settings', 'nav-admin', 'action-change-theme'],
     );
     expect(paletteIds).not.toContain('nav-billing');
 

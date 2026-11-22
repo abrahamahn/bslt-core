@@ -265,7 +265,7 @@ function emitMinimalCoreReadme(): string {
     '  - `@bslt/identity` — Email/password, magic link, OAuth, WebAuthn passkeys, TOTP/SMS MFA, sessions, devices, personal API keys, admin user management.',
     '  - `@bslt/compliance` — Terms/Privacy versioning, cookie consent sync, GDPR data export, account deletion lifecycle.',
     '  - `@bslt/audit` — Partitioned append-only `audit_log` + security metrics.',
-    '  - `@bslt/devtools` (`devOnly`) — Live API route explorer (`/routes`) and interactive `@bslt/ui` component catalog (`/ui-library`).',
+    '  - `@bslt/devtools` (`devOnly`) — Live API route explorer (`/developer/api-routes`) and interactive `@bslt/ui` component catalog (`/ui-library`).',
     '',
     '## One-Click Quickstart',
     '',

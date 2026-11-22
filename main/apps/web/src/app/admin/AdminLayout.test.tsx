@@ -1,7 +1,6 @@
 // main/apps/web/src/app/admin/AdminLayout.test.tsx
-import { AppLayoutContext, EMPTY_CAPABILITY_CONTEXT } from '@bslt/web-platform';
-import { screen, waitFor, within } from '@testing-library/react';
-import { useState } from 'react';
+import { EMPTY_CAPABILITY_CONTEXT } from '@bslt/web-platform';
+import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { createMockEnvironment, mockAdminUser, renderWithProviders } from '../../__tests__/utils';
@@ -9,21 +8,8 @@ import { hasAdminModule, hasNotificationsModule, installedModules } from '../../
 
 import { AdminLayout } from './AdminLayout';
 
-import type { ReactElement, ReactNode } from 'react';
-
 const INSTALLED_IDS: ReadonlySet<string> = new Set(installedModules.map((m) => m.id));
 const hasMod = (id: string): boolean => INSTALLED_IDS.has(id);
-
-const AdminLayoutHarness = ({ children }: { children: ReactNode }): ReactElement => {
-  const [rightSidebar, setRightSidebar] = useState<ReactNode | null>(null);
-
-  return (
-    <AppLayoutContext.Provider value={{ setRightSidebar }}>
-      <main>{children}</main>
-      <aside data-testid="right-sidebar">{rightSidebar}</aside>
-    </AppLayoutContext.Provider>
-  );
-};
 
 describe('AdminLayout', () => {
   it('should render children', () => {
@@ -63,55 +49,40 @@ describe('AdminLayout', () => {
     expect(screen.queryByText(/Loading admin access/i)).not.toBeInTheDocument();
   });
 
-  it('should render navigation in the app right sidebar', async () => {
+  it('renders grouped left navigation inside AdminLayout alongside page content', () => {
     const environment = createMockEnvironment({
       user: mockAdminUser,
       isAuthenticated: true,
     });
 
     renderWithProviders(
-      <AdminLayoutHarness>
-        <AdminLayout>
-          <div data-testid="admin-page">Content</div>
-        </AdminLayout>
-      </AdminLayoutHarness>,
+      <AdminLayout>
+        <div data-testid="admin-page">Content</div>
+      </AdminLayout>,
       { environment },
     );
 
-    await waitFor(() => {
-      expect(
-        within(screen.getByTestId('right-sidebar')).getByRole('navigation', {
-          name: 'Admin sections',
-        }),
-      ).toBeInTheDocument();
-    });
+    const sidebar = within(screen.getByLabelText('Admin control center'));
+    expect(sidebar.getByRole('navigation', { name: 'Admin sections' })).toBeInTheDocument();
+    expect(sidebar.getByText('Operations')).toBeInTheDocument();
+    expect(sidebar.getByText('Trust & Compliance')).toBeInTheDocument();
     expect(within(screen.getByTestId('admin-page')).queryByRole('navigation')).toBeNull();
   });
 
-  it('omits optional and internal admin tools from the primary sidebar', async () => {
+  it('omits optional and internal admin tools from the primary sidebar', () => {
     const environment = createMockEnvironment({
       user: mockAdminUser,
       isAuthenticated: true,
     });
 
     renderWithProviders(
-      <AdminLayoutHarness>
-        <AdminLayout>
-          <div>Content</div>
-        </AdminLayout>
-      </AdminLayoutHarness>,
+      <AdminLayout>
+        <div>Content</div>
+      </AdminLayout>,
       { environment },
     );
 
-    await waitFor(() => {
-      expect(
-        within(screen.getByTestId('right-sidebar')).getByRole('navigation', {
-          name: 'Admin sections',
-        }),
-      ).toBeInTheDocument();
-    });
-
-    const sidebar = within(screen.getByTestId('right-sidebar'));
+    const sidebar = within(screen.getByLabelText('Admin control center'));
     expect(sidebar.getByRole('button', { name: /security/i })).toBeInTheDocument();
     expect(sidebar.getByRole('button', { name: /audit/i })).toBeInTheDocument();
     expect(sidebar.getByRole('button', { name: /legal/i })).toBeInTheDocument();
@@ -140,7 +111,7 @@ describe('AdminLayout', () => {
     expect(sidebar.queryByRole('button', { name: /api routes/i })).toBeNull();
   });
 
-  it('surfaces advanced optional tools but never the internal route manifest', async () => {
+  it('surfaces advanced optional tools but never the internal route manifest', () => {
     const environment = createMockEnvironment({
       user: mockAdminUser,
       isAuthenticated: true,
@@ -151,23 +122,13 @@ describe('AdminLayout', () => {
     });
 
     renderWithProviders(
-      <AdminLayoutHarness>
-        <AdminLayout>
-          <div>Content</div>
-        </AdminLayout>
-      </AdminLayoutHarness>,
+      <AdminLayout>
+        <div>Content</div>
+      </AdminLayout>,
       { environment },
     );
 
-    await waitFor(() => {
-      expect(
-        within(screen.getByTestId('right-sidebar')).getByRole('navigation', {
-          name: 'Admin sections',
-        }),
-      ).toBeInTheDocument();
-    });
-
-    const sidebar = within(screen.getByTestId('right-sidebar'));
+    const sidebar = within(screen.getByLabelText('Admin control center'));
     expect(sidebar.getByRole('button', { name: /dashboard/i })).toBeInTheDocument();
     if (hasMod('flags')) {
       expect(sidebar.getByRole('button', { name: /feature flags/i })).toBeInTheDocument();
@@ -178,30 +139,20 @@ describe('AdminLayout', () => {
     expect(sidebar.queryByRole('button', { name: /api routes/i })).toBeNull();
   });
 
-  it('marks the index surface active on the /admin index route', async () => {
+  it('marks the index surface active on the /admin index route', () => {
     const environment = createMockEnvironment({
       user: mockAdminUser,
       isAuthenticated: true,
     });
 
     renderWithProviders(
-      <AdminLayoutHarness>
-        <AdminLayout>
-          <div>Content</div>
-        </AdminLayout>
-      </AdminLayoutHarness>,
+      <AdminLayout>
+        <div>Content</div>
+      </AdminLayout>,
       { environment, route: '/admin' },
     );
 
-    await waitFor(() => {
-      expect(
-        within(screen.getByTestId('right-sidebar')).getByRole('navigation', {
-          name: 'Admin sections',
-        }),
-      ).toBeInTheDocument();
-    });
-
-    const sidebar = within(screen.getByTestId('right-sidebar'));
+    const sidebar = within(screen.getByLabelText('Admin control center'));
     if (hasAdminModule) {
       expect(sidebar.getByRole('button', { name: /health/i })).toHaveAttribute(
         'aria-current',

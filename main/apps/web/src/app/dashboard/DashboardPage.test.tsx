@@ -132,6 +132,11 @@ describe('DashboardPage', () => {
     renderDashboardPage();
 
     expect(screen.getByRole('heading', { name: /account/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /security & shortcuts/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /manage sessions/i })).toHaveAttribute(
+      'href',
+      '/settings/sessions',
+    );
     expect(screen.getByText(/test@example.com/i)).toBeInTheDocument();
     expect(screen.getByText(/Test User/)).toBeInTheDocument();
     expect(screen.getByText(/@testuser/)).toBeInTheDocument();

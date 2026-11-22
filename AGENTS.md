@@ -64,5 +64,5 @@ pnpm --filter @bslt/<pkg> type-check          # Type-check one package
 pnpm --filter @bslt/<pkg> test                # Unit-test one package
 pnpm bslt sync modules && pnpm bslt sync rows # Regenerate module & DB row bindings
 pnpm bslt sync openapi && pnpm bslt sync docs # Regenerate OpenAPI + docs/reference/*.md
-pnpm bslt gate merge --concurrency=2          # Full 49-gate static + unit merge lane
+pnpm bslt gate merge --concurrency=2          # Full 50-gate static + unit merge lane
 ```

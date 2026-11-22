@@ -52,13 +52,12 @@ Every client/SSR route (41), navigation link, and admin console surface attribut
 
 ## Primary Navigation
 
-| Label      | Path          | Owner      |
-| ---------- | ------------- | ---------- |
-| Dashboard  | `/dashboard`  | `kernel`   |
-| Profile    | `/profile`    | `identity` |
-| Activities | `/activities` | `audit`    |
-| Settings   | `/settings`   | `kernel`   |
-| Admin      | `/admin`      | `kernel`   |
+| Label      | Path          | Owner    |
+| ---------- | ------------- | -------- |
+| Dashboard  | `/dashboard`  | `kernel` |
+| Activities | `/activities` | `audit`  |
+| Settings   | `/settings`   | `kernel` |
+| Admin      | `/admin`      | `kernel` |
 
 ## Public Footer Links
 

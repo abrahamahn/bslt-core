@@ -44,6 +44,7 @@ export interface CommandDependencies {
 interface CommandOptions {
   adminEnabled?: boolean;
   billingEnabled?: boolean;
+  teamsEnabled?: boolean;
 }
 
 /**
@@ -56,12 +57,13 @@ export function createCommands(deps: CommandDependencies, options: CommandOption
   const { navigate, cycleTheme } = deps;
   const adminEnabled = options.adminEnabled ?? false;
   const billingEnabled = options.billingEnabled ?? false;
+  const teamsEnabled = options.teamsEnabled ?? false;
   const flags = {
     advancedAdminEnabled: false,
     advancedAuthEnabled: false,
     billingEnabled,
     developerToolsEnabled: false,
-    teamsEnabled: false,
+    teamsEnabled,
   };
 
   const entries = webApp.getPaletteEntries({

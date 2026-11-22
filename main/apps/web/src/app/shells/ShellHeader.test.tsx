@@ -51,10 +51,12 @@ describe('ShellHeader', () => {
     expect(openAuthModal).toHaveBeenCalledWith('register');
   });
 
-  it('omits admin search for non-admin users and ignores blank search submissions for admins', () => {
+  it('omits admin search for non-admin users, exposes the command palette button, and never renders a duplicate h1', () => {
     const memberEnv = createMockEnvironment({ user: mockUser, isAuthenticated: true });
     const first = renderWithProviders(<ShellHeader variant="app" />, { environment: memberEnv });
     expect(screen.queryByRole('search')).toBeNull();
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull();
+    expect(screen.getByRole('button', { name: /jump to/i })).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: 'Primary' })).toBeNull();
     first.unmount();
 

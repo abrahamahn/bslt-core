@@ -408,10 +408,6 @@
               "to": "/dashboard"
             },
             {
-              "label": "Profile",
-              "to": "/profile"
-            },
-            {
               "label": "Activities",
               "to": "/activities"
             },
@@ -424,10 +420,6 @@
             {
               "label": "Dashboard",
               "to": "/dashboard"
-            },
-            {
-              "label": "Profile",
-              "to": "/profile"
             },
             {
               "label": "Activities",
@@ -487,6 +479,12 @@
             "navigatesTo": "/dashboard"
           },
           {
+            "id": "nav-profile",
+            "label": "Go to Profile",
+            "category": "navigation",
+            "navigatesTo": "/profile"
+          },
+          {
             "id": "nav-settings",
             "label": "Go to Settings",
             "category": "navigation",
@@ -527,7 +525,7 @@
         },
         {
           "id": "preferences",
-          "label": "Theme"
+          "label": "Preferences"
         },
         {
           "id": "account",
@@ -1089,10 +1087,6 @@
               "to": "/dashboard"
             },
             {
-              "label": "Profile",
-              "to": "/profile"
-            },
-            {
               "label": "Activities",
               "to": "/activities"
             },
@@ -1105,10 +1099,6 @@
             {
               "label": "Dashboard",
               "to": "/dashboard"
-            },
-            {
-              "label": "Profile",
-              "to": "/profile"
             },
             {
               "label": "Activities",
@@ -1168,6 +1158,12 @@
             "navigatesTo": "/dashboard"
           },
           {
+            "id": "nav-profile",
+            "label": "Go to Profile",
+            "category": "navigation",
+            "navigatesTo": "/profile"
+          },
+          {
             "id": "nav-settings",
             "label": "Go to Settings",
             "category": "navigation",
@@ -1208,7 +1204,7 @@
         },
         {
           "id": "preferences",
-          "label": "Theme"
+          "label": "Preferences"
         },
         {
           "id": "account",

@@ -2,9 +2,20 @@
 
 import { useAuth, useProfileCompleteness, useSessions } from '@bslt/identity/web';
 import { Link } from '@bslt/react/router';
-import { Badge, Button, Card, Heading, PageContainer, Progress, Skeleton, Text } from '@bslt/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  Heading,
+  Kbd,
+  PageContainer,
+  Progress,
+  Skeleton,
+  Text,
+} from '@bslt/ui';
 
 import { useOptionalMyAvatar } from '../../generated/modules';
+import { openCommandPalette } from '../command-palette';
 import { webApp } from '../webApp';
 
 import './DashboardPage.css';
@@ -252,8 +263,8 @@ export const DashboardPage = (): JSX.Element => {
           }
           tone={sessionsError ? 'warning' : 'success'}
           loading={sessionsLoading}
-          href="/settings/security"
-          actionLabel="Open security"
+          href="/settings/sessions"
+          actionLabel="Manage sessions"
         />
 
         {webApp.dashboardTiles.map((tile) => (
@@ -311,6 +322,75 @@ export const DashboardPage = (): JSX.Element => {
               detail={user?.id ?? 'No user id available'}
               tone="info"
             />
+          </div>
+        </Card>
+
+        <Card className="dashboard-panel">
+          <div className="dashboard-panel__header">
+            <div>
+              <Heading as="h2" size="sm">
+                Security &amp; Shortcuts
+              </Heading>
+              <Text tone="muted" size="sm">
+                Jump directly to account controls or open the command palette.
+              </Text>
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              size="small"
+              title="Open command palette (⌘K)"
+              onClick={openCommandPalette}
+            >
+              <span>Jump to…</span>
+              <Kbd aria-hidden="true">⌘K</Kbd>
+            </Button>
+          </div>
+          <div className="dashboard-shortcuts">
+            <Link to="/settings/security" className="dashboard-shortcut-row">
+              <div className="dashboard-surface-row__copy">
+                <Text as="span" size="sm" className="dashboard-surface-row__label">
+                  Security &amp; Sign-in
+                </Text>
+                <Text as="span" tone="muted" size="sm">
+                  Password, passkeys, 2FA, and connected sign-in methods.
+                </Text>
+              </div>
+              <Badge tone="info">Manage</Badge>
+            </Link>
+            <Link to="/settings/api-keys" className="dashboard-shortcut-row">
+              <div className="dashboard-surface-row__copy">
+                <Text as="span" size="sm" className="dashboard-surface-row__label">
+                  Personal API Keys
+                </Text>
+                <Text as="span" tone="muted" size="sm">
+                  Create, inspect, and revoke programmatic access tokens.
+                </Text>
+              </div>
+              <Badge tone="info">Keys</Badge>
+            </Link>
+            <Link to="/settings/data-controls" className="dashboard-shortcut-row">
+              <div className="dashboard-surface-row__copy">
+                <Text as="span" size="sm" className="dashboard-surface-row__label">
+                  Data Controls &amp; Privacy
+                </Text>
+                <Text as="span" tone="muted" size="sm">
+                  Consent preferences, GDPR exports, and age assurance.
+                </Text>
+              </div>
+              <Badge tone="info">Privacy</Badge>
+            </Link>
+            <Link to="/settings/preferences" className="dashboard-shortcut-row">
+              <div className="dashboard-surface-row__copy">
+                <Text as="span" size="sm" className="dashboard-surface-row__label">
+                  Preferences
+                </Text>
+                <Text as="span" tone="muted" size="sm">
+                  Appearance theme, timezone, and display language.
+                </Text>
+              </div>
+              <Badge tone="info">Theme</Badge>
+            </Link>
           </div>
         </Card>
       </div>
