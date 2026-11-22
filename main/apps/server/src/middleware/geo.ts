@@ -5,7 +5,7 @@
  * The edge half of the jurisdiction gate: adapters that read a location off a
  * CDN header, and the hook that turns a blocked location into a 403.
  *
- * The rule itself is not here — it lives in `@bslt/shared/core/geo`, which knows
+ * The rule itself is not here — it lives in `@bslt/server-system/security`, which knows
  * nothing about HTTP. This file only knows how to find a location; it does not
  * decide what a location means.
  *
@@ -15,7 +15,7 @@
  * CDN configuration.
  */
 
-import { HTTP_STATUS } from '@bslt/shared/constants';
+import { HTTP_STATUS } from '@bslt/contract';
 import {
   createJurisdictionBlockedBody,
   evaluateGeoAccess,
@@ -23,16 +23,18 @@ import {
   normalizeCountry,
   normalizeRegion,
   parseBlockedRegions,
-} from '@bslt/shared/core/geo';
+  type GeoHeaders,
+  type GeoLocation,
+  type GeoProvider,
+} from '@bslt/server-system/security';
 
-import type { GeoHeaders, GeoLocation, GeoProvider } from '@bslt/shared/core/geo';
-import type { HttpReply, HttpRequest } from '@bslt/shared/system';
+import type { HttpReply, HttpRequest } from '@bslt/server-system/http';
 
 // ============================================================================
 // Adapters (edge — these know the transport, and nothing else)
 // ============================================================================
 
-export interface HeaderGeoAdapterOptions {
+interface HeaderGeoAdapterOptions {
   /** Header carrying the ISO 3166-1 alpha-2 country (e.g. `cf-ipcountry`). */
   countryHeader: string;
   /** Headers that may carry the subdivision, in priority order. */
@@ -133,7 +135,7 @@ export function createGeoProvider(options: HeaderGeoAdapterOptions): GeoProvider
 // Middleware
 // ============================================================================
 
-export interface GeoBlockOptions {
+interface GeoBlockOptions {
   /** Configured jurisdictions (`US-WA`). Empty leaves the gate inert. */
   blockedRegions: readonly string[];
   /** Resolves the location of a request. */

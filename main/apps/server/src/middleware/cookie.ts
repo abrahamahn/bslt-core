@@ -5,22 +5,15 @@
  * Manual cookie parsing and setting. Replaces @fastify/cookie.
  */
 
+import {
+  parseCookies,
+  serializeCookie,
+  type CookieOptions,
+  type HttpServer,
+  type HttpServerReply,
+  type HttpServerRequest,
+} from '@bslt/server-system/http';
 import { signToken, verifyToken } from '@bslt/server-system/security';
-import { parseCookies, serializeCookie } from '@bslt/shared/system';
-import { type CookieOptions } from '@bslt/shared/system';
-
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-
-declare module 'fastify' {
-  interface FastifyRequest {
-    cookies: Record<string, string | undefined>;
-    unsignCookie: (value: string) => { valid: boolean; value: string | null };
-  }
-  interface FastifyReply {
-    setCookie: (name: string, value: string, options?: CookieOptions) => FastifyReply;
-    clearCookie: (name: string, options?: CookieOptions) => FastifyReply;
-  }
-}
 
 // ============================================================================
 // Cookie Signing
@@ -59,7 +52,7 @@ export function unsignCookie(
 // Fastify Plugin
 // ============================================================================
 
-export interface CookiePluginOptions {
+interface CookiePluginOptions {
   secret: string;
   parseOptions?: Record<string, unknown>;
 }
@@ -70,22 +63,20 @@ export interface CookiePluginOptions {
  * @param server - The Fastify instance to register on
  * @param options - Cookie plugin options including the signing secret
  */
-export function registerCookies(server: FastifyInstance, options: CookiePluginOptions): void {
+export function registerCookies(server: HttpServer, options: CookiePluginOptions): void {
   const { secret } = options;
 
-  // Decorate request with cookies (use null for reference types in Fastify 5)
-  server.decorateRequest('cookies', null as never);
-  server.decorateRequest('unsignCookie', null as never);
+  server.decorateRequest('cookies', null);
+  server.decorateRequest('unsignCookie', null);
 
-  // Decorate reply with cookie methods (use function to bind Fastify reply)
   server.decorateReply(
     'setCookie',
     function (
-      this: FastifyReply,
+      this: HttpServerReply,
       name: string,
       value: string,
       opts: CookieOptions = {},
-    ): FastifyReply {
+    ): HttpServerReply {
       let cookieValue = value;
 
       // Sign if requested
@@ -98,7 +89,7 @@ export function registerCookies(server: FastifyInstance, options: CookiePluginOp
       // Get existing Set-Cookie headers
       const existing = this.getHeader('Set-Cookie');
       if (existing != null) {
-        const cookies = Array.isArray(existing) ? existing : [existing as string];
+        const cookies = Array.isArray(existing) ? existing : [String(existing)];
         this.header('Set-Cookie', [...cookies, serialized]);
       } else {
         this.header('Set-Cookie', serialized);
@@ -109,7 +100,7 @@ export function registerCookies(server: FastifyInstance, options: CookiePluginOp
   );
   server.decorateReply(
     'clearCookie',
-    function (this: FastifyReply, name: string, opts: CookieOptions = {}): FastifyReply {
+    function (this: HttpServerReply, name: string, opts: CookieOptions = {}): HttpServerReply {
       return this.setCookie(name, '', {
         ...opts,
         expires: new Date(0),
@@ -119,14 +110,12 @@ export function registerCookies(server: FastifyInstance, options: CookiePluginOp
   );
 
   // Parse cookies on each request
-  server.addHook('onRequest', async (req: FastifyRequest, reply: FastifyReply) => {
+  server.addHook('onRequest', (req: HttpServerRequest) => {
     // Parse cookies from header
     req.cookies = parseCookies(req.headers.cookie);
 
     // Add unsign method bound to secret
     req.unsignCookie = (value: string): ReturnType<typeof unsignCookie> =>
       unsignCookie(value, secret);
-
-    void reply;
   });
 }

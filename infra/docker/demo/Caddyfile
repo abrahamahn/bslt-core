@@ -1,0 +1,185 @@
+# infra/docker/demo/Caddyfile
+#
+# Bootstrap configuration for a new demo host. The live proxy serves unrelated
+# projects too; deployment only copies this file when no live config exists.
+# Update live routes through a validated, targeted merge instead of replacing it.
+# A separately deployed site owns the explicit app.bslt.dev/bslt.dev host blocks.
+#
+# The bare :80/:443 blocks are the bslt demo itself and stay the default:
+#   :80  — plain HTTP (bare-IP access, and Cloudflare SSL mode "Flexible")
+#   :443 — HTTPS with a self-signed cert (Cloudflare SSL mode "Full")
+# Cloudflare terminates the public cert; it connects to this origin on 80 or 443
+# depending on its SSL/TLS mode. auto_https is off so Caddy does not try to fetch
+# a public Let's Encrypt cert (the domain is proxied by Cloudflare). Named sites
+# below reach their app over the docker bridge gateway (172.18.0.1) because they
+# run in separate compose stacks, not in this one.
+
+{
+	auto_https off
+}
+
+(app) {
+	encode gzip
+	handle /api/* {
+		reverse_proxy bslt-demo-api-1:8080
+	}
+	handle /health* {
+		reverse_proxy bslt-demo-api-1:8080
+	}
+	handle {
+		reverse_proxy bslt-demo-web-1:80
+	}
+}
+
+:80 {
+	import app
+}
+
+:443 {
+	tls /etc/caddy/origin-cert.pem /etc/caddy/origin-key.pem
+	import app
+}
+
+# --- Blendtune (bslt-stack cutover) — routes blendtune.com to the host Fastify (:8080),
+# which serves the SPA + /api. bslt demo stays the default on the bare :80/:443 blocks.
+blendtune.com, www.blendtune.com {
+	encode gzip
+	tls /etc/caddy/origin-cert.pem /etc/caddy/origin-key.pem
+	reverse_proxy 172.18.0.1:8080
+}
+
+http://blendtune.com, http://www.blendtune.com {
+	encode gzip
+	reverse_proxy 172.18.0.1:8080
+}
+
+# --- Ganbate temporary public route — routes ganbate.io to the Rune/Ganbate stack.
+# DNS should point ganbate.io and www.ganbate.io to 192.241.141.36.
+(ganbate_app) {
+	encode gzip
+	handle /api/* {
+		reverse_proxy 172.18.0.1:18080
+	}
+	handle /uploads/* {
+		reverse_proxy 172.18.0.1:18080
+	}
+	handle /ws* {
+		reverse_proxy 172.18.0.1:18080
+	}
+	handle /health* {
+		reverse_proxy 172.18.0.1:18080
+	}
+	handle {
+		reverse_proxy 172.18.0.1:18081
+	}
+}
+
+http://ganbate.io, http://www.ganbate.io {
+	import ganbate_app
+}
+
+ganbate.io, www.ganbate.io {
+	# This uses the existing origin cert mode on the droplet. HTTP works directly;
+	# HTTPS is suitable behind a proxy such as Cloudflare Full mode until a real
+	# ganbate.io certificate is installed.
+	tls /etc/caddy/origin-cert.pem /etc/caddy/origin-key.pem
+	import ganbate_app
+}
+
+# --- Kanu Studio (kanustudio.com) — static marketing site, served by this Caddy
+# from the caddy_data volume (/data/sites/kanustudio; host path:
+# /var/lib/docker/volumes/bslt-demo_caddy_data/_data/sites/kanustudio).
+# DNS (Cloudflare): A kanustudio.com -> 192.241.141.36, CNAME www -> kanustudio.com.
+# Origin TLS uses the shared self-signed origin cert — set Cloudflare SSL mode to
+# "Full" (not "Full (strict)"), same as the other sites on this box.
+(kanustudio_site) {
+	encode gzip
+	root * /data/sites/kanustudio
+	# Marketing contact form -> Kanu portal API (path-scoped; all else stays static)
+	handle /api/contact {
+		reverse_proxy 172.18.0.1:18090
+	}
+	# Geo default language for the bare domain: explicit locale cookie beats
+	# CF-IPCountry (Cloudflare geo). 302 + no-store so the per-visitor redirect
+	# is never cached at the edge. Missing CF-IPCountry falls through to /en/.
+	route / {
+		header Cache-Control no-store
+		@localeKo header_regexp Cookie \blocale=ko\b
+		redir @localeKo /ko/ 302
+		@localeEn header_regexp Cookie \blocale=en\b
+		redir @localeEn /en/ 302
+		@geoKr header CF-IPCountry KR
+		redir @geoKr /ko/ 302
+		redir * /en/ 302
+	}
+	# Persist the visitor's language: /en/ and /ko/ page views refresh the
+	# preference cookie (assets live under /assets/ + /fonts/, never stamped).
+	@localePageEn path /en/*
+	header @localePageEn +Set-Cookie "locale=en; Path=/; Max-Age=31536000; SameSite=Lax; Secure"
+	@localePageKo path /ko/*
+	header @localePageKo +Set-Cookie "locale=ko; Path=/; Max-Age=31536000; SameSite=Lax; Secure"
+	@immutable path /assets/* /fonts/*
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+	@mutable not path /assets/* /fonts/*
+	header @mutable Cache-Control "no-cache"
+	file_server {
+		hide _redirects
+	}
+}
+
+http://kanustudio.com {
+	import kanustudio_site
+}
+
+kanustudio.com {
+	tls /etc/caddy/origin-cert.pem /etc/caddy/origin-key.pem
+	import kanustudio_site
+}
+
+http://www.kanustudio.com {
+	redir https://kanustudio.com{uri} 301
+}
+
+www.kanustudio.com {
+	tls /etc/caddy/origin-cert.pem /etc/caddy/origin-key.pem
+	redir https://kanustudio.com{uri} 301
+}
+
+# --- Kanu Portal (portal.kanustudio.com) — SPA + API for the Kanu studio portal.
+# SPA is static files in /data/sites/kanu-portal (caddy_data volume); API is the
+# kanu-production stack published on the docker bridge gateway 172.18.0.1:18090
+# (same mechanism as ganbate.io above). DNS (Cloudflare): A portal -> 192.241.141.36,
+# SSL mode "Full" with the shared self-signed origin cert.
+(kanu_portal) {
+	encode gzip
+	handle /api/* {
+		reverse_proxy 172.18.0.1:18090
+	}
+	handle /health* {
+		reverse_proxy 172.18.0.1:18090
+	}
+	handle /uploads/* {
+		reverse_proxy 172.18.0.1:18090
+	}
+	handle /ws* {
+		reverse_proxy 172.18.0.1:18090
+	}
+	handle {
+		root * /data/sites/kanu-portal
+		@immutable path /assets/*
+		header @immutable Cache-Control "public, max-age=31536000, immutable"
+		@mutable not path /assets/*
+		header @mutable Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+http://portal.kanustudio.com {
+	import kanu_portal
+}
+
+portal.kanustudio.com {
+	tls /etc/caddy/origin-cert.pem /etc/caddy/origin-key.pem
+	import kanu_portal
+}

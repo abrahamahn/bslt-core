@@ -12,6 +12,7 @@
     "lib": ["ES2023"],
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "customConditions": ["source"],
     "resolveJsonModule": true,
 
     "strict": true,

@@ -1,20 +1,39 @@
 {
+  "id": "/",
   "short_name": "BSLT",
   "name": "BSLT Enterprise SaaS Boilerplate",
+  "description": "Modular TypeScript web platform foundation",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0f172a",
+  "background_color": "#ffffff",
+  "categories": ["productivity", "utilities"],
   "icons": [
     {
       "src": "/icons/logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
     },
     {
       "src": "/icons/logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/logo512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
-  ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#0f172a",
-  "background_color": "#ffffff"
+  ]
 }

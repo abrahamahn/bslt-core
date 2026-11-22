@@ -6,29 +6,23 @@
  * Prevents injection attacks, validates data types, and sanitizes user input.
  */
 
+import { BadRequestError } from '@bslt/contract';
 import {
-  BadRequestError,
   getInjectionErrors,
   sanitizeObject,
   type ValidationOptions,
-} from '@bslt/shared/system';
+} from '@bslt/server-system/security';
 
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { HttpServer, HttpServerRequest } from '@bslt/server-system/http';
 
 // ============================================================================
-// Fastify Middleware
+// HTTP Server Middleware
 // ============================================================================
 
 /**
- * Register input validation middleware on a Fastify instance
- *
- * @param server - The Fastify instance to register on
- * @param options - Validation options controlling behavior
+ * Register input validation middleware on an HTTP server instance
  */
-export function registerInputValidation(
-  server: FastifyInstance,
-  options: ValidationOptions = {},
-): void {
+export function registerInputValidation(server: HttpServer, options: ValidationOptions = {}): void {
   const {
     strict = true,
     sanitize = true,
@@ -39,7 +33,7 @@ export function registerInputValidation(
   } = options;
 
   // Pre-handler validation hook
-  server.addHook('preHandler', async (req: FastifyRequest, _reply: FastifyReply) => {
+  server.addHook('preHandler', (req: HttpServerRequest) => {
     const validationResult = validateRequestInput(req, {
       strict,
       sanitize,
@@ -104,7 +98,10 @@ function isParsedMultipartFileBody(value: unknown): boolean {
 /**
  * Validate all request input (body, query, params)
  */
-function validateRequestInput(req: FastifyRequest, options: ValidationOptions): ValidationResult {
+function validateRequestInput(
+  req: HttpServerRequest,
+  options: ValidationOptions,
+): ValidationResult {
   const allErrors: string[] = [];
   const allWarnings: string[] = [];
   let sanitizedBody: unknown;
@@ -124,8 +121,9 @@ function validateRequestInput(req: FastifyRequest, options: ValidationOptions): 
   }
 
   // Validate and sanitize query parameters
-  if (req.query != null && typeof req.query === 'object') {
-    const result = sanitizeObject(req.query, options);
+  const rawQuery: unknown = req.query;
+  if (rawQuery != null && typeof rawQuery === 'object') {
+    const result = sanitizeObject(rawQuery, options);
     allErrors.push(...result.errors);
     allWarnings.push(...result.warnings);
 
@@ -135,8 +133,9 @@ function validateRequestInput(req: FastifyRequest, options: ValidationOptions): 
   }
 
   // Validate and sanitize route parameters
-  if (req.params != null && typeof req.params === 'object') {
-    const result = sanitizeObject(req.params, options);
+  const rawParams: unknown = req.params;
+  if (rawParams != null && typeof rawParams === 'object') {
+    const result = sanitizeObject(rawParams, options);
     allErrors.push(...result.errors);
     allWarnings.push(...result.warnings);
 
@@ -146,8 +145,10 @@ function validateRequestInput(req: FastifyRequest, options: ValidationOptions): 
   }
 
   // Check for injection patterns in string inputs
+  const skipBodyInjectionCheck =
+    shouldSkipBodySanitization || req.routeOptions.config.skipBodyInjectionFilter === true;
   const inputs: [unknown, string][] = [
-    ...(shouldSkipBodySanitization ? [] : ([[req.body, 'body']] as [unknown, string][])),
+    ...(skipBodyInjectionCheck ? [] : ([[req.body, 'body']] as [unknown, string][])),
     [req.query, 'query'],
     [req.params, 'params'],
   ];

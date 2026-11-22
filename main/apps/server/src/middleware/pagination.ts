@@ -3,20 +3,27 @@
  * Pagination module for HTTP middleware and request typing.
  */
 
-import { createPaginationHelpers, type PaginationHelpers } from '@bslt/db';
-import { DEFAULT_PAGE_LIMIT, DEFAULT_SORT_BY, DEFAULT_SORT_ORDER } from '@bslt/shared/constants';
 import {
+  DEFAULT_PAGE_LIMIT,
+  DEFAULT_SORT_BY,
+  DEFAULT_SORT_ORDER,
+  type CursorPaginationOptions,
+  type PaginationOptions,
+  type SortOrder,
+} from '@bslt/contract';
+import {
+  createPaginationHelpers,
   getQueryParam,
   parseLimitParam,
   parsePageParam,
   parseSortByParam,
   parseSortOrderParam,
-} from '@bslt/shared/db';
+  type PaginationHelpers,
+} from '@bslt/db';
 
-import type { CursorPaginationOptions, PaginationOptions, SortOrder } from '@bslt/shared/db';
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { HttpServerReply, HttpServerRequest } from '@bslt/server-system/http';
 
-export interface PaginationMiddlewareOptions {
+interface PaginationMiddlewareOptions {
   defaultLimit?: number;
   maxLimit?: number;
   defaultSortBy?: string;
@@ -31,14 +38,14 @@ export interface PaginationMiddlewareOptions {
   };
 }
 
-export interface PaginationContext {
+interface PaginationContext {
   type: 'offset' | 'cursor';
   offset?: PaginationOptions;
   cursor?: CursorPaginationOptions;
   helpers: PaginationHelpers;
 }
 
-export interface PaginationRequest extends FastifyRequest {
+export interface PaginationRequest extends HttpServerRequest {
   pagination: PaginationContext;
 }
 
@@ -60,10 +67,11 @@ const DEFAULT_OPTIONS: Required<PaginationMiddlewareOptions> = {
 export function createPaginationMiddleware(options: PaginationMiddlewareOptions = {}) {
   const config = { ...DEFAULT_OPTIONS, ...options };
 
-  return function paginationMiddleware(request: FastifyRequest, _reply: FastifyReply): void {
+  return function paginationMiddleware(request: HttpServerRequest, _reply: HttpServerReply): void {
+    const rawQuery: unknown = request.query;
     const query =
-      typeof request.query === 'object' && request.query !== null
-        ? (request.query as Record<string, unknown>)
+      typeof rawQuery === 'object' && rawQuery !== null
+        ? (rawQuery as Record<string, unknown>)
         : {};
     const paramNames = config.paramNames;
     const cursorParam = getQueryParam(query, paramNames.cursor || 'cursor');

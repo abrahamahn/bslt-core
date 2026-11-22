@@ -1,0 +1,22 @@
+{
+  "extends": "../config/tsconfig.base.json",
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "types": ["node", "@testing-library/jest-dom", "@playwright/test", "vite/client"],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    "rootDir": "..",
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "jsx": "react-jsx"
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.d.ts",
+    "../main/apps/web/src/**/*.d.ts",
+    "../main/apps/server/src/types/**/*.d.ts"
+  ],
+  "exclude": ["node_modules", "dist", "build", "coverage"]
+}

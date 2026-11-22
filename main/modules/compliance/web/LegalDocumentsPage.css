@@ -1,0 +1,19 @@
+/* main/modules/compliance/web/LegalDocumentsPage.css */
+.legal-documents-grid {
+  display: grid;
+  gap: var(--ui-gap-2xl);
+}
+
+@media (min-width: 64rem) {
+  .legal-documents-grid {
+    grid-template-columns: minmax(0, 1fr) 24rem;
+  }
+}
+
+.legal-documents-preview {
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  padding: var(--ui-gap-md);
+  max-height: 20rem;
+  overflow-y: auto;
+}

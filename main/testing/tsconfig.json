@@ -1,0 +1,16 @@
+{
+  "extends": "../../config/tsconfig.node.json",
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "module": "ESNext",
+    "types": ["node"],
+    "typeRoots": ["../../node_modules/@types"],
+    "rootDir": "../..",
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "tsBuildInfoFile": "./node_modules/.cache/typescript/tsconfig.testing.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts", "vitest.config.ts", "../apps/server/src/types/**/*.d.ts"]
+}

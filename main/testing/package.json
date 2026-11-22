@@ -1,0 +1,41 @@
+{
+  "name": "@bslt/testing",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The testing kit: buildTestApp (the production buildApp on a test database), describeRealDb, describeOwnerIsolation and the fakes for external ports. Dev tooling only; it runs from source.",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./real-db": {
+      "source": "./src/real-db.ts",
+      "default": "./src/real-db.ts"
+    },
+    "./database": {
+      "source": "./src/database.ts",
+      "default": "./src/database.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "type-check": "tsc -p tsconfig.json",
+    "test": "vitest run --reporter=dot --silent=passed-only"
+  },
+  "dependencies": {
+    "@bslt/compliance": "workspace:*",
+    "@bslt/contract": "workspace:*",
+    "@bslt/db": "workspace:*",
+    "@bslt/identity": "workspace:*",
+    "@bslt/server": "workspace:*",
+    "@bslt/server-system": "workspace:*"
+  },
+  "devDependencies": {
+    "@bslt/build-config": "workspace:*",
+    "@types/node": "^26.6.6",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
+  }
+}

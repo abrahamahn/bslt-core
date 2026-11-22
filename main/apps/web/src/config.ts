@@ -5,8 +5,7 @@
  * All environment variables and app-level constants in one place.
  */
 
-import { MS_PER_DAY, MS_PER_MINUTE, MS_PER_SECOND } from '@bslt/shared/constants/time';
-import { trimTrailingSlashes } from '@bslt/shared/helpers/string';
+import { MS_PER_DAY, MS_PER_MINUTE, MS_PER_SECOND, trimTrailingSlashes } from '@bslt/contract';
 
 export const DEFAULT_APP_NAME = 'Your App';
 
@@ -66,7 +65,7 @@ export type ClientConfig = {
 // Factory (for testing)
 // ============================================================================
 
-export function createClientConfig(): ClientConfig {
+function createClientConfig(): ClientConfig {
   // Cached VITE variables are re-evaluated when this file changes
   const viteApiUrl = env['VITE_API_URL'] as string | undefined;
   const normalizedApiUrl = trimTrailingSlashes(viteApiUrl ?? '');

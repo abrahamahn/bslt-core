@@ -1,32 +1,38 @@
 // main/apps/server/src/bootstrap/runtime.ts
 /**
- * Server Runtime — lifecycle orchestrator for the server process.
+ * Server Runtime — the process lifecycle around `buildApp`.
  *
  * Responsibilities:
- *   start(): bootstrap phased system + app
- *   stop():  stop app/workers/infra in safe order
+ *   start(): compose the app (`buildApp`) and start it; exit on failure
+ *   stop():  stop the app (workers, HTTP, comms, data, infra, in that order)
+ *   signals: SIGTERM / SIGINT stop the app and exit; an uncaught exception or an
+ *            unhandled rejection is logged as fatal, then Node exits
  */
 
-import { bootstrapServerSystem, stopServerSystem, type ServerBootstrapState } from './system';
+import { buildApp, type BuiltApp, type ProcessRole } from './build-app';
 
-import type { AppConfig } from '@bslt/shared/system/config';
+import type { AppConfig } from '@bslt/server-system/config';
 
 // ============================================================================
 // ServerRuntime
 // ============================================================================
 
 export class ServerRuntime {
-  private state?: ServerBootstrapState;
+  private built?: BuiltApp;
   private shutdownHandlersRegistered = false;
 
-  constructor(private readonly config: AppConfig) {}
+  constructor(
+    private readonly config: AppConfig,
+    private readonly role: ProcessRole = 'all',
+  ) {}
 
   async start(): Promise<void> {
     try {
-      this.state = await bootstrapServerSystem(this.config);
+      this.built = await buildApp(this.config, { role: this.role });
+      await this.built.start();
     } catch (error: unknown) {
       process.stderr.write(`Failed to start server: ${String(error)}\n`);
-      if (this.state) {
+      if (this.built) {
         await this.stop().catch((err: unknown) => {
           process.stderr.write(`Failed to stop during startup error: ${String(err)}\n`);
         });
@@ -36,9 +42,9 @@ export class ServerRuntime {
   }
 
   async stop(): Promise<void> {
-    const log = this.state?.comms.context.log;
+    const log = this.built?.context.log;
     log?.info('Stopping server...');
-    await stopServerSystem(this.state ?? {});
+    await this.built?.stop();
 
     log?.info('Server stopped');
   }
@@ -50,10 +56,19 @@ export class ServerRuntime {
     const signals = ['SIGTERM', 'SIGINT'] as const;
     for (const signal of signals) {
       process.on(signal, async () => {
-        this.state?.comms.context.log.info(`Received ${signal}, shutting down...`);
+        this.built?.context.log.info(`Received ${signal}, shutting down...`);
         await this.stop();
         process.exit(0);
       });
     }
+
+    // A crash becomes one structured fatal event in the log pipeline. The monitor
+    // only observes: Node still prints the error and exits, and with the default
+    // --unhandled-rejections=throw it sees rejections too (origin 'unhandledRejection').
+    // No 'unhandledRejection' listener, on purpose: one would downgrade that exit
+    // to a warning and keep a process that lost a promise serving in an unknown state.
+    process.on('uncaughtExceptionMonitor', (error, origin) => {
+      this.built?.context.log.fatal(error, 'Uncaught exception', { origin });
+    });
   }
 }

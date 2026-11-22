@@ -1,0 +1,703 @@
+name: CI
+
+# The one CI workflow (restructure plan, section 14.5).
+#
+# Lanes:
+# - every run (pull_request, push to main, nightly, manual): `static`,
+#   `real-db`, the `security-*` scanners with their `security` verdict, and
+#   `infra` when a file under infra/ changed.
+# - push to main also runs `images`, after `static` and `real-db`. The Deploy
+#   workflow (deploy.yml) starts when this workflow completes, and only for a
+#   push-triggered run that succeeded as a whole: it pulls the images by the
+#   digests in the `deployment-images` artifact.
+# - the nightly schedule and a manual run add the heavy lane: `e2e`, `build`,
+#   `coverage`, `lighthouse`, and `infra` whatever changed.
+#
+# There is no separate `unit` job. `pnpm bslt gate merge` already runs the
+# unit tests of every package (its `test` gate, `turbo run test`), so a second
+# job would run the same tests twice.
+#
+# Versions: Node comes from .node-version (through the setup-node-pnpm action),
+# the Postgres service image is POSTGRES_IMAGE in infra/versions.env, and every
+# action is pinned by commit. The `version-pins` gate fails on any other value.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+# One queue per ref and lane. A group holds one waiting run and a newer one
+# cancels it, so the nightly and manual runs (the heavy lane) must not share a
+# group with the pushes to main: they would cancel the waiting run of the
+# newest push, whose commit then gets no images and no deploy. Pushes to main
+# stay in one queue and finish in push order, which the deploy relies on.
+concurrency:
+  group: ci-${{ github.ref }}-${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'heavy' || 'gate' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  # ===========================================================================
+  # Every run
+  # ===========================================================================
+  static:
+    name: static
+    runs-on: ubuntu-latest
+    # Fail fast rather than letting a hung step run until the 6h default.
+    timeout-minutes: 30
+    env:
+      # Two interacting OOMs gate this job, both addressed here:
+      # 1) System RAM: Turbo's default 10-way fan-out starts about 10 type-aware
+      #    ESLint/tsc/vitest processes at once and OOM-kills the whole runner
+      #    ("received a shutdown signal", 0 tasks completed). Cap concurrency.
+      # 2) Per-process heap: the type-aware lint of the larger server packages
+      #    exceeds V8's default old-space and aborts (exit 134, "JavaScript heap
+      #    out of memory"). Raise the heap ceiling for lint, type-check and test.
+      TURBO_CONCURRENCY: '2'
+      NODE_OPTIONS: '--max-old-space-size=4096'
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: ./.github/actions/setup-node-pnpm
+
+      - name: Cache Turbo
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: node_modules/.cache/turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}-static
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
+      # Every registered gate executes and returns a result (seconds, no database).
+      - name: Gate registry self-test
+        run: pnpm bslt gate --self-test
+
+      # Audits, CSS lints, tombstones, Prettier, then lint, type-check and the
+      # unit tests of every package.
+      - name: Merge gate
+        run: pnpm bslt gate merge
+
+  # Green mock suites cannot catch SQL, constraint or migration bugs, so every
+  # merge gates on a real, migrated Postgres of the pinned major.
+  real-db:
+    name: real-db
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17.11-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: bslt_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d bslt_ci"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      # The job runs on the production role split (docs/deploy/env.md#database-roles).
+      # The superuser is the admin connection only: the role bootstrap, the test
+      # harness's CREATE DATABASE per suite file, and the Postgres smoke suite.
+      DATABASE_ADMIN_URL: postgresql://postgres:postgres@127.0.0.1:5432/bslt_ci
+      # Throwaway values for an ephemeral service container, not secrets.
+      DATABASE_URL: postgresql://bslt_app:ci-app-role-password@127.0.0.1:5432/bslt_ci
+      WORKER_DATABASE_URL: postgresql://bslt_worker:ci-worker-role-password@127.0.0.1:5432/bslt_ci
+      MIGRATION_DATABASE_URL: postgresql://bslt_owner:ci-owner-role-password@127.0.0.1:5432/bslt_ci
+      # The smoke suite seeds and cleans up tables no runtime role may write, so it
+      # still runs on the admin connection (an accepted Phase 0 residual).
+      POSTGRES_SMOKE_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/bslt_ci
+      DB_SSL: false
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: ./.github/actions/setup-node-pnpm
+
+      # Same order as a deploy: roles, then migrations (as bslt_owner).
+      - name: Bootstrap database roles
+        run: pnpm db:bootstrap:roles
+
+      # The runner of @bslt/db on the kernel baseline and the owners' baselines.
+      - name: Apply the migrations
+        run: pnpm db:migrate
+
+      # The migrated database against the committed catalog, table by table.
+      - name: Catalog check
+        run: pnpm db:audit --db
+
+      # The catalog recomputed: every migration source applied on its own to a
+      # scratch database, each object attributed to the source that created it,
+      # against main/kernel/db/catalog.snapshot.json (the merge gate has no
+      # database and reads the committed file).
+      - name: Catalog recomputed
+        run: pnpm bslt db catalog --check
+
+      # Each suite file gets its own database; the suites connect as bslt_app
+      # and bslt_worker.
+      - name: Real-DB integration tests
+        run: pnpm test:real-db
+
+      # On the database bootstrapped and migrated above.
+      - name: Postgres smoke tests
+        run: pnpm test:postgres-smoke
+
+  # Decides whether `infra` runs: a change under infra/, or the heavy lane.
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    outputs:
+      infra: ${{ steps.filter.outputs.infra }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+
+      - name: Detect infrastructure changes
+        id: filter
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          # pull_request: the base branch tip (HEAD is the merge commit).
+          # push: the commit the branch pointed at before.
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          infra=false
+          if [ "$EVENT_NAME" = "schedule" ] || [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            infra=true
+          elif ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            # No usable base (a new branch, a forced push): check rather than skip.
+            infra=true
+          elif ! git diff --quiet "$BASE_SHA" HEAD -- infra; then
+            infra=true
+          fi
+          echo "infra=$infra" >> "$GITHUB_OUTPUT"
+
+  # Terraform under infra/cloud is reference code: it is formatted and
+  # validated here and never applied from CI (deploy.yml has the manual job).
+  infra:
+    name: infra (${{ matrix.provider }})
+    needs: changes
+    if: needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [digitalocean, gcp]
+    env:
+      PROVIDER: ${{ matrix.provider }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: '~1.0'
+
+      - name: Terraform format
+        working-directory: infra/cloud
+        run: terraform fmt -check -diff -recursive "$PROVIDER"
+
+      # No backend and no credentials: this validates the configuration only.
+      - name: Terraform validate
+        working-directory: infra/cloud/${{ matrix.provider }}
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      - name: Module structure and documentation
+        run: |
+          missing=0
+          for file in \
+            infra/README.md \
+            infra/cloud/terraform.tfvars.example \
+            "infra/cloud/$PROVIDER/main.tf" \
+            "infra/cloud/$PROVIDER/variables.tf" \
+            "infra/cloud/$PROVIDER/outputs.tf"; do
+            if [ ! -f "$file" ]; then
+              echo "::error file=$file::Required infrastructure file is missing."
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+  # ===========================================================================
+  # Security (blocking policy: docs/dev/security-ci.md)
+  # ===========================================================================
+  security-codeql:
+    name: security-codeql
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    env:
+      CODEQL_ACTION_DIFF_INFORMED_QUERIES: 'false'
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@89a39a4e59826350b863aa6b6252a07ad50cf83e # v4.32.4
+        with:
+          languages: javascript-typescript
+          queries: security-extended,security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@89a39a4e59826350b863aa6b6252a07ad50cf83e # v4.32.4
+
+      # Non-blocking: the analysis itself succeeds, but the SARIF upload is
+      # rejected when GitHub code scanning is not enabled (a private repository
+      # without Advanced Security). Findings still appear in the job log.
+      - name: Analyze
+        uses: github/codeql-action/analyze@89a39a4e59826350b863aa6b6252a07ad50cf83e # v4.32.4
+        continue-on-error: true
+        with:
+          category: '/language:javascript-typescript'
+
+  security-semgrep:
+    name: security-semgrep
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+
+      - name: Install Semgrep
+        run: pip install semgrep
+
+      - name: Run Semgrep
+        run: semgrep scan --config auto --sarif --output semgrep.sarif
+
+      - name: Upload Semgrep SARIF
+        uses: github/codeql-action/upload-sarif@89a39a4e59826350b863aa6b6252a07ad50cf83e # v4.32.4
+        if: always() && hashFiles('semgrep.sarif') != ''
+        continue-on-error: true
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+      - name: Upload Semgrep artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always() && hashFiles('semgrep.sarif') != ''
+        with:
+          name: semgrep-sarif
+          path: semgrep.sarif
+
+  security-dependencies:
+    name: security-dependencies
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: ./.github/actions/setup-node-pnpm
+
+      # Every dependency, moderate severity and above.
+      - name: pnpm audit
+        run: pnpm audit --audit-level moderate
+
+      # Production dependencies, any severity: the former daily audit.
+      - name: pnpm audit (production dependencies)
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: pnpm audit --prod
+
+      - name: OSV Scanner
+        uses: google/osv-scanner-action/osv-scanner-action@c5996e0193a3df57d695c1b8a1dec2a4c62e8730 # v2.3.3
+        with:
+          scan-args: |-
+            --recursive
+            --format sarif
+            --output osv-results.sarif
+            .
+
+      - name: Upload OSV SARIF
+        uses: github/codeql-action/upload-sarif@89a39a4e59826350b863aa6b6252a07ad50cf83e # v4.32.4
+        if: always() && hashFiles('osv-results.sarif') != ''
+        continue-on-error: true
+        with:
+          sarif_file: osv-results.sarif
+          category: osv
+
+      - name: Upload OSV artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always() && hashFiles('osv-results.sarif') != ''
+        with:
+          name: osv-sarif
+          path: osv-results.sarif
+
+  security-secrets:
+    name: security-secrets
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITLEAKS_ENABLE_COMMENTS: false
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  security-trivy:
+    name: security-trivy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    env:
+      SCAN_IMAGE: bslt-server:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Build the server image
+        id: build-image
+        run: docker build -f infra/docker/Dockerfile -t "$SCAN_IMAGE" .
+
+      # Non-blocking: findings surface as SARIF; continue-on-error keeps the job
+      # green on them, as the CodeQL analysis above. token-setup-trivy
+      # authenticates the binary download so it does not hit GitHub's
+      # unauthenticated rate limit.
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        if: steps.build-image.outcome == 'success'
+        continue-on-error: true
+        with:
+          image-ref: ${{ env.SCAN_IMAGE }}
+          format: sarif
+          output: trivy-image.sarif
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+          token-setup-trivy: ${{ github.token }}
+
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        continue-on-error: true
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-fs.sarif
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+          token-setup-trivy: ${{ github.token }}
+
+      - name: Upload Trivy image SARIF
+        uses: github/codeql-action/upload-sarif@89a39a4e59826350b863aa6b6252a07ad50cf83e # v4.32.4
+        if: always() && hashFiles('trivy-image.sarif') != ''
+        continue-on-error: true
+        with:
+          sarif_file: trivy-image.sarif
+          category: trivy-image
+
+      - name: Upload Trivy filesystem SARIF
+        uses: github/codeql-action/upload-sarif@89a39a4e59826350b863aa6b6252a07ad50cf83e # v4.32.4
+        if: always() && hashFiles('trivy-fs.sarif') != ''
+        continue-on-error: true
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-fs
+
+      - name: Upload Trivy artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: trivy-sarif
+          path: |
+            trivy-image.sarif
+            trivy-fs.sarif
+          if-no-files-found: ignore
+
+  # One verdict for branch protection: red when any scanner job is.
+  security:
+    name: security
+    if: always()
+    needs:
+      [security-codeql, security-semgrep, security-dependencies, security-secrets, security-trivy]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scanner results
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "scanner jobs: $RESULTS"
+          for result in $RESULTS; do
+            if [ "$result" != "success" ]; then
+              echo "::error::A security scanner job ended as '$result'."
+              exit 1
+            fi
+          done
+
+  # ===========================================================================
+  # Heavy lane: nightly schedule and manual runs only
+  # ===========================================================================
+  e2e:
+    name: e2e
+    needs: static
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: postgres:17.11-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: bslt_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d bslt_e2e"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/bslt_e2e
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: bslt_e2e
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      DB_SSL: false
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: ./.github/actions/setup-node-pnpm
+
+      # The API refuses to start without its secrets (JWT_SECRET and the rest),
+      # and a fresh checkout has no env file. The setup preset writes
+      # config/env/.env.development with generated ones. The database stays the
+      # one in this job's env: the process environment wins over env files.
+      - name: Write the development env the servers start from
+        run: pnpm bootstrap --preset docker --yes --skip-db --skip-docker --skip-install
+
+      - name: Prepare the E2E database schema
+        run: pnpm db:migrate
+
+      - name: Install Playwright browsers
+        run: pnpm -w exec playwright install --with-deps
+
+      - name: E2E tests
+        run: pnpm test:e2e
+
+      # Same job, same database: globalSetup reconciles the flags.* rows to the
+      # toggles at the start of each run, so this leg turns the three flags on and
+      # the specs behind them stop skipping (docs/dev/testing.md).
+      - name: E2E tests, optional surfaces on
+        env:
+          E2E_ENABLE_ADVANCED_ADMIN: '1'
+          E2E_ENABLE_BILLING: '1'
+          E2E_ENABLE_ACTIVITY_FEED: '1'
+        run: pnpm test:e2e billing/ admin/ auth/auth.e2e.ts system/runtime-flags.e2e.ts
+
+      - name: Upload E2E reports
+        if: failure()
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: playwright-report
+          path: |
+            tests/e2e/reports/test-results/
+            config/blob-report/
+          retention-days: 3
+
+  # What the merge gate leaves out: the build of every package (with the
+  # postbuild ESM checks) and the API response and client checks.
+  build:
+    name: build
+    needs: static
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      TURBO_CONCURRENCY: '2'
+      NODE_OPTIONS: '--max-old-space-size=4096'
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: ./.github/actions/setup-node-pnpm
+
+      - name: Cache Turbo
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: node_modules/.cache/turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}-build
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
+      - name: Build every package
+        run: pnpm bslt gate run build
+
+  # A report, not a gate: it shows where tests are thin. The test assertions
+  # themselves gate in `static`.
+  coverage:
+    name: coverage
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: ./.github/actions/setup-node-pnpm
+
+      - name: Coverage report (non-blocking)
+        continue-on-error: true
+        run: pnpm test:coverage
+
+      - name: Upload coverage reports
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage-reports
+          path: |
+            coverage/lcov.info
+            coverage/coverage-final.json
+            main/**/coverage/lcov.info
+            tests/coverage/lcov.info
+          retention-days: 3
+          if-no-files-found: ignore
+
+  lighthouse:
+    name: lighthouse
+    needs: build
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: ./.github/actions/setup-node-pnpm
+
+      - name: Build the web app
+        run: pnpm --filter @bslt/web build
+
+      - name: Lighthouse CI
+        run: npx @lhci/cli@0.14.x autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+  # ===========================================================================
+  # Images: push to main only
+  # ===========================================================================
+  # The deploy chain depends on this job. It waits for both gates, so a red
+  # gate publishes no image and fails the run the deploy keys on.
+  images:
+    name: images
+    needs: [static, real-db]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Resolve image variables
+        id: image-vars
+        env:
+          INPUT_REGISTRY: ${{ vars.REGISTRY || secrets.REGISTRY || 'ghcr.io' }}
+          INPUT_IMAGE_NAME_RAW: ${{ vars.IMAGE_NAME || github.event.repository.name }}
+          INPUT_REPO_OWNER: ${{ github.repository_owner }}
+        run: |
+          REGISTRY="$INPUT_REGISTRY"
+          if [[ "$INPUT_IMAGE_NAME_RAW" != */* ]]; then
+            IMAGE_NAME="${INPUT_REPO_OWNER}/${INPUT_IMAGE_NAME_RAW}"
+          else
+            IMAGE_NAME="$INPUT_IMAGE_NAME_RAW"
+          fi
+          # A registry path is lower case; an owner name need not be.
+          IMAGE_NAME="$(printf '%s' "$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')"
+          {
+            echo "registry=$REGISTRY"
+            echo "image_name=$IMAGE_NAME"
+            echo "api_tag=${REGISTRY}/${IMAGE_NAME}:${GITHUB_SHA}-api"
+            echo "web_tag=${REGISTRY}/${IMAGE_NAME}:${GITHUB_SHA}-web"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Log in to the container registry
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ${{ steps.image-vars.outputs.registry }}
+          # Fall back to the workflow's own identity and token. A package inherits
+          # the repository visibility; no additional registry credentials needed.
+          username: ${{ secrets.REGISTRY_USERNAME || github.actor }}
+          password: ${{ secrets.REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }}
+
+      # The server image; its process role is chosen at run time.
+      - name: Build and push the API image
+        id: build-api
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: .
+          file: ./infra/docker/Dockerfile
+          push: true
+          tags: ${{ steps.image-vars.outputs.api_tag }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+      - name: Build and push the web image
+        id: build-web
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: .
+          file: ./infra/docker/Dockerfile.web
+          push: true
+          tags: ${{ steps.image-vars.outputs.web_tag }}
+          # SITE_URL is optional for prerendering; it enables the sitemap.
+          build-args: |
+            VITE_API_URL=
+            SITE_URL=${{ vars.SITE_URL }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+      - name: Write the deployment image artifact
+        env:
+          REGISTRY: ${{ steps.image-vars.outputs.registry }}
+          IMAGE_NAME: ${{ steps.image-vars.outputs.image_name }}
+          API_TAG: ${{ steps.image-vars.outputs.api_tag }}
+          WEB_TAG: ${{ steps.image-vars.outputs.web_tag }}
+          API_DIGEST: ${{ steps.build-api.outputs.digest }}
+          WEB_DIGEST: ${{ steps.build-web.outputs.digest }}
+        run: |
+          cat > deployment-images.json << EOF
+          {
+            "commit_sha": "${GITHUB_SHA}",
+            "registry": "${REGISTRY}",
+            "image_name": "${IMAGE_NAME}",
+            "api_image": "${REGISTRY}/${IMAGE_NAME}@${API_DIGEST}",
+            "web_image": "${REGISTRY}/${IMAGE_NAME}@${WEB_DIGEST}",
+            "api_tag": "${API_TAG}",
+            "web_tag": "${WEB_TAG}"
+          }
+          EOF
+
+      - name: Upload the deployment image artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: deployment-images
+          path: deployment-images.json
+          retention-days: 7

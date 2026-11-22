@@ -1,0 +1,21 @@
+/* main/apps/web/src/pages/PublicPages.css */
+
+.landing-hero {
+  padding-block: 4rem;
+}
+
+.landing-lead {
+  max-width: 40rem;
+}
+
+.landing-grid {
+  display: grid;
+  gap: var(--ui-gap-lg);
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  padding-bottom: 4rem;
+}
+
+.unavailable-section {
+  max-width: 38rem;
+  margin: 0 auto;
+}

@@ -10,7 +10,7 @@
 // Types
 // ============================================================================
 
-export type ServiceWorkerStatus =
+type ServiceWorkerStatus =
   | 'idle'
   | 'registering'
   | 'registered'
@@ -21,9 +21,7 @@ export type ServiceWorkerStatus =
   | 'error'
   | 'unsupported';
 
-export type ServiceWorkerEventType = 'statechange' | 'updatefound' | 'error' | 'message';
-
-export interface ServiceWorkerUpdateInfo {
+interface ServiceWorkerUpdateInfo {
   /** Whether an update is available */
   updateAvailable: boolean;
   /** Whether the service worker is waiting to be activated */
@@ -43,7 +41,7 @@ export interface ServiceWorkerCallbacks {
   onStatusChange?: (status: ServiceWorkerStatus) => void;
 }
 
-export interface ServiceWorkerConfig {
+interface ServiceWorkerConfig {
   /** Path to the service worker file (default: '/sw.js') */
   swPath?: string;
   /** Scope for the service worker (default: '/') */
@@ -54,7 +52,7 @@ export interface ServiceWorkerConfig {
   callbacks?: ServiceWorkerCallbacks;
 }
 
-export interface ServiceWorkerController {
+interface ServiceWorkerController {
   /** Current registration status */
   status: ServiceWorkerStatus;
   /** The service worker registration object */

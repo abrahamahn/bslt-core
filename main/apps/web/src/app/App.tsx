@@ -8,52 +8,49 @@
  * - Environment passed as prop (dependency injection)
  */
 
-import { TosAcceptanceModal } from '@auth/components';
-import { getApiClient } from '@bslt/api';
 import {
   clearQueryCache,
   clearUserScopedLocalStorage,
+  createEndpointClient,
   createPersistedClientFromQueryCache,
   createQueryPersister,
+  createTransport,
   restorePersistedQueryCache,
   runUserScopedResets,
   type Persister,
 } from '@bslt/client-engine';
+import { complianceModule } from '@bslt/compliance/module';
+import { CookieConsentBanner, TosAcceptanceModal } from '@bslt/compliance/web';
+import { useAuth } from '@bslt/identity/web';
 import { LiveRegion, QueryCacheProvider, toastStore } from '@bslt/react';
 import { HistoryProvider, useRouteFocusAnnounce } from '@bslt/react/hooks';
-import { BrowserRouter, Navigate, Route, Routes } from '@bslt/react/router';
-import {
-  ErrorBoundary,
-  LoadingContainer,
-  ProtectedRoute,
-  SkipLink,
-  ThemeProvider,
-  Toaster,
-} from '@bslt/ui';
-import { useAuth } from '@features/auth';
-import { CookieConsentBanner } from '@settings/components';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from '@bslt/react/router';
+import { AsyncBoundary, ErrorBoundary, SkipLink, ThemeProvider, Toaster } from '@bslt/ui';
+import { useCapabilities } from '@bslt/web-platform';
 import {
   Suspense,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ElementType,
   type ReactElement,
 } from 'react';
 
-import { addRouteChangeBreadcrumb, SentryErrorBoundary } from '../lib/sentry';
+import { reportError } from '../lib/errorReporter';
 
 import { getAccessToken } from './authToken';
 import { ClientEnvironmentProvider, type ClientEnvironment } from './ClientEnvironment';
+import { CommandPalette } from './command-palette';
 import { NetworkStatus } from './components';
 import { isPersistableQueryKey } from './queryPersistencePolicy';
-import { appRoutes, type AppRoute } from './routes'; // Import appRoutes and AppRoute type
-import { setTosHandler } from './tosHandler';
+import { deriveAppRouteFlags } from './routeFlags';
+import { createAppRoutes, createPendingAppRoutes, type AppRoute } from './routes';
+import { ShellOverlays } from './shells';
+import { setTosHandler, type TosRequiredPayload } from './tosHandler';
 
-import type { TosRequiredPayload } from '@bslt/api';
-
-import { I18nProvider } from '@/i18n';
+import { I18nProvider } from '#app/i18n';
 
 // ============================================================================
 // Types
@@ -73,77 +70,54 @@ const AppToaster = (): ReactElement => {
   return <Toaster messages={messages} onDismiss={dismiss} position="bottom-right" />;
 };
 
+const AuthenticatedCommandPalette = (): ReactElement | null => {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <CommandPalette /> : null;
+};
+
 /** Announces route changes to screen readers via the LiveRegion provider */
 const RouteFocusAnnouncer = (): null => {
   useRouteFocusAnnounce();
   return null;
 };
 
-/** Records Sentry breadcrumbs on route changes for debugging context */
-const SentryRouteTracker = (): null => {
-  const prevPath = useRef(window.location.pathname);
-
-  useEffect(() => {
-    // Use a MutationObserver-free approach: listen to popstate + intercept pushState
-    const handleRouteChange = (): void => {
-      const currentPath = window.location.pathname;
-      if (currentPath !== prevPath.current) {
-        addRouteChangeBreadcrumb(prevPath.current, currentPath);
-        prevPath.current = currentPath;
-      }
-    };
-
-    // Listen for browser back/forward
-    window.addEventListener('popstate', handleRouteChange);
-
-    // Patch pushState/replaceState to detect programmatic navigation
-    const originalPushState = history.pushState.bind(history);
-    const originalReplaceState = history.replaceState.bind(history);
-
-    history.pushState = (...args: Parameters<typeof history.pushState>) => {
-      originalPushState(...args);
-      handleRouteChange();
-    };
-
-    history.replaceState = (...args: Parameters<typeof history.replaceState>) => {
-      originalReplaceState(...args);
-      handleRouteChange();
-    };
-
-    return () => {
-      window.removeEventListener('popstate', handleRouteChange);
-      history.pushState = originalPushState;
-      history.replaceState = originalReplaceState;
-    };
-  }, []);
-
-  return null;
+/** The root boundary's render errors go to the error reporter (consent-gated). */
+const reportRenderError = (error: Error): void => {
+  reportError(error, 'render');
 };
 
 /**
- * Shown while a lazy route's chunk loads. The `data-route-pending` attribute is
- * the contract with the boot splash (src/bootstrap/splash.ts): while it is in the
- * tree the first route is NOT on screen yet, and revealing would only swap the
- * splash for this spinner.
+ * Shown while a lazy route's chunk loads, and in place of a flag-gated route
+ * while the viewer's capability context loads. The `data-route-pending`
+ * attribute is the contract with the boot splash (src/bootstrap/splash.ts):
+ * while it is in the tree the first route is NOT on screen yet, and revealing
+ * would only swap the splash for this spinner.
  */
 export const RouteLoadingFallback = (): ReactElement => (
   <div className="app-route-loading" role="status" aria-label="Loading page" data-route-pending="">
-    <LoadingContainer className="app-route-loading__indicator" text="" size="md" />
+    <AsyncBoundary className="app-route-loading__indicator" isLoading loadingText="" size="md" />
   </div>
 );
 
-/** Wraps a page component with auth protection using hooks properly */
+const pendingAppRoutes = createPendingAppRoutes(RouteLoadingFallback);
+
+/** Shell/route auth guard preserving returnTo and keeping mounted pages alive across background user refreshes. */
 const ProtectedPage = ({ Component }: { Component: ElementType }): ReactElement => {
   const { isAuthenticated, isLoading } = useAuth();
-  return (
-    <ProtectedRoute
-      isAuthenticated={isAuthenticated}
-      isLoading={isLoading}
-      loadingComponent={<RouteLoadingFallback />}
-    >
-      <Component />
-    </ProtectedRoute>
-  );
+  const location = useLocation();
+
+  if (isLoading && !isAuthenticated) {
+    return <RouteLoadingFallback />;
+  }
+  if (!isAuthenticated) {
+    const currentPath = location.pathname + location.search;
+    const target =
+      currentPath !== '/' && currentPath !== ''
+        ? `/login?returnTo=${encodeURIComponent(currentPath)}`
+        : '/login';
+    return <Navigate to={target} replace />;
+  }
+  return <Component />;
 };
 
 /** Redirects authenticated users away from public/demo pages into the logged-in app. */
@@ -208,7 +182,15 @@ const renderRoutes = (routes: AppRoute[]): ReactElement[] => {
 };
 
 const AppRoutes = (): ReactElement => {
-  return <Routes>{renderRoutes(appRoutes)}</Routes>;
+  const { context, status } = useCapabilities();
+  const routes = useMemo(
+    () =>
+      status === 'loading'
+        ? pendingAppRoutes
+        : createAppRoutes(deriveAppRouteFlags(context, { isDev: import.meta.env.DEV }), context),
+    [context, status],
+  );
+  return <Routes>{renderRoutes(routes)}</Routes>;
 };
 // ============================================================================
 // App
@@ -240,7 +222,7 @@ function useQueryPersistence(environment: ClientEnvironment): void {
         const persistedClient = await persister.restoreClient();
         restorePersistedQueryCache(queryCache, persistedClient, isPersistableQueryKey);
       } catch {
-        // Restore failed silently, continue with empty cache
+        await persister.removeClient();
       }
 
       // Subscribe to cache changes for persistence
@@ -258,6 +240,22 @@ function useQueryPersistence(environment: ClientEnvironment): void {
       unsubscribe?.();
     };
   }, [queryCache, maxAge, throttleTime, persister]);
+}
+
+function clearServiceWorkerCachesOnLogout(): void {
+  if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+    const sw = navigator.serviceWorker as ServiceWorkerContainer | undefined;
+    const controller = sw?.controller ?? null;
+    if (controller !== null) {
+      controller.postMessage({ type: 'CLEAR_CACHE' });
+    }
+  }
+  if (typeof window !== 'undefined' && 'caches' in window) {
+    void window.caches
+      .keys()
+      .then((names) => Promise.all(names.map((name) => window.caches.delete(name))))
+      .catch(() => false);
+  }
 }
 
 /**
@@ -287,12 +285,14 @@ function useAuthScopedCacheReset(environment: ClientEnvironment): void {
         //  - the in-memory query cache (server data — balances, lists, …)
         //  - the IndexedDB-persisted query cache (else a cold start restores it)
         //  - single-slot user-scoped localStorage (active org, export id, …)
+        //  - Service Worker CacheStorage (`CLEAR_CACHE`)
         // Per-user preferences stored via createUserScopedStorage are namespaced
         // by id, so they are preserved and restored on that user's next login.
         queryCache.clear();
         clearUserScopedLocalStorage();
         runUserScopedResets();
-        void clearQueryCache().catch(() => undefined);
+        clearServiceWorkerCachesOnLogout();
+        void clearQueryCache().catch(() => false);
       }
     });
   }, [auth, queryCache]);
@@ -326,11 +326,11 @@ function useTosAcceptance(environment: ClientEnvironment): {
   handleDismiss: () => void;
 } {
   const [state, setState] = useState<TosModalState>(TOS_INITIAL_STATE);
-  const resolveRef = useRef<(() => void) | null>(null);
+  const resolveRef = useRef<((accepted: boolean) => void) | null>(null);
 
   useEffect(() => {
     const cleanup = setTosHandler((payload: TosRequiredPayload) => {
-      return new Promise<void>((resolve) => {
+      return new Promise<boolean>((resolve) => {
         resolveRef.current = resolve;
         setState({
           open: true,
@@ -344,23 +344,27 @@ function useTosAcceptance(environment: ClientEnvironment): {
 
   const handleAccept = useCallback(
     async (documentId: string) => {
-      const api = getApiClient({
-        baseUrl: environment.config.apiUrl,
-        getToken: getAccessToken,
+      const transport =
+        environment.transport ??
+        createTransport({
+          baseUrl: environment.config.apiUrl,
+          getToken: getAccessToken,
+        });
+      await createEndpointClient(complianceModule, transport).acceptTos({
+        body: { documentId },
       });
-      await api.acceptTos(documentId);
 
-      // Close modal and resolve the pending promise so the original request retries
+      // Close modal and resolve true so the original request retries
       setState(TOS_INITIAL_STATE);
-      resolveRef.current?.();
+      resolveRef.current?.(true);
       resolveRef.current = null;
     },
-    [environment.config],
+    [environment.config.apiUrl, environment.transport],
   );
 
   const handleDismiss = useCallback(() => {
     setState(TOS_INITIAL_STATE);
-    // Don't resolve - the original request will remain rejected
+    resolveRef.current?.(false);
     resolveRef.current = null;
   }, []);
 
@@ -371,7 +375,7 @@ function useTosAcceptance(environment: ClientEnvironment): {
  * Root component that sets up all application infrastructure.
  *
  * Provider stack (outer to inner):
- * - ErrorBoundary: Catches unhandled render errors
+ * - ErrorBoundary: Catches unhandled render errors and hands them to the error reporter
  * - QueryCacheProvider: Custom query cache infrastructure
  * - I18nProvider: Locale state and translation context
  * - BrowserRouter: React Router infrastructure
@@ -395,47 +399,42 @@ export const App = ({ environment }: AppProps): ReactElement => {
   } = useTosAcceptance(environment);
 
   return (
-    <SentryErrorBoundary fallback={<ErrorBoundary>{null}</ErrorBoundary>}>
-      <ErrorBoundary>
-        <QueryCacheProvider cache={environment.queryCache}>
-          {/* Single source of truth for appearance — same storage keys the
-              Settings → Theme controls write, so the choice applies app-wide. */}
-          <ThemeProvider
-            storageKey="app-theme-mode"
-            densityStorageKey="app-density"
-            contrastStorageKey="app-contrast"
-          >
-            <I18nProvider>
-              <BrowserRouter>
-                <ClientEnvironmentProvider value={environment}>
-                  <HistoryProvider>
-                    <LiveRegion>
-                      <div className="h-screen flex flex-col overflow-hidden">
-                        <SkipLink />
-                        <RouteFocusAnnouncer />
-                        <SentryRouteTracker />
-                        <div className="flex-1 min-h-0 relative">
-                          <AppRoutes />
-                        </div>
-                        <AppToaster />
-                        <NetworkStatus />
-                        <CookieConsentBanner />
-                        <TosAcceptanceModal
-                          open={tosState.open}
-                          documentId={tosState.documentId}
-                          requiredVersion={tosState.requiredVersion}
-                          onAccept={handleTosAccept}
-                          onDismiss={handleTosDismiss}
-                        />
+    <ErrorBoundary onError={reportRenderError}>
+      <QueryCacheProvider cache={environment.queryCache}>
+        {/* Single source of truth for appearance — same storage keys the
+            Settings → Theme controls write, so the choice applies app-wide. */}
+        <ThemeProvider>
+          <I18nProvider>
+            <BrowserRouter>
+              <ClientEnvironmentProvider value={environment}>
+                <HistoryProvider>
+                  <LiveRegion>
+                    <div className="h-screen flex flex-col overflow-hidden">
+                      <SkipLink />
+                      <RouteFocusAnnouncer />
+                      <div className="flex-1 min-h-0 relative">
+                        <AppRoutes />
                       </div>
-                    </LiveRegion>
-                  </HistoryProvider>
-                </ClientEnvironmentProvider>
-              </BrowserRouter>
-            </I18nProvider>
-          </ThemeProvider>
-        </QueryCacheProvider>
-      </ErrorBoundary>
-    </SentryErrorBoundary>
+                      <ShellOverlays />
+                      <AppToaster />
+                      <NetworkStatus />
+                      <AuthenticatedCommandPalette />
+                      <CookieConsentBanner />
+                      <TosAcceptanceModal
+                        open={tosState.open}
+                        documentId={tosState.documentId}
+                        requiredVersion={tosState.requiredVersion}
+                        onAccept={handleTosAccept}
+                        onDismiss={handleTosDismiss}
+                      />
+                    </div>
+                  </LiveRegion>
+                </HistoryProvider>
+              </ClientEnvironmentProvider>
+            </BrowserRouter>
+          </I18nProvider>
+        </ThemeProvider>
+      </QueryCacheProvider>
+    </ErrorBoundary>
   );
 };

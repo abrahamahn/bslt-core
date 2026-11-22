@@ -90,6 +90,9 @@
         opacity: 0;
         pointer-events: none;
       }
+      #root[data-ssr-public='true'] ~ #app-splash {
+        display: none;
+      }
       .app-splash__mark {
         width: 2rem;
         height: 2rem;
@@ -133,10 +136,10 @@
   </head>
   <body>
     <!--
-      The build-time prerenderer (main/tools/scripts/build/prerender.ts) writes the
-      public pages into these two placeholders and marks the root data-prerendered,
-      so the client knows to drop the markup and mount fresh rather than hydrate it.
-      For every other route the file ships exactly as it is: an empty SPA shell.
+      PublicRoute SSR (serve.ts) and build-time prerendering (bslt web prerender)
+      inject server-rendered HTML into these markers and mark #root data-ssr-public,
+      skipping #app-splash and hydrating cleanly via entry-public.tsx.
+      For SPA routes the file ships as an empty #root shell.
     -->
     <div id="root"><!--ssr-outlet--></div>
 

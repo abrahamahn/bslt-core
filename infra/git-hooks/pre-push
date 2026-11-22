@@ -1,0 +1,31 @@
+#!/usr/bin/env sh
+
+# Git passes ref updates via stdin:
+#   <local_ref> <local_sha> <remote_ref> <remote_sha>
+# If there are no effective updates (already up-to-date), skip heavy checks.
+has_updates=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+  # Skip deletions.
+  if [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then
+    continue
+  fi
+  # New remote ref (all-zero remote SHA) or changed SHA requires checks.
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ] || [ "$local_sha" != "$remote_sha" ]; then
+    has_updates=1
+  fi
+done
+
+# Note: the loop above must run to EOF rather than `break`ing on the first
+# update. git is still writing the ref list to this hook's stdin; leaving it
+# undrained means the pipe closes when the hook exits and git dies of SIGPIPE,
+# which it reports as a failed push. It only shows up when the gate is fully
+# turbo-cached and returns in ~1s — with a cache miss git always finished
+# writing first, so the bug stayed hidden behind slow builds.
+
+if [ "$has_updates" -eq 0 ]; then
+  echo "ℹ️ pre-push: refs already up-to-date, skipping checks."
+  exit 0
+fi
+
+pnpm exec bslt maintain-caches || exit 1
+pnpm pre-push

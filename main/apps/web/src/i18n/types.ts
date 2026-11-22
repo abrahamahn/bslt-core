@@ -12,7 +12,7 @@ import {
   DEFAULT_LOCALE as SHARED_DEFAULT_LOCALE,
   SUPPORTED_LOCALES as SHARED_SUPPORTED_LOCALES,
   type Locale as SharedLocale,
-} from '@bslt/shared/constants/system';
+} from '@bslt/contract';
 
 // ============================================================================
 // Locale Types
@@ -70,7 +70,7 @@ export interface I18nContextValue {
 /**
  * Display metadata for a locale.
  */
-export interface LocaleMetadata {
+interface LocaleMetadata {
   /** BCP 47 locale code */
   code: Locale;
   /** English name of the language */
@@ -86,22 +86,4 @@ export interface LocaleMetadata {
  */
 export const LOCALE_METADATA: Record<Locale, LocaleMetadata> = {
   'en-US': { code: 'en-US', name: 'English', nativeName: 'English', direction: 'ltr' },
-  es: { code: 'es', name: 'Spanish', nativeName: 'Español', direction: 'ltr' },
-  fr: { code: 'fr', name: 'French', nativeName: 'Français', direction: 'ltr' },
-  de: { code: 'de', name: 'German', nativeName: 'Deutsch', direction: 'ltr' },
-  ja: { code: 'ja', name: 'Japanese', nativeName: '日本語', direction: 'ltr' },
-  ko: { code: 'ko', name: 'Korean', nativeName: '한국어', direction: 'ltr' },
-  'zh-CN': {
-    code: 'zh-CN',
-    name: 'Chinese (Simplified)',
-    nativeName: '简体中文',
-    direction: 'ltr',
-  },
-  'pt-BR': {
-    code: 'pt-BR',
-    name: 'Portuguese (Brazil)',
-    nativeName: 'Português (Brasil)',
-    direction: 'ltr',
-  },
-  ar: { code: 'ar', name: 'Arabic', nativeName: 'العربية', direction: 'rtl' },
 };

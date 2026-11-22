@@ -1,0 +1,52 @@
+{
+  "name": "@bslt/tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cross-package integration and E2E tests for BSLT",
+  "imports": {
+    "#tests/integration/web/utils": "./integration/web/utils.tsx",
+    "#tests/*": "./*.ts"
+  },
+  "scripts": {
+    "test": "pnpm run test:integration",
+    "test:integration": "vitest run --config vitest.config.ts --reporter=dot --silent=passed-only --exclude '**/*.real-db.test.ts' --exclude '../main/modules/**/*.real-db.test.ts'",
+    "test:postgres-smoke": "POSTGRES_SMOKE_REQUIRED=1 vitest run --config vitest.config.ts --reporter=dot --silent=passed-only integration/database/postgres-smoke.test.ts",
+    "test:real-db": "REQUIRE_REAL_DB=1 vitest run --config vitest.config.ts --reporter=dot --silent=passed-only --fileParallelism=false .real-db.test.ts",
+    "test:e2e": "NODE_OPTIONS=--conditions=source playwright test --config ../config/playwright.config.ts",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@bslt/audit": "workspace:*",
+    "@bslt/build-config": "workspace:*",
+    "@bslt/client-engine": "workspace:*",
+    "@bslt/compliance": "workspace:*",
+    "@bslt/contract": "workspace:*",
+    "@bslt/db": "workspace:*",
+    "@bslt/devtools": "workspace:*",
+    "@bslt/identity": "workspace:*",
+    "@bslt/protocols": "workspace:*",
+    "@bslt/react": "workspace:*",
+    "@bslt/realtime": "workspace:*",
+    "@bslt/schema": "workspace:*",
+    "@bslt/server": "workspace:*",
+    "@bslt/server-system": "workspace:*",
+    "@bslt/testing": "workspace:*",
+    "@bslt/tools": "workspace:*",
+    "@bslt/ui": "workspace:*",
+    "@bslt/web": "workspace:*",
+    "@bslt/web-platform": "workspace:*",
+    "@playwright/test": "^1.65.0",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "jsdom": "^31.0.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
+  }
+}

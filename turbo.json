@@ -6,8 +6,8 @@
   "tasks": {
     "build:theme": {
       "cache": true,
-      "inputs": ["main/tools/sync/sync-css-theme.ts", "main/client/ui/src/theme/**"],
-      "outputs": ["main/client/ui/src/generated/**"]
+      "inputs": ["main/tools/sync/sync-css-theme.ts", "main/kernel/ui/src/theme/**"],
+      "outputs": ["main/kernel/ui/src/generated/**"]
     },
     "build": {
       "dependsOn": ["^build", "build:theme"],
@@ -38,8 +38,10 @@
       "inputs": [
         "main/apps/**/*.css",
         "main/client/**/*.css",
+        "main/kernel/**/*.css",
         "main/apps/**/*.tsx",
         "main/client/**/*.tsx",
+        "main/kernel/**/*.tsx",
         "main/tools/scripts/lint/lint-css-tokens.ts",
         "main/tools/scripts/lint/lint-responsive.ts",
         "main/tools/scripts/lint/lint-dead-classes.ts",
@@ -54,6 +56,7 @@
       "cache": true
     },
     "test": {
+      "dependsOn": ["^build"],
       "inputs": ["**/*.{ts,tsx}", "vitest.config.ts"],
       "cache": true,
       "env": ["NODE_ENV", "DATABASE_URL", "TEST_*"]
@@ -67,11 +70,11 @@
     }
   },
   "globalDependencies": [
-    "docs/legal/**",
-    "main/tools/scripts/build/ensure-js-extensions.ts",
+    "main/modules/compliance/seeds/legal/**",
+    "main/build-config/bin/**",
+    "main/build-config/src/**",
     "pnpm-lock.yaml",
     "tsconfig.json",
-    "vitest.config.ts",
     "config/*.{ts,js,mjs,cjs,json}",
     "config/.prettierrc",
     "config/tsconfig.eslint.json",

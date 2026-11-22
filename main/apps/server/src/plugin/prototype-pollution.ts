@@ -3,18 +3,20 @@
  * Reusable Fastify JSON parser registration that strips prototype-pollution keys.
  */
 
-import { sanitizePrototype } from '@bslt/shared/helpers/object';
-import { BadRequestError } from '@bslt/shared/system';
+import { BadRequestError } from '@bslt/contract';
+import {
+  sanitizePrototype,
+  type HttpServer,
+  type HttpServerRequest,
+} from '@bslt/server-system/http';
 
-import type { FastifyInstance, FastifyRequest } from 'fastify';
-
-export function registerPrototypePollutionProtection(server: FastifyInstance): void {
+export function registerPrototypePollutionProtection(server: HttpServer): void {
   server.removeContentTypeParser('application/json');
 
   server.addContentTypeParser(
     'application/json',
     { parseAs: 'string' },
-    (_req: FastifyRequest, body: string, done: (err: Error | null, body?: unknown) => void) => {
+    (_req: HttpServerRequest, body: string, done: (err: Error | null, body?: unknown) => void) => {
       try {
         if (body === '' || body.trim() === '') {
           done(null, undefined);

@@ -1,0 +1,1295 @@
+name: Deploy
+
+# The one deploy workflow (restructure plan, section 14.5).
+#
+# What starts it, and what it then does (decided by the `plan` job):
+#
+# | Event                                           | Environment | Jobs                         |
+# | ----------------------------------------------- | ----------- | ---------------------------- |
+# | CI passed for a push to main (`workflow_run`)   | production  | app, demo                    |
+# | push to the `staging` branch                    | staging     | staging-images, app          |
+# | manual, `environment` only                      | as chosen   | that environment's deploy    |
+# | manual with `rollback_sha`                      | as chosen   | the same jobs, older images  |
+# | manual with `terraform` = plan or apply         | as chosen   | terraform, and nothing else  |
+#
+# Nothing here runs for a pull request, and a CI run that was not started by a
+# push (the nightly and manual runs publish no images) deploys nothing.
+#
+# Layout the `app` job deploys onto (docs/deploy/README.md#two-servers): the app
+# server runs infra/docker/production/docker-compose.prod.yml, which has no
+# database. Postgres runs on its own server and is never restarted from here.
+#
+# GitHub environments: `staging`, `production`, `demo`. Put protection rules
+# (required reviewers) on them, and environment-specific values in them.
+#
+# Secrets
+#   SSH_PRIVATE_KEY               key for the app server (app)
+#   SSH_HOST_FINGERPRINT          SHA256 fingerprint of the app server's host key; unverified with a warning until set
+#   SERVER_HOST                   app server address, if not set as the variable DEPLOY_HOST
+#   DB_PASSWORD                   database superuser password (or POSTGRES_PASSWORD)
+#   DB_OWNER_PASSWORD             bslt_owner password   (openssl rand -hex 32)
+#   DB_APP_PASSWORD               bslt_app password     (openssl rand -hex 32)
+#   DB_WORKER_PASSWORD            bslt_worker password  (openssl rand -hex 32)
+#   JWT_SECRET, COOKIE_SECRET, OAUTH_TOKEN_ENCRYPTION_KEY
+#   ACME_EMAIL                    contact for the TLS certificates
+#   EMAIL_FROM_ADDRESS, SMTP_HOST, SMTP_USER, SMTP_PASS   optional mail settings
+#   REGISTRY_USERNAME, REGISTRY_PASSWORD                  optional; default: this workflow's token on ghcr.io
+#   DROPLET_HOST, DROPLET_SSH_KEY                         the demo host (demo)
+#   DROPLET_KNOWN_HOSTS                                   the demo host's known_hosts line; unverified with a warning until set
+#   DIGITALOCEAN_TOKEN, GCP_SA_KEY, SSH_PUBLIC_KEY, GCP_DB_USERNAME, GCP_DB_PASSWORD,
+#   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY              Terraform only (the last two: an S3-compatible state backend)
+#
+# Variables
+#   DEPLOY_HOST                   app server address (or INSTANCE_IP)
+#   DOMAIN                        public domain; default: the server address
+#   DB_HOST                       the database server's private address, as the app server reaches it (required)
+#   DB_PORT, DB_NAME              default 5432 and abe_stack
+#   APP_NAME                      deployment slug, default bslt
+#   SSH_USERNAME, SSH_PORT        default root and 22 (or the secrets SERVER_USER, SERVER_PORT)
+#   REGISTRY, IMAGE_NAME          default ghcr.io and the repository name
+#   SITE_URL                      public origin, for the sitemap
+#   DROPLET_SSH_PORT, DEMO_PUBLIC_HOST                    demo, default 2222 and app.bslt.dev
+#   DO_REGION, DO_INSTANCE_SIZE, DO_ENABLE_MANAGED_DB, DO_DATABASE_SIZE, GCP_PROJECT_ID, GCP_REGION,
+#   GCP_ZONE, GCP_INSTANCE_SIZE, GCP_ENABLE_MANAGED_DB, GCP_DATABASE_SIZE   Terraform only
+#
+# A target whose host or token is not configured is skipped with a warning on
+# an automatic run, so a fork that uses one target is not red for the others.
+# On a manual run the same gap is an error.
+
+on:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+    branches: [main]
+  push:
+    branches: [staging]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy, roll back or run Terraform for'
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+          - demo
+      rollback_sha:
+        description: 'Roll back: the full commit SHA whose images to run again (empty: deploy)'
+        required: false
+        default: ''
+        type: string
+      terraform:
+        description: 'Terraform instead of a deploy (apply needs a remote state backend)'
+        required: true
+        default: none
+        type: choice
+        options:
+          - none
+          - plan
+          - apply
+      provider:
+        description: 'Terraform only: cloud provider'
+        required: true
+        default: digitalocean
+        type: choice
+        options:
+          - digitalocean
+          - gcp
+
+# Staging runs wait for one another as whole runs: a push builds its images
+# before it deploys them, and two builds side by side could finish in the wrong
+# order and leave the older commit deployed. A run that waits is replaced by a
+# newer one, so staging ends on the latest push. Every other run gets a group
+# of its own: each finished CI run on main starts a run here, most of which
+# deploy nothing, and in a shared group they would cancel a production deploy
+# that is waiting. The targets are serialised by the job-level groups below.
+concurrency:
+  group: deploy-run-${{ (github.event_name == 'push' || inputs.environment == 'staging') && 'staging' || github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # ===========================================================================
+  # Decide what this run does
+  # ===========================================================================
+  plan:
+    name: plan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Lists the runs of the CI workflow for a manual production deploy.
+      actions: read
+    outputs:
+      environment: ${{ steps.decide.outputs.environment }}
+      mode: ${{ steps.decide.outputs.mode }}
+      sha: ${{ steps.decide.outputs.sha }}
+      app: ${{ steps.decide.outputs.app }}
+      build: ${{ steps.decide.outputs.build }}
+      demo: ${{ steps.decide.outputs.demo }}
+      terraform: ${{ steps.decide.outputs.terraform }}
+    steps:
+      - name: Decide
+        id: decide
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          REF_NAME: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+          RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_EVENT: ${{ github.event.workflow_run.event }}
+          RUN_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          # Reads the tip of main for a CI run that was run again, and the
+          # CI runs of a commit for a manual production deploy.
+          GH_TOKEN: ${{ github.token }}
+          INPUT_ENVIRONMENT: ${{ inputs.environment }}
+          INPUT_ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+          INPUT_TERRAFORM: ${{ inputs.terraform }}
+        run: |
+          environment=""
+          mode=none
+          sha=""
+          app=false
+          build=false
+          demo=false
+          terraform=false
+
+          stop() {
+            echo "::error::$1"
+            exit 1
+          }
+
+          case "$EVENT_NAME" in
+            workflow_run)
+              # Only a CI run that a push to main started and that passed as a
+              # whole. The nightly and manual CI runs build no images.
+              if [ "$RUN_CONCLUSION" != "success" ] || [ "$RUN_EVENT" != "push" ] || [ "$RUN_HEAD_BRANCH" != "main" ]; then
+                echo "::notice::Nothing to deploy: the CI run was started by '$RUN_EVENT' on '$RUN_HEAD_BRANCH' and ended as '$RUN_CONCLUSION'."
+              else
+                # "Re-run jobs" on an earlier run completes once more, for that
+                # run's own commit, and its image artifact is still there. On
+                # their first attempt the runs of main finish in push order; a
+                # later attempt deploys only while its commit is still the tip
+                # of main, so it cannot put an older commit back over a newer
+                # one. Running an older commit again is a rollback.
+                stale=false
+                if [ "$RUN_ATTEMPT" != "1" ]; then
+                  main_tip=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha) || main_tip=""
+                  [ -n "$main_tip" ] || stop "Could not read the tip of main, which decides whether attempt '$RUN_ATTEMPT' of the CI run for $RUN_HEAD_SHA still deploys."
+                  [ "$main_tip" = "$RUN_HEAD_SHA" ] || stale=true
+                fi
+                if [ "$stale" = "true" ]; then
+                  echo "::notice::Nothing to deploy: the CI run for $RUN_HEAD_SHA was run again (attempt '$RUN_ATTEMPT') after main moved on to $main_tip. To run that commit's images again, start this workflow with rollback_sha."
+                else
+                  environment=production
+                  mode=deploy
+                  sha="$RUN_HEAD_SHA"
+                  app=true
+                  demo=true
+                fi
+              fi
+              ;;
+            push)
+              [ "$REF_NAME" = "staging" ] || stop "A push deploys only from the staging branch, not from '$REF_NAME'."
+              environment=staging
+              mode=deploy
+              sha="$COMMIT_SHA"
+              app=true
+              build=true
+              ;;
+            workflow_dispatch)
+              environment="$INPUT_ENVIRONMENT"
+              case "$environment" in
+                staging | production | demo) ;;
+                *) stop "Unknown environment '$environment'." ;;
+              esac
+              if [ "${INPUT_TERRAFORM:-none}" != "none" ]; then
+                case "$INPUT_TERRAFORM" in
+                  plan | apply) ;;
+                  *) stop "Unknown Terraform action '$INPUT_TERRAFORM'." ;;
+                esac
+                [ -z "$INPUT_ROLLBACK_SHA" ] || stop "Choose a rollback or a Terraform action, not both."
+                [ "$environment" != "demo" ] || stop "Terraform describes the staging and production servers; the demo host is not managed by it."
+                mode=terraform
+                sha="$COMMIT_SHA"
+                terraform=true
+              else
+                if [ -n "$INPUT_ROLLBACK_SHA" ]; then
+                  # The images are tagged with the full SHA, so nothing shorter
+                  # and nothing symbolic can name them.
+                  # Matched against the whole value, not line by line.
+                  if [[ ! "$INPUT_ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+                    stop "rollback_sha must be a full 40-character commit SHA in lower case."
+                  fi
+                  mode=rollback
+                  sha="$INPUT_ROLLBACK_SHA"
+                else
+                  mode=deploy
+                  sha="$COMMIT_SHA"
+                fi
+                case "$environment" in
+                  staging)
+                    app=true
+                    # A staging deploy builds its own images; a rollback reuses
+                    # the ones an earlier staging deploy pushed.
+                    [ "$mode" = "rollback" ] || build=true
+                    ;;
+                  production)
+                    # Production images are built by CI on a push to main, and
+                    # only there. An older commit is a rollback. The full ref:
+                    # a tag can be named main too.
+                    if [ "$mode" = "deploy" ] && [ "$REF" != "refs/heads/main" ]; then
+                      stop "A production deploy runs from the main branch (CI builds its images there), not from '$REF'. To run an older commit again, set rollback_sha."
+                    fi
+                    # The images exist as soon as the `images` job of the CI
+                    # run has pushed them, which waits for the two gates only.
+                    # The automatic deploy waits for the whole run, scanners
+                    # included, and so does this one: the commit must have a
+                    # CI run, started by its push to main, that passed.
+                    if [ "$mode" = "deploy" ]; then
+                      passed=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$COMMIT_SHA&event=push&branch=main&status=success&per_page=1" --jq .total_count) || passed=""
+                      case "$passed" in
+                        '' | *[!0-9]*)
+                          stop "Could not ask GitHub for the CI runs of $COMMIT_SHA."
+                          ;;
+                        0)
+                          stop "CI has not passed for $COMMIT_SHA: its run for the push to main is still going, failed, or was cancelled. Wait for it or fix it. To run an earlier commit's images again, set rollback_sha."
+                          ;;
+                      esac
+                    fi
+                    app=true
+                    ;;
+                  demo)
+                    demo=true
+                    ;;
+                esac
+              fi
+              ;;
+            *)
+              stop "This workflow does not handle the '$EVENT_NAME' event."
+              ;;
+          esac
+
+          {
+            echo "environment=$environment"
+            echo "mode=$mode"
+            echo "sha=$sha"
+            echo "app=$app"
+            echo "build=$build"
+            echo "demo=$demo"
+            echo "terraform=$terraform"
+          } >> "$GITHUB_OUTPUT"
+          echo "environment=${environment:-none} mode=$mode sha=${sha:-none} app=$app build=$build demo=$demo terraform=$terraform"
+
+  # ===========================================================================
+  # Staging builds its own images (CI builds the production ones on main)
+  # ===========================================================================
+  staging-images:
+    name: staging-images
+    needs: plan
+    if: needs.plan.outputs.build == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    env:
+      TURBO_CONCURRENCY: '2'
+      NODE_OPTIONS: '--max-old-space-size=4096'
+      DEPLOY_SHA: ${{ needs.plan.outputs.sha }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
+
+      - uses: ./.github/actions/setup-node-pnpm
+
+      # No CI run precedes a push to staging, so the merge gate runs here.
+      - name: Merge gate
+        run: pnpm bslt gate merge
+
+      - name: Resolve image variables
+        id: image-vars
+        env:
+          INPUT_REGISTRY: ${{ vars.REGISTRY || secrets.REGISTRY || 'ghcr.io' }}
+          INPUT_IMAGE_NAME_RAW: ${{ vars.IMAGE_NAME || github.event.repository.name }}
+          INPUT_REPO_OWNER: ${{ github.repository_owner }}
+        run: |
+          REGISTRY="$INPUT_REGISTRY"
+          if [[ "$INPUT_IMAGE_NAME_RAW" != */* ]]; then
+            IMAGE_NAME="${INPUT_REPO_OWNER}/${INPUT_IMAGE_NAME_RAW}"
+          else
+            IMAGE_NAME="$INPUT_IMAGE_NAME_RAW"
+          fi
+          # A registry path is lower case; an owner name need not be.
+          IMAGE_NAME="$(printf '%s' "$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')"
+          {
+            echo "registry=$REGISTRY"
+            echo "image_name=$IMAGE_NAME"
+            echo "api_tag=${REGISTRY}/${IMAGE_NAME}:${DEPLOY_SHA}-api"
+            echo "web_tag=${REGISTRY}/${IMAGE_NAME}:${DEPLOY_SHA}-web"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Log in to the container registry
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ${{ steps.image-vars.outputs.registry }}
+          # Fall back to the workflow's own identity and token. A package inherits
+          # the repository visibility; no additional registry credentials needed.
+          username: ${{ secrets.REGISTRY_USERNAME || github.actor }}
+          password: ${{ secrets.REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }}
+
+      # The two build steps below are the ones of the `images` job in ci.yml;
+      # workflows.test.ts fails when their inputs differ.
+      - name: Build and push the API image
+        id: build-api
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: .
+          file: ./infra/docker/Dockerfile
+          push: true
+          tags: ${{ steps.image-vars.outputs.api_tag }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+      - name: Build and push the web image
+        id: build-web
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: .
+          file: ./infra/docker/Dockerfile.web
+          push: true
+          tags: ${{ steps.image-vars.outputs.web_tag }}
+          # SITE_URL is optional for prerendering; it enables the sitemap.
+          build-args: |
+            VITE_API_URL=
+            SITE_URL=${{ vars.SITE_URL }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+  # ===========================================================================
+  # The app server: staging or production
+  # ===========================================================================
+  app:
+    name: app (${{ needs.plan.outputs.environment }}, ${{ needs.plan.outputs.mode }})
+    needs: [plan, staging-images]
+    # `always()` so that a skipped staging-images (every production run) does
+    # not skip this job; a failed one still does.
+    if: always() && needs.plan.outputs.app == 'true' && (needs.staging-images.result == 'success' || needs.staging-images.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: ${{ needs.plan.outputs.environment }}
+    concurrency:
+      group: deploy-app-${{ needs.plan.outputs.environment }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      # Reads the `deployment-images` artifact of the CI run.
+      actions: read
+      # Reads the repository's own GHCR package. A package inherits the
+      # repository's visibility on first publish, so for a private repository
+      # the server's `docker pull` gets `denied` without a token that carries this.
+      packages: read
+    env:
+      DEPLOY_ENV: ${{ needs.plan.outputs.environment }}
+      DEPLOY_MODE: ${{ needs.plan.outputs.mode }}
+      DEPLOY_SHA: ${{ needs.plan.outputs.sha }}
+    steps:
+      - name: Resolve the target server
+        id: target
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST || vars.INSTANCE_IP || secrets.SERVER_HOST }}
+          DEPLOY_DOMAIN: ${{ vars.DOMAIN || secrets.DOMAIN }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST_FINGERPRINT: ${{ secrets.SSH_HOST_FINGERPRINT }}
+        run: |
+          if [ -z "$DEPLOY_HOST" ] || [ -z "$SSH_PRIVATE_KEY" ]; then
+            message="No app server is configured for the '$DEPLOY_ENV' environment (variable DEPLOY_HOST, secret SSH_PRIVATE_KEY)."
+            if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+              echo "::error::$message"
+              exit 1
+            fi
+            echo "::warning::$message The app deploy was skipped."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # The first thing the deploy sends over SSH is every secret of this
+          # environment. With the server's host key pinned, the connection is
+          # refused unless the server proves it holds that key; without it,
+          # whatever answers at the address receives them.
+          if [ -z "$SSH_HOST_FINGERPRINT" ]; then
+            echo "::warning::The host key of the '$DEPLOY_ENV' app server is not verified. Set the secret SSH_HOST_FINGERPRINT (docs/deploy/secrets-checklist.md#ssh-host-keys)."
+          elif [[ ! "$SSH_HOST_FINGERPRINT" =~ ^SHA256:[A-Za-z0-9+/]{43}=?$ ]]; then
+            echo "::error::SSH_HOST_FINGERPRINT must be the fingerprint of the server's host key in the form SHA256:... , as ssh-keygen -l prints it."
+            exit 1
+          fi
+          {
+            echo "enabled=true"
+            echo "host=$DEPLOY_HOST"
+            echo "domain=${DEPLOY_DOMAIN:-$DEPLOY_HOST}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Download the CI image artifact
+        if: steps.target.outputs.enabled == 'true' && github.event_name == 'workflow_run'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: deployment-images
+          path: .deploy-image/
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve the image references
+        id: images
+        if: steps.target.outputs.enabled == 'true'
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_REGISTRY: ${{ vars.REGISTRY || secrets.REGISTRY || 'ghcr.io' }}
+          INPUT_IMAGE_NAME_RAW: ${{ vars.IMAGE_NAME || github.event.repository.name }}
+          INPUT_REPO_OWNER: ${{ github.repository_owner }}
+        run: |
+          REGISTRY="$INPUT_REGISTRY"
+          if [[ "$INPUT_IMAGE_NAME_RAW" != */* ]]; then
+            IMAGE_NAME="${INPUT_REPO_OWNER}/${INPUT_IMAGE_NAME_RAW}"
+          else
+            IMAGE_NAME="$INPUT_IMAGE_NAME_RAW"
+          fi
+          IMAGE_NAME="$(printf '%s' "$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')"
+
+          ARTIFACT_FILE=".deploy-image/deployment-images.json"
+          if [ "$EVENT_NAME" = "workflow_run" ]; then
+            # By digest: exactly the images the CI run built.
+            if [ ! -f "$ARTIFACT_FILE" ]; then
+              echo "::error::The CI run has no deployment-images artifact."
+              exit 1
+            fi
+            API_IMAGE=$(jq -r '.api_image // empty' "$ARTIFACT_FILE")
+            WEB_IMAGE=$(jq -r '.web_image // empty' "$ARTIFACT_FILE")
+            SOURCE="ci-artifact"
+          else
+            # By tag: what CI (main) or staging-images pushed for this commit.
+            # A commit with no images fails at the pull, before anything changes.
+            API_IMAGE="${REGISTRY}/${IMAGE_NAME}:${DEPLOY_SHA}-api"
+            WEB_IMAGE="${REGISTRY}/${IMAGE_NAME}:${DEPLOY_SHA}-web"
+            SOURCE="commit-tag"
+          fi
+
+          if [ -z "$API_IMAGE" ] || [ -z "$WEB_IMAGE" ]; then
+            echo "::error::Could not resolve the image references."
+            exit 1
+          fi
+
+          {
+            echo "registry=$REGISTRY"
+            echo "api_image=$API_IMAGE"
+            echo "web_image=$WEB_IMAGE"
+            echo "source=$SOURCE"
+          } >> "$GITHUB_OUTPUT"
+
+      # One script for both modes. `deploy` writes the configuration, checks
+      # the database server, runs the role bootstrap and the migrations, then
+      # replaces the containers. `rollback` changes the image references of the
+      # stack the last deploy left and nothing else. Neither takes the stack
+      # down first, and neither touches the database server's own processes.
+      - name: Deploy on the server
+        if: steps.target.outputs.enabled == 'true'
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
+        env:
+          # Falls back to the workflow's own identity and token, so a fresh clone
+          # of this template deploys with zero registry secrets configured.
+          REGISTRY_HOST: ${{ steps.images.outputs.registry }}
+          REGISTRY_USER: ${{ secrets.REGISTRY_USERNAME || github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }}
+          # Reads the compose file, the Caddyfile and the version pins at the
+          # deployed SHA. Separate from REGISTRY_TOKEN, which may be a token
+          # for some other registry.
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # One independent secret per database role. Nothing is derived from
+          # the superuser password (docs/deploy/env.md#database-roles), so a
+          # role password can be rotated alone and the superuser secret does
+          # not reveal the other three.
+          DB_SUPERUSER_PASSWORD: ${{ secrets.DB_PASSWORD || secrets.POSTGRES_PASSWORD }}
+          DB_OWNER_PASSWORD: ${{ secrets.DB_OWNER_PASSWORD }}
+          DB_APP_PASSWORD: ${{ secrets.DB_APP_PASSWORD }}
+          DB_WORKER_PASSWORD: ${{ secrets.DB_WORKER_PASSWORD }}
+          # The separate database server (docs/deploy/README.md#two-servers):
+          # its private address as the app server reaches it. Not a secret, so
+          # an environment variable is enough; a secret of the same name also works.
+          DB_HOST: ${{ vars.DB_HOST || secrets.DB_HOST }}
+          DB_PORT: ${{ vars.DB_PORT || '5432' }}
+          DB_NAME: ${{ vars.DB_NAME || 'abe_stack' }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
+          OAUTH_TOKEN_ENCRYPTION_KEY: ${{ secrets.OAUTH_TOKEN_ENCRYPTION_KEY }}
+          ACME_EMAIL: ${{ secrets.ACME_EMAIL }}
+          EMAIL_FROM_ADDRESS_INPUT: ${{ secrets.EMAIL_FROM_ADDRESS }}
+          SMTP_HOST_INPUT: ${{ secrets.SMTP_HOST }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+        with:
+          host: ${{ steps.target.outputs.host }}
+          username: ${{ vars.SSH_USERNAME || secrets.SERVER_USER || 'root' }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ vars.SSH_PORT || secrets.SERVER_PORT || 22 }}
+          # The pinned host key. Empty, the action accepts any key (the
+          # "Resolve the target server" step warns about that on every run).
+          fingerprint: ${{ secrets.SSH_HOST_FINGERPRINT }}
+          # The action's default is ten minutes, no more than the script's own
+          # health wait. Below the job's timeout, so that the script's failure
+          # message and container logs arrive before the job is cancelled.
+          command_timeout: 40m
+          # Every secret is forwarded by name. The action writes one quoted
+          # `export NAME='value'` line per name in front of the script, so a `$`
+          # or a quote in a value is not read as shell syntax, which it would be
+          # if the value were written into the script text below.
+          #
+          # Those lines are part of the command text the server's shell is
+          # started with. While the deploy runs, whoever can read the process
+          # list on the app server (any local user, unless /proc is mounted
+          # with hidepid) can read them there; the values then stay in the
+          # owner-only .env. Nothing the script itself starts gets a secret as
+          # an argument. Keep the app server free of other users' logins.
+          envs: REGISTRY_HOST,REGISTRY_USER,REGISTRY_TOKEN,REPO_TOKEN,DB_SUPERUSER_PASSWORD,DB_OWNER_PASSWORD,DB_APP_PASSWORD,DB_WORKER_PASSWORD,DB_HOST,DB_PORT,DB_NAME,JWT_SECRET,COOKIE_SECRET,OAUTH_TOKEN_ENCRYPTION_KEY,ACME_EMAIL,EMAIL_FROM_ADDRESS_INPUT,SMTP_HOST_INPUT,SMTP_USER,SMTP_PASS
+          # The script has no `set -e`: it counts and tests with `grep`, which
+          # exits 1 when nothing matches (no image line yet, a service not yet
+          # healthy). Every step that must not be skipped past therefore ends
+          # in an explicit `|| { ...; exit 1; }`.
+          script: |
+            export DEPLOY_MODE="${{ needs.plan.outputs.mode }}"
+            export DEPLOY_ENV="${{ needs.plan.outputs.environment }}"
+            export DOMAIN="${{ steps.target.outputs.domain }}"
+            export APP_NAME_INPUT="${{ vars.APP_NAME || 'bslt' }}"
+            export DEPLOY_COMMIT_SHA="${{ needs.plan.outputs.sha }}"
+            export API_IMAGE="${{ steps.images.outputs.api_image }}"
+            export WEB_IMAGE="${{ steps.images.outputs.web_image }}"
+
+            APP_NAME=$(echo "$APP_NAME_INPUT" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9-' '-' | sed 's/^-//; s/-$//')
+            if [ -z "$APP_NAME" ]; then
+              APP_NAME="bslt"
+            fi
+            export APP_NAME
+            export COMPOSE_PROJECT_NAME="${APP_NAME}-${DEPLOY_ENV}"
+            DEPLOY_ROOT="$HOME/deployments/$APP_NAME/$DEPLOY_ENV"
+
+            compose() {
+              docker compose --project-name "$COMPOSE_PROJECT_NAME" -f docker-compose.prod.yml "$@"
+            }
+
+            # The host may never have authenticated to the registry, and a
+            # private repository's package cannot be pulled anonymously.
+            # --password-stdin, never -p: an argv password is visible in `ps`.
+            # Both images are pulled before anything changes, so a commit with
+            # no images stops here.
+            pull_images() {
+              echo "$REGISTRY_TOKEN" | docker login "$REGISTRY_HOST" -u "$REGISTRY_USER" --password-stdin || { echo "FATAL: could not log in to $REGISTRY_HOST; the running stack was not changed"; exit 1; }
+              docker pull "$API_IMAGE" || { echo "FATAL: could not pull $API_IMAGE; the running stack was not changed"; exit 1; }
+              docker pull "$WEB_IMAGE" || { echo "FATAL: could not pull $WEB_IMAGE; the running stack was not changed"; exit 1; }
+            }
+
+            if [ "$DEPLOY_MODE" = "rollback" ]; then
+              # ---------------------------------------------------------------
+              # Rollback: the images of an earlier commit, on the configuration
+              # the last deploy left. The .env, the Caddyfile and every other
+              # line of the compose file stay as they are.
+              #
+              # The database is not rolled back. Migrations only move forward,
+              # so the older code runs against the current schema: roll back
+              # only across migrations the older code can live with. Neither
+              # bootstrap-roles nor migrate runs here.
+              # ---------------------------------------------------------------
+              cd "$DEPLOY_ROOT" 2>/dev/null || { echo "FATAL: there is no deployment in $DEPLOY_ROOT to roll back"; exit 1; }
+              if [ ! -f docker-compose.prod.yml ] || [ ! -f .env ]; then
+                echo "FATAL: $DEPLOY_ROOT holds no docker-compose.prod.yml and .env from an earlier deploy; there is nothing to roll back"
+                exit 1
+              fi
+
+              pull_images
+
+              awk -v api="$API_IMAGE" -v web="$WEB_IMAGE" '
+                /^[^ #]/ { svc = "" }
+                /^  [a-zA-Z0-9_-]+:$/ { svc = "" }
+                /^  (api|bootstrap-roles|migrate):$/ { svc = "api" }
+                /^  web:$/ { svc = "web" }
+                svc == "api" && /^    image:/ { print "    image: " api; next }
+                svc == "web" && /^    image:/ { print "    image: " web; next }
+                { print }
+              ' docker-compose.prod.yml > docker-compose.rollback.tmp || { rm -f docker-compose.rollback.tmp; echo "FATAL: could not rewrite docker-compose.prod.yml; nothing was changed"; exit 1; }
+              api_lines=$(grep -cxF "    image: $API_IMAGE" docker-compose.rollback.tmp)
+              web_lines=$(grep -cxF "    image: $WEB_IMAGE" docker-compose.rollback.tmp)
+              if [ "$api_lines" != "3" ] || [ "$web_lines" != "1" ]; then
+                rm -f docker-compose.rollback.tmp
+                echo "FATAL: docker-compose.prod.yml in $DEPLOY_ROOT is not the file a deploy writes (it should name an image for api, bootstrap-roles, migrate and web). Nothing was changed."
+                exit 1
+              fi
+              cp -p docker-compose.prod.yml docker-compose.prod.yml.before-rollback
+              mv docker-compose.rollback.tmp docker-compose.prod.yml
+              echo "Rolling back to the images of $DEPLOY_COMMIT_SHA"
+            else
+              # ---------------------------------------------------------------
+              # Deploy
+              # ---------------------------------------------------------------
+              EMAIL_FROM_ADDRESS="${EMAIL_FROM_ADDRESS_INPUT:-no-reply@${DOMAIN}}"
+              SMTP_HOST="${SMTP_HOST_INPUT:-smtp.mail.${DOMAIN}}"
+
+              # Database role split (docs/deploy/env.md#database-roles): the API
+              # runs as bslt_app / bslt_worker, migrations as bslt_owner, never as
+              # the superuser. Each role has its own secret, set independently;
+              # bootstrap-roles (below) applies them on every deploy, so changing
+              # one secret and redeploying rotates that role's password.
+              : "${DB_SUPERUSER_PASSWORD:?DB_PASSWORD or POSTGRES_PASSWORD secret is required}"
+              : "${DB_OWNER_PASSWORD:?DB_OWNER_PASSWORD secret is required}"
+              : "${DB_APP_PASSWORD:?DB_APP_PASSWORD secret is required}"
+              : "${DB_WORKER_PASSWORD:?DB_WORKER_PASSWORD secret is required}"
+              : "${JWT_SECRET:?JWT_SECRET secret is required}"
+              : "${COOKIE_SECRET:?COOKIE_SECRET secret is required}"
+              : "${OAUTH_TOKEN_ENCRYPTION_KEY:?OAUTH_TOKEN_ENCRYPTION_KEY secret is required}"
+              # The three role passwords are written into connection URLs as they
+              # are, so they must need no percent-encoding.
+              for role_secret in "$DB_OWNER_PASSWORD" "$DB_APP_PASSWORD" "$DB_WORKER_PASSWORD"; do
+                case "$role_secret" in
+                  *[!A-Za-z0-9._~-]*)
+                    echo "FATAL: database role passwords must be URL-safe (generate each with: openssl rand -hex 32)"
+                    exit 1
+                    ;;
+                esac
+              done
+
+              # Every other secret and free-text setting goes into the .env in
+              # single quotes, which Compose reads literally. Unquoted, Compose
+              # resolves each `$` reference in a value and cuts it at ` #`: the
+              # API would sign with another secret than the one configured, and
+              # the role bootstrap would use another superuser password than
+              # the version check below. The one thing a single-quoted value
+              # cannot carry is its own end. The API's configuration loader then
+              # trims each value and reads white space followed by `#` as the
+              # start of a comment, so a value it would shorten is refused too.
+              line_break=$(printf '\nx')
+              line_break="${line_break%x}"
+              env_file_value() {
+                case "$2" in
+                  *"'"* | *"$line_break"* | *\\ | [[:space:]]* | *[[:space:]] | *[[:space:]]"#"*)
+                    echo "FATAL: $1 would not reach the containers as configured: it holds a single quote, a line break, a backslash at its end, white space at either end, or white space followed by '#'. Choose a value without them."
+                    exit 1
+                    ;;
+                esac
+              }
+              env_file_value "DB_PASSWORD (or POSTGRES_PASSWORD)" "$DB_SUPERUSER_PASSWORD"
+              env_file_value JWT_SECRET "$JWT_SECRET"
+              env_file_value COOKIE_SECRET "$COOKIE_SECRET"
+              env_file_value OAUTH_TOKEN_ENCRYPTION_KEY "$OAUTH_TOKEN_ENCRYPTION_KEY"
+              env_file_value ACME_EMAIL "$ACME_EMAIL"
+              env_file_value DOMAIN "$DOMAIN"
+              env_file_value APP_NAME "$APP_NAME_INPUT"
+              env_file_value EMAIL_FROM_ADDRESS "$EMAIL_FROM_ADDRESS"
+              env_file_value SMTP_HOST "$SMTP_HOST"
+              env_file_value SMTP_USER "$SMTP_USER"
+              env_file_value SMTP_PASS "$SMTP_PASS"
+
+              # The database runs on its own server; this one runs no Postgres.
+              # Host, port and name go into connection URLs as they are.
+              : "${DB_HOST:?DB_HOST (the database server's private address) is not configured}"
+              DB_PORT="${DB_PORT:-5432}"
+              DB_NAME="${DB_NAME:-abe_stack}"
+              case "$DB_HOST" in
+                *[!A-Za-z0-9.-]*)
+                  echo "FATAL: DB_HOST must be a host name or an IPv4 address, with no scheme, port, path or credentials"
+                  exit 1
+                  ;;
+              esac
+              case "$DB_PORT" in
+                *[!0-9]*)
+                  echo "FATAL: DB_PORT must be a number"
+                  exit 1
+                  ;;
+              esac
+              case "$DB_NAME" in
+                *[!A-Za-z0-9_]*)
+                  echo "FATAL: DB_NAME may hold only letters, digits and underscores"
+                  exit 1
+                  ;;
+              esac
+
+              mkdir -p "$DEPLOY_ROOT"
+              cd "$DEPLOY_ROOT" || { echo "FATAL: could not enter $DEPLOY_ROOT"; exit 1; }
+
+              # Authenticated: raw.githubusercontent.com serves nothing for a
+              # private repository. The contents API with `Accept: raw` works
+              # for public and private alike. `--fail` so a 404 stops the deploy
+              # instead of writing an HTML error page over the compose file.
+              fetch_repo_file() {
+                curl -sSL --fail \
+                  -H "Authorization: Bearer ${REPO_TOKEN}" \
+                  -H "Accept: application/vnd.github.raw" \
+                  "https://api.github.com/repos/${{ github.repository }}/contents/$1?ref=${DEPLOY_COMMIT_SHA}" \
+                  -o "$2"
+              }
+
+              # Fetched under other names first: a failed fetch, or any stop
+              # before the role bootstrap, leaves the compose file of the
+              # running stack as it was.
+              mkdir -p prometheus
+              fetch_repo_file "infra/docker/production/docker-compose.prod.yml" docker-compose.prod.next || { echo "FATAL: could not fetch docker-compose.prod.yml at $DEPLOY_COMMIT_SHA"; exit 1; }
+              fetch_repo_file "infra/runtime/caddy/Caddyfile" Caddyfile.next || { echo "FATAL: could not fetch Caddyfile at $DEPLOY_COMMIT_SHA"; exit 1; }
+              fetch_repo_file "infra/runtime/prometheus/alerts.yml" prometheus/alerts.yml.next || { echo "FATAL: could not fetch infra/runtime/prometheus/alerts.yml at $DEPLOY_COMMIT_SHA"; exit 1; }
+              fetch_repo_file "infra/versions.env" versions.env || { echo "FATAL: could not fetch infra/versions.env at $DEPLOY_COMMIT_SHA"; exit 1; }
+              POSTGRES_MAJOR=$(sed -n 's/^POSTGRES_MAJOR=\([0-9][0-9]*\)$/\1/p' versions.env)
+              POSTGRES_IMAGE=$(sed -n 's/^POSTGRES_IMAGE=\(.*\)$/\1/p' versions.env)
+              if [ -z "$POSTGRES_MAJOR" ] || [ -z "$POSTGRES_IMAGE" ]; then
+                echo "FATAL: infra/versions.env at $DEPLOY_COMMIT_SHA names no POSTGRES_MAJOR or no POSTGRES_IMAGE"
+                exit 1
+              fi
+
+              # Ask the database server for its version before anything here
+              # changes. The images, the migrations and the backups are built for
+              # the pinned major, and a server that does not answer cannot be
+              # deployed onto at all. psql comes from the pinned Postgres image;
+              # the superuser password reaches it as environment, never as an
+              # argument. server_version_num is e.g. 170011 for 17.11.
+              SERVER_VERSION_NUM=$(PGPASSWORD="$DB_SUPERUSER_PASSWORD" docker run --rm --env PGPASSWORD --env PGCONNECT_TIMEOUT=15 "$POSTGRES_IMAGE" psql --host "$DB_HOST" --port "$DB_PORT" --username postgres --dbname "$DB_NAME" --no-psqlrc --tuples-only --no-align --command 'SHOW server_version_num' | tr -d '[:space:]')
+              case "$SERVER_VERSION_NUM" in
+                '' | *[!0-9]*)
+                  echo "FATAL: could not ask the database server at $DB_HOST:$DB_PORT for its version (database $DB_NAME, user postgres)."
+                  echo "Check that the server is up, admits this host (pg_hba, firewall) and that the superuser password matches. The running stack was not changed."
+                  exit 1
+                  ;;
+              esac
+              SERVER_MAJOR=$((SERVER_VERSION_NUM / 10000))
+              if [ "$SERVER_MAJOR" != "$POSTGRES_MAJOR" ]; then
+                echo "FATAL: the database server at $DB_HOST:$DB_PORT runs PostgreSQL $SERVER_MAJOR; this deploy is built for PostgreSQL $POSTGRES_MAJOR."
+                echo "Upgrade the database server first (docs/deploy/production-postgres.md#major-version-upgrades). The running stack was not changed."
+                exit 1
+              fi
+
+              pull_images
+
+              sed -i '/^name:/d' docker-compose.prod.next
+              sed -i '/container_name:/d' docker-compose.prod.next
+              sed -i '/^[[:space:]]\{2,\}name:[[:space:]]/d' docker-compose.prod.next
+              # The mount source only, with its dots escaped: as wildcards they
+              # also match inside the target path `/etc/caddy/Caddyfile`.
+              sed -i 's|\.\./\.\./runtime/caddy/Caddyfile:|./Caddyfile:|' docker-compose.prod.next
+
+              awk '
+                BEGIN { skip = 0 }
+                /^    env_file:$/ { skip = 1; next }
+                skip == 1 && /^      - / { next }
+                skip == 1 { skip = 0 }
+                { print }
+              ' docker-compose.prod.next > docker-compose.prod.tmp && mv docker-compose.prod.tmp docker-compose.prod.next || { echo "FATAL: could not rewrite the compose file; the running stack was not changed"; exit 1; }
+
+              awk -v api="$API_IMAGE" -v web="$WEB_IMAGE" '
+                BEGIN { in_api=0; in_web=0; in_build=0 }
+                /^  (api|bootstrap-roles|migrate):$/ { in_api=1; in_web=0; print; next }
+                /^  web:$/ { in_web=1; in_api=0; print; next }
+                /^  [a-zA-Z0-9_-]+:$/ { in_api=0; in_web=0 }
+                (in_api || in_web) && /^    build:$/ {
+                  in_build=1
+                  if (in_api) print "    image: " api
+                  if (in_web) print "    image: " web
+                  next
+                }
+                in_build && /^      / { next }
+                in_build && !/^      / { in_build=0 }
+                (in_api || in_web) && /^      VITE_API_URL:/ { next }
+                { print }
+              ' docker-compose.prod.next > docker-compose.prod.tmp && mv docker-compose.prod.tmp docker-compose.prod.next || { echo "FATAL: could not rewrite the compose file; the running stack was not changed"; exit 1; }
+
+              # .env holds every secret. A new file is created owner-only (the
+              # umask is scoped to the subshell), and one an earlier deploy left
+              # world-readable is tightened before the new values go into it.
+              #
+              # Every value is written resolved (no escaped `\$`): a rollback and
+              # any operator command render this file from a shell that has none
+              # of this session's variables, where an unresolved reference is empty.
+              # The quoted values were checked above; the others are a slug, a
+              # validated host, port and name, and URLs built from validated parts.
+              ( umask 077 && touch .env ) && chmod 600 .env || { echo "FATAL: could not create an owner-only .env"; exit 1; }
+              cat > ".env" << EOF
+            APP_NAME=${APP_NAME}
+            COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
+            DOMAIN='${DOMAIN}'
+            ACME_EMAIL='${ACME_EMAIL}'
+            POSTGRES_HOST=${DB_HOST}
+            POSTGRES_PORT=${DB_PORT}
+            POSTGRES_DB=${DB_NAME}
+            POSTGRES_USER=postgres
+            POSTGRES_PASSWORD='${DB_SUPERUSER_PASSWORD}'
+            DATABASE_URL=postgresql://bslt_app:${DB_APP_PASSWORD}@pgbouncer:5432/${DB_NAME}
+            WORKER_DATABASE_URL=postgresql://bslt_worker:${DB_WORKER_PASSWORD}@pgbouncer:5432/${DB_NAME}
+            LISTEN_DATABASE_URL=postgresql://bslt_worker:${DB_WORKER_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+            MIGRATION_DATABASE_URL=postgresql://bslt_owner:${DB_OWNER_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+            JWT_SECRET='${JWT_SECRET}'
+            COOKIE_SECRET='${COOKIE_SECRET}'
+            OAUTH_TOKEN_ENCRYPTION_KEY='${OAUTH_TOKEN_ENCRYPTION_KEY}'
+            TRUST_PROXY=true
+            TRUSTED_PROXIES=172.16.0.0/12,10.0.0.0/8
+            MAX_PROXY_DEPTH=1
+            STORAGE_PROVIDER=local
+            STORAGE_ROOT_PATH=/app/uploads
+            STORAGE_PUBLIC_BASE_URL=/uploads
+            EMAIL_PROVIDER=smtp
+            EMAIL_FROM_NAME='${APP_NAME_INPUT}'
+            EMAIL_FROM_ADDRESS='${EMAIL_FROM_ADDRESS}'
+            SMTP_HOST='${SMTP_HOST}'
+            SMTP_USER='${SMTP_USER}'
+            SMTP_PASS='${SMTP_PASS}'
+            EOF
+              mv docker-compose.prod.next docker-compose.prod.yml && mv Caddyfile.next Caddyfile && mv prometheus/alerts.yml.next prometheus/alerts.yml || { echo "FATAL: could not put the new stack files in place"; exit 1; }
+
+              # Roles first (idempotent; hands an older superuser-migrated database
+              # to bslt_owner), then migrations as bslt_owner. Both are one-shot
+              # services: the only containers that get the superuser and owner
+              # credentials, which the API service never does. Both connect to the
+              # database server directly. Either one failing stops the deploy
+              # before the API is replaced: the stack is never taken down first,
+              # so the previous API keeps serving through both steps and `up -d`
+              # then replaces only the containers whose image or configuration
+              # changed. The database is not part of this stack and is not
+              # restarted by any of it.
+              compose run --rm bootstrap-roles || { echo "FATAL: database role bootstrap failed; the API was not replaced"; exit 1; }
+              compose run --rm migrate || { echo "FATAL: database migration failed; the API was not replaced"; exit 1; }
+            fi
+
+            compose up -d || { echo "FATAL: docker compose up failed"; exit 1; }
+
+            # `up -d` replaces a container whose image or configuration changed.
+            # A new Caddyfile is neither: the file is bind-mounted, and a running
+            # container keeps the one it was created with. So the file caddy
+            # reads is compared with the one on disk, and caddy alone is
+            # recreated when they differ (also after a deploy that put a new
+            # Caddyfile in place and then stopped at the migration).
+            if ! compose exec -T caddy cat /etc/caddy/Caddyfile 2>/dev/null | cmp -s - Caddyfile; then
+              echo "The Caddyfile changed: recreating caddy"
+              compose up -d --force-recreate --no-deps caddy || { echo "FATAL: could not recreate caddy on the new Caddyfile; it still serves the previous one"; exit 1; }
+            fi
+
+            # Every service the compose file declares must report `(healthy)`,
+            # asked for by name: counting the healthy containers against those
+            # that are `Up` passes a service that keeps restarting or has
+            # exited, because it is in neither count. Each long-running service
+            # has a health check; the one-shot jobs are in the `ops` profile and
+            # are not listed. `(healthy)` with its parentheses: a bare "healthy"
+            # also matches "(unhealthy)".
+            services=$(compose config --services) || services=""
+            if [ -z "$services" ]; then
+              echo "FATAL: could not list the services of the stack to wait for"
+              exit 1
+            fi
+            timeout=600
+            elapsed=0
+            while [ "$elapsed" -lt "$timeout" ]; do
+              not_healthy=""
+              for svc in $services; do
+                compose ps "$svc" | grep -q "(healthy)" || not_healthy="$not_healthy $svc"
+              done
+              if [ -z "$not_healthy" ]; then
+                break
+              fi
+              sleep 10
+              elapsed=$((elapsed + 10))
+            done
+
+            if [ "$elapsed" -ge "$timeout" ]; then
+              compose logs
+              echo "FATAL: the stack did not become healthy within $timeout seconds (not healthy:$not_healthy)"
+              exit 1
+            fi
+
+            # Assert the running containers are the images this run names.
+            #
+            # Container health alone has lied before: a stale container from the
+            # previous deploy is perfectly healthy, and reports so, while serving
+            # the old code. Comparing the running image reference against the one
+            # this run deployed is what distinguishes "deployed" from "still up".
+            for svc_image in "api:$API_IMAGE" "web:$WEB_IMAGE"; do
+              svc="${svc_image%%:*}"
+              want="${svc_image#*:}"
+              cid=$(compose ps -q "$svc")
+              if [ -z "$cid" ]; then
+                echo "FATAL: service '$svc' is not running after the $DEPLOY_MODE"
+                exit 1
+              fi
+              got=$(docker inspect --format '{{.Config.Image}}' "$cid")
+              if [ "$got" != "$want" ]; then
+                echo "FATAL: '$svc' is running '$got' but this $DEPLOY_MODE names '$want'"
+                echo "The stack is up, but it is serving the wrong build."
+                exit 1
+              fi
+              echo "ok: $svc is running $got"
+            done
+
+      # Through the public address, after the containers themselves were
+      # verified over SSH above.
+      - name: Smoke test
+        if: steps.target.outputs.enabled == 'true'
+        env:
+          DEPLOY_DOMAIN: ${{ steps.target.outputs.domain }}
+        run: |
+          sleep 30
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${DEPLOY_DOMAIN}/api/health" || echo "000")
+          if [ "$STATUS" != "200" ]; then
+            echo "::error::https://${DEPLOY_DOMAIN}/api/health answered $STATUS"
+            exit 1
+          fi
+          echo "https://${DEPLOY_DOMAIN}/api/health answered 200"
+
+      - name: Summary
+        if: steps.target.outputs.enabled == 'true'
+        env:
+          IMAGE_SOURCE: ${{ steps.images.outputs.source }}
+          API_IMAGE: ${{ steps.images.outputs.api_image }}
+          WEB_IMAGE: ${{ steps.images.outputs.web_image }}
+          DEPLOY_DOMAIN: ${{ steps.target.outputs.domain }}
+        run: |
+          {
+            echo "## App $DEPLOY_MODE: $DEPLOY_ENV"
+            echo ""
+            echo "**Commit:** \`$DEPLOY_SHA\`"
+            echo "**Image source:** $IMAGE_SOURCE"
+            echo "**API image:** \`$API_IMAGE\`"
+            echo "**Web image:** \`$WEB_IMAGE\`"
+            echo "**Domain:** https://$DEPLOY_DOMAIN"
+            if [ "$DEPLOY_MODE" = "rollback" ]; then
+              echo ""
+              echo "The database was not rolled back. Deploy a fix forward when it is ready."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ===========================================================================
+  # The demo host: its own images and its own disposable database
+  # ===========================================================================
+  # Two jobs, because of their tokens. The job that pushes the images holds a
+  # token that can write this repository's packages; the demo host, which also
+  # serves other projects, is given the token of a job that can only read them.
+  demo-images:
+    name: demo-images
+    needs: plan
+    # A rollback builds nothing: the images of that commit are in the registry.
+    if: needs.plan.outputs.demo == 'true' && needs.plan.outputs.mode == 'deploy'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: demo
+    concurrency:
+      group: deploy-demo-images
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      # The same check as in the `demo` job: nothing is built for a host that
+      # is not configured.
+      - name: Check the demo host configuration
+        id: config
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HOST: ${{ secrets.DROPLET_HOST }}
+          SSH_KEY: ${{ secrets.DROPLET_SSH_KEY }}
+        run: |
+          if [ -z "$HOST" ] || [ -z "$SSH_KEY" ]; then
+            message="No demo host is configured (secrets DROPLET_HOST and DROPLET_SSH_KEY)."
+            if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+              echo "::error::$message"
+              exit 1
+            fi
+            echo "::warning::$message The demo deploy was skipped."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        if: steps.config.outputs.enabled == 'true'
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
+
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+        if: steps.config.outputs.enabled == 'true'
+
+      - name: Log in to ghcr.io
+        if: steps.config.outputs.enabled == 'true'
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push the demo API image
+        if: steps.config.outputs.enabled == 'true'
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: .
+          file: infra/docker/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/bslt-api:latest
+            ghcr.io/${{ github.repository_owner }}/bslt-api:${{ needs.plan.outputs.sha }}
+          cache-from: type=gha,scope=bslt-api
+          cache-to: type=gha,mode=max,scope=bslt-api
+
+      # Feature and capability flags resolve at runtime via /api/platform/context.
+      - name: Build and push the demo web image
+        if: steps.config.outputs.enabled == 'true'
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: .
+          file: infra/docker/Dockerfile.web
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/bslt-web:latest
+            ghcr.io/${{ github.repository_owner }}/bslt-web:${{ needs.plan.outputs.sha }}
+          cache-from: type=gha,scope=bslt-web
+          cache-to: type=gha,mode=max,scope=bslt-web
+
+  demo:
+    name: demo (${{ needs.plan.outputs.mode }})
+    needs: [plan, demo-images]
+    # `!cancelled()` so that a skipped demo-images (a rollback) does not skip
+    # this job; a failed or cancelled one still does, and so does a cancelled run.
+    if: (!cancelled()) && needs.plan.outputs.demo == 'true' && (needs.demo-images.result == 'success' || needs.demo-images.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: demo
+    concurrency:
+      group: deploy-demo
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      # Read only: this job's token is the one the demo host logs in to the
+      # registry with.
+      packages: read
+    env:
+      OWNER: ${{ github.repository_owner }}
+      SSH_PORT: ${{ vars.DROPLET_SSH_PORT || '2222' }}
+      PUBLIC_HOST: ${{ vars.DEMO_PUBLIC_HOST || 'app.bslt.dev' }}
+      IMAGE_TAG: ${{ needs.plan.outputs.sha }}
+      DEPLOY_MODE: ${{ needs.plan.outputs.mode }}
+    steps:
+      - name: Check the demo host configuration
+        id: config
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HOST: ${{ secrets.DROPLET_HOST }}
+          SSH_KEY: ${{ secrets.DROPLET_SSH_KEY }}
+        run: |
+          if [ -z "$HOST" ] || [ -z "$SSH_KEY" ]; then
+            message="No demo host is configured (secrets DROPLET_HOST and DROPLET_SSH_KEY)."
+            if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+              echo "::error::$message"
+              exit 1
+            fi
+            echo "::warning::$message The demo deploy was skipped."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+
+      # At the commit being deployed or rolled back to: the stack files that
+      # are synced below belong to the images of the same commit.
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        if: steps.config.outputs.enabled == 'true'
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
+
+      - name: Sync the demo stack files to the host
+        if: steps.config.outputs.enabled == 'true'
+        env:
+          SSH_KEY: ${{ secrets.DROPLET_SSH_KEY }}
+          HOST: ${{ secrets.DROPLET_HOST }}
+          KNOWN_HOSTS: ${{ secrets.DROPLET_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # The host's key, pinned in a secret. Scanning for it at the start of
+          # each run trusts whatever answers at the address at that moment,
+          # which verifies nothing; it remains only until the secret is set.
+          # Every connection below, and the deploy step, then refuses a host
+          # whose key is not in this file.
+          if [ -n "$KNOWN_HOSTS" ]; then
+            printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            echo "::warning::The host key of the demo host is not verified. Set the secret DROPLET_KNOWN_HOSTS (docs/deploy/secrets-checklist.md#ssh-host-keys)."
+            ssh-keyscan -p "$SSH_PORT" -H "$HOST" > ~/.ssh/known_hosts 2>/dev/null
+          fi
+          ssh -p "$SSH_PORT" -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes "root@${HOST}" 'mkdir -p /opt/bslt/demo'
+          # This Caddyfile also serves other projects. Only bootstrap it on a
+          # new host; a BSLT deployment must not replace the shared live routes.
+          if ! ssh -p "$SSH_PORT" -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes "root@${HOST}" 'test -s /opt/bslt/demo/Caddyfile'; then
+            scp -P "$SSH_PORT" -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+              infra/docker/demo/Caddyfile "root@${HOST}:/opt/bslt/demo/Caddyfile"
+          fi
+          scp -P "$SSH_PORT" -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+            infra/docker/demo/docker-compose.demo.yml \
+            infra/docker/demo/nginx.conf \
+            infra/docker/demo/generate-env.sh \
+            infra/docker/demo/remote-deploy.sh \
+            config/env/.env.production.example \
+            infra/versions.env \
+            "root@${HOST}:/opt/bslt/demo/"
+
+      # remote-deploy.sh: role bootstrap, migrations, then the stack, stopping
+      # at the first step that fails. Its database lives in its own compose file.
+      - name: Deploy on the demo host
+        if: steps.config.outputs.enabled == 'true'
+        env:
+          HOST: ${{ secrets.DROPLET_HOST }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The token goes over standard input. In the command text it would be
+          # an argument of `ssh` here and of the shell the host starts for it,
+          # both readable in a process list for as long as the deploy runs.
+          printf '%s\n' "$GHCR_TOKEN" | ssh -p "$SSH_PORT" -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes "root@${HOST}" \
+            "IFS= read -r GHCR_TOKEN && export GHCR_TOKEN && IMAGE_TAG='${IMAGE_TAG}' OWNER='${OWNER}' PUBLIC_HOST='${PUBLIC_HOST}' PUBLIC_BASE_URL='https://${PUBLIC_HOST}' bash /opt/bslt/demo/remote-deploy.sh"
+
+      - name: Verify
+        if: steps.config.outputs.enabled == 'true'
+        env:
+          HOST: ${{ secrets.DROPLET_HOST }}
+        run: |
+          sleep 10
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "http://${HOST}/health")
+          echo "health -> $code"
+          test "$code" = "200"
+
+  # ===========================================================================
+  # Terraform: manual only, never part of a deploy
+  # ===========================================================================
+  # infra/cloud is reference code. This template ships no state backend and
+  # applies nothing; `plan` works without one, `apply` refuses to run until the
+  # fork declares a remote, locked backend. ci.yml validates the configuration.
+  # `terraform destroy` is deliberately not offered here.
+  terraform:
+    name: terraform ${{ inputs.terraform }} (${{ needs.plan.outputs.environment }}, ${{ inputs.provider }})
+    needs: plan
+    if: needs.plan.outputs.terraform == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ${{ needs.plan.outputs.environment }}
+    concurrency:
+      group: terraform-${{ needs.plan.outputs.environment }}-${{ inputs.provider }}
+      cancel-in-progress: false
+    env:
+      PROVIDER: ${{ inputs.provider }}
+      TF_ACTION: ${{ inputs.terraform }}
+      TF_ENVIRONMENT: ${{ needs.plan.outputs.environment }}
+      TF_IN_AUTOMATION: 'true'
+      TF_INPUT: '0'
+      DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+      # For an S3-compatible state backend (DigitalOcean Spaces, AWS S3).
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      # State on a runner's disk is gone when the job ends: an apply without a
+      # remote backend would create servers that no later run knows about.
+      - name: Check the state backend
+        id: backend
+        run: |
+          if grep -Eqs '^[[:space:]]*backend[[:space:]]+"[a-z0-9_]+"' "infra/cloud/$PROVIDER"/*.tf; then
+            echo "remote=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$TF_ACTION" = "apply" ]; then
+            echo "::error::infra/cloud/$PROVIDER declares no remote state backend, so apply is refused: its state would be lost with this runner. Add a remote, locked backend block in your fork (infra/cloud/main.tf lists the options), then run apply again."
+            exit 1
+          fi
+          echo "::warning::infra/cloud/$PROVIDER declares no remote state backend. This plan is computed against an empty state and shows every resource as new."
+          echo "remote=false" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: '~1.0'
+
+      - name: Authenticate to Google Cloud
+        if: inputs.provider == 'gcp'
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Write terraform.tfvars
+        env:
+          TF_DOMAIN: ${{ vars.DOMAIN || secrets.DOMAIN }}
+          TF_SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+          DO_REGION: ${{ vars.DO_REGION || 'nyc1' }}
+          DO_INSTANCE_SIZE: ${{ vars.DO_INSTANCE_SIZE || 's-1vcpu-1gb' }}
+          DO_ENABLE_MANAGED_DB: ${{ vars.DO_ENABLE_MANAGED_DB || 'false' }}
+          DO_DATABASE_SIZE: ${{ vars.DO_DATABASE_SIZE || 'db-s-1vcpu-1gb' }}
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ vars.GCP_REGION || 'us-central1' }}
+          GCP_ZONE: ${{ vars.GCP_ZONE || 'us-central1-a' }}
+          GCP_INSTANCE_SIZE: ${{ vars.GCP_INSTANCE_SIZE || 'e2-small' }}
+          GCP_ENABLE_MANAGED_DB: ${{ vars.GCP_ENABLE_MANAGED_DB || 'false' }}
+          GCP_DATABASE_SIZE: ${{ vars.GCP_DATABASE_SIZE || 'db-f1-micro' }}
+          GCP_DB_USERNAME: ${{ secrets.GCP_DB_USERNAME || 'abe_user' }}
+          GCP_DB_PASSWORD: ${{ secrets.GCP_DB_PASSWORD }}
+        run: |
+          cd infra/cloud
+          ( umask 077 && : > terraform.tfvars )
+          cat > terraform.tfvars << EOF
+          environment    = "$TF_ENVIRONMENT"
+          domain         = "$TF_DOMAIN"
+          ssh_public_key = "$TF_SSH_PUBLIC_KEY"
+          EOF
+          if [ "$PROVIDER" = "digitalocean" ]; then
+            cat >> terraform.tfvars << EOF
+          region                  = "$DO_REGION"
+          instance_size           = "$DO_INSTANCE_SIZE"
+          enable_managed_database = $DO_ENABLE_MANAGED_DB
+          database_size           = "$DO_DATABASE_SIZE"
+          EOF
+          else
+            cat >> terraform.tfvars << EOF
+          project_id              = "$GCP_PROJECT_ID"
+          region                  = "$GCP_REGION"
+          zone                    = "$GCP_ZONE"
+          instance_size           = "$GCP_INSTANCE_SIZE"
+          enable_managed_database = $GCP_ENABLE_MANAGED_DB
+          database_size           = "$GCP_DATABASE_SIZE"
+          database_username       = "$GCP_DB_USERNAME"
+          database_password       = "$GCP_DB_PASSWORD"
+          EOF
+          fi
+
+      - name: Terraform init
+        working-directory: infra/cloud/${{ inputs.provider }}
+        run: terraform init
+
+      # One state per environment under the same backend.
+      - name: Select the workspace
+        working-directory: infra/cloud/${{ inputs.provider }}
+        run: terraform workspace select -or-create "$TF_ENVIRONMENT"
+
+      - name: Terraform plan
+        working-directory: infra/cloud/${{ inputs.provider }}
+        run: |
+          terraform plan -no-color -out=tfplan -var-file=../terraform.tfvars
+          {
+            echo "## Terraform plan: $TF_ENVIRONMENT on $PROVIDER"
+            echo ""
+            echo '```'
+            terraform show -no-color tfplan | head -100
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Terraform apply
+        if: inputs.terraform == 'apply' && steps.backend.outputs.remote == 'true'
+        working-directory: infra/cloud/${{ inputs.provider }}
+        run: |
+          terraform apply -no-color -auto-approve tfplan
+          {
+            echo "## Terraform apply: $TF_ENVIRONMENT on $PROVIDER"
+            echo ""
+            echo "Set these on the '$TF_ENVIRONMENT' environment for the app deploy:"
+            echo ""
+            echo "- DEPLOY_HOST: $(terraform output -raw instance_public_ip 2>/dev/null || echo 'not available')"
+            echo "- DOMAIN: $(terraform output -raw domain_name 2>/dev/null || echo 'not available')"
+          } >> "$GITHUB_STEP_SUMMARY"

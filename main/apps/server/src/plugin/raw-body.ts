@@ -12,21 +12,9 @@
 
 import { Readable } from 'node:stream';
 
-import { errorCodes } from 'fastify';
+import { httpErrorCodes, type HttpServer } from '@bslt/server-system/http';
 
-import type { FastifyInstance } from 'fastify';
-
-declare module 'fastify' {
-  interface FastifyRequest {
-    rawBody?: Buffer;
-  }
-
-  interface FastifyContextConfig {
-    rawBody?: boolean;
-  }
-}
-
-export function registerRawBodyCapture(server: FastifyInstance): void {
+export function registerRawBodyCapture(server: HttpServer): void {
   server.addHook('preParsing', (request, _reply, payload, done) => {
     if (request.routeOptions.config.rawBody !== true) {
       done(null, payload);
@@ -49,7 +37,7 @@ export function registerRawBodyCapture(server: FastifyInstance): void {
       if (settled) return;
       received += chunk.length;
       if (received > limit) {
-        fail(new errorCodes.FST_ERR_CTP_BODY_TOO_LARGE());
+        fail(new httpErrorCodes.BODY_TOO_LARGE());
         return;
       }
       chunks.push(chunk);

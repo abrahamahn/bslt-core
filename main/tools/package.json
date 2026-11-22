@@ -1,0 +1,69 @@
+{
+  "name": "@bslt/tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Repository tooling: the bslt CLI, the gate registry and the repo scripts. Dev tooling only.",
+  "bin": {
+    "bslt": "./bin/bslt.ts"
+  },
+  "exports": {
+    "./catalog/attribute": {
+      "source": "./catalog/attribute.ts",
+      "default": "./catalog/attribute.ts"
+    },
+    "./catalog/audit": {
+      "source": "./catalog/audit.ts",
+      "default": "./catalog/audit.ts"
+    },
+    "./catalog/build": {
+      "source": "./catalog/build.ts",
+      "default": "./catalog/build.ts"
+    },
+    "./catalog/file": {
+      "source": "./catalog/file.ts",
+      "default": "./catalog/file.ts"
+    },
+    "./catalog/read": {
+      "source": "./catalog/read.ts",
+      "default": "./catalog/read.ts"
+    },
+    "./catalog/rls": {
+      "source": "./catalog/rls.ts",
+      "default": "./catalog/rls.ts"
+    },
+    "./catalog/rls-structure": {
+      "source": "./catalog/rls-structure.ts",
+      "default": "./catalog/rls-structure.ts"
+    },
+    "./snapshot/snapshot-file": {
+      "source": "./snapshot/snapshot-file.ts",
+      "default": "./snapshot/snapshot-file.ts"
+    },
+    "./scripts/deploy/backup": {
+      "source": "./scripts/deploy/backup.ts",
+      "default": "./scripts/deploy/backup.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "type-check": "tsc -p tsconfig.json",
+    "test": "vitest run --config vitest.config.ts --reporter=dot --silent=passed-only"
+  },
+  "devDependencies": {
+    "@bslt/build-config": "workspace:*",
+    "@bslt/contract": "workspace:*",
+    "@bslt/db": "workspace:*",
+    "@bslt/identity": "workspace:*",
+    "@bslt/protocols": "workspace:*",
+    "@bslt/schema": "workspace:*",
+    "@bslt/server": "workspace:*",
+    "@bslt/server-system": "workspace:*",
+    "@bslt/testing": "workspace:*",
+    "@playwright/test": "^1.65.0",
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0"
+  }
+}

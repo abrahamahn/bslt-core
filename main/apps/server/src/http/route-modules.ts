@@ -1,25 +1,37 @@
-// Core edition route composition. Guards remain in the shared app router.
-import { coreRouteModuleRegistrations } from '@bslt/core/route-modules';
-import { createComposedAuthRoutes, createComposedUserRoutes } from './auth-route-overrides';
-import { featureRouteModules } from '../extensions';
+// main/apps/server/src/http/route-modules.ts
+/**
+ * App Route Module Registry
+ *
+ * App-owned route composition helpers:
+ * - composed core module registry
+ * - realtime/system module registration
+ */
+
+import { realtimeRoutes } from '@bslt/realtime';
+
 import { systemRoutes } from './system-routes';
+
 import type { RouteMap } from '@bslt/server-system/http';
-export interface RouteModuleRegistration {
+
+interface RouteModuleRegistration {
   module: string;
   routes: RouteMap;
   prefix?: string;
 }
-export async function createAppRouteModuleRegistrations(
-  enabledStrategies: readonly string[],
-): Promise<readonly RouteModuleRegistration[]> {
-  const auth = createComposedAuthRoutes(enabledStrategies);
-  const users = createComposedUserRoutes();
-  return [
-    ...coreRouteModuleRegistrations.map((entry) => ({
-      ...entry,
-      routes: entry.module === 'auth' ? auth : entry.module === 'users' ? users : entry.routes,
-    })),
-    ...featureRouteModules(),
+
+interface RouteModuleCompositionOptions {
+  readonly includeRealtimeRoutes?: boolean | undefined;
+}
+
+export function createAppRouteModuleRegistrations(
+  _enabledStrategies: readonly string[],
+  options: RouteModuleCompositionOptions = {},
+): Promise<ReadonlyArray<RouteModuleRegistration>> {
+  const realtimeRouteModules: ReadonlyArray<RouteModuleRegistration> =
+    options.includeRealtimeRoutes === true ? [{ module: 'realtime', routes: realtimeRoutes }] : [];
+
+  return Promise.resolve([
+    ...realtimeRouteModules,
     { module: 'system', routes: systemRoutes, prefix: '' },
-  ];
+  ]);
 }

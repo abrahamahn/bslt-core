@@ -1,0 +1,78 @@
+# GCP Module Outputs
+
+output "instance_name" {
+  description = "GCP compute instance name"
+  value       = google_compute_instance.starter_app.name
+}
+
+output "instance_public_ip" {
+  description = "Public IP address of the compute instance"
+  value       = google_compute_instance.starter_app.network_interface[0].access_config[0].nat_ip
+}
+
+output "instance_private_ip" {
+  description = "Private IP address of the compute instance"
+  value       = google_compute_instance.starter_app.network_interface[0].network_ip
+}
+
+output "ssh_connection_string" {
+  description = "SSH connection command"
+  value       = "ssh -i <your-private-key> deploy@${google_compute_instance.starter_app.network_interface[0].access_config[0].nat_ip}"
+}
+
+output "service_account_email" {
+  description = "Service account email address"
+  value       = google_service_account.starter_app.email
+}
+
+output "domain_name" {
+  description = "Configured domain name"
+  value       = trimsuffix(google_dns_managed_zone.starter_app.dns_name, ".")
+}
+
+output "name_servers" {
+  description = "DNS name servers for the domain"
+  value       = google_dns_managed_zone.starter_app.name_servers
+}
+
+output "database_connection_string" {
+  description = "PostgreSQL connection string via private IP (if Cloud SQL enabled)"
+  value       = var.enable_managed_database ? "postgresql://${google_sql_user.starter_app[0].name}:${google_sql_user.starter_app[0].password}@${google_sql_database_instance.starter_app[0].private_ip_address}:5432/${google_sql_database.starter_app[0].name}?sslmode=require" : null
+  sensitive   = true
+}
+
+output "database_host" {
+  description = "Database private IP (if Cloud SQL enabled)"
+  value       = var.enable_managed_database ? google_sql_database_instance.starter_app[0].private_ip_address : null
+}
+
+output "database_port" {
+  description = "Database port (if Cloud SQL enabled)"
+  value       = var.enable_managed_database ? 5432 : null
+}
+
+output "database_name" {
+  description = "Database name (if Cloud SQL enabled)"
+  value       = var.enable_managed_database ? google_sql_database.starter_app[0].name : null
+}
+
+output "database_username" {
+  description = "Database username (if Cloud SQL enabled)"
+  value       = var.enable_managed_database ? google_sql_user.starter_app[0].name : null
+}
+
+output "database_password" {
+  description = "Database password (if Cloud SQL enabled)"
+  value       = var.enable_managed_database ? google_sql_user.starter_app[0].password : null
+  sensitive   = true
+}
+
+output "vpc_network_name" {
+  description = "VPC network name"
+  value       = google_compute_network.starter_app.name
+}
+
+output "subnet_name" {
+  description = "Subnet name"
+  value       = google_compute_subnetwork.starter_app.name
+}

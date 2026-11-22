@@ -18,15 +18,7 @@
 
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { ar } from './locales/ar';
-import { de } from './locales/de';
 import { enUS } from './locales/en-US';
-import { es } from './locales/es';
-import { fr } from './locales/fr';
-import { ja } from './locales/ja';
-import { ko } from './locales/ko';
-import { ptBR } from './locales/pt-BR';
-import { zhCN } from './locales/zh-CN';
 import { DEFAULT_LOCALE, LOCALE_METADATA, SUPPORTED_LOCALES } from './types';
 import { detectLocale, interpolate } from './utils';
 
@@ -39,20 +31,9 @@ import type { ReactElement, ReactNode } from 'react';
 
 /**
  * Map of locale codes to their translation maps.
- *
- * New locales are registered here. Each locale must provide a
- * FlatTranslationMap with dot-notation keys matching en-US.
  */
 const translationRegistry: Record<Locale, FlatTranslationMap> = {
   'en-US': enUS,
-  es,
-  fr,
-  de,
-  ja,
-  ko,
-  'zh-CN': zhCN,
-  'pt-BR': ptBR,
-  ar,
 };
 
 const LOCALE_STORAGE_KEY = 'abe-locale-preference';
@@ -95,7 +76,7 @@ export const I18nContext = createContext<I18nContextValue | undefined>(undefined
 /**
  * Props for the I18nProvider component.
  */
-export interface I18nProviderProps {
+interface I18nProviderProps {
   /** Child components that will have access to i18n context */
   children: ReactNode;
   /** Initial locale override (defaults to browser-detected locale) */

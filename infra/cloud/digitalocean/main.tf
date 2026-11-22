@@ -1,0 +1,141 @@
+# DigitalOcean Infrastructure Module
+# Deploys the starter app to a DigitalOcean Droplet with optional managed database
+
+terraform {
+  required_providers {
+    digitalocean = {
+      source  = "digitalocean/digitalocean"
+      version = "~> 2.0"
+    }
+  }
+}
+
+# DigitalOcean Droplet (VM Instance)
+resource "digitalocean_droplet" "starter_app" {
+  name     = "${var.app_name}-${var.environment}"
+  region   = var.region
+  size     = var.instance_size
+  image    = "ubuntu-24-04-x64" # Latest LTS Ubuntu
+  ssh_keys = [digitalocean_ssh_key.default.id]
+
+  # Enable monitoring and backups
+  monitoring = true
+  backups    = var.environment == "production"
+
+  # User data for initial server setup
+  user_data = templatefile("${path.module}/user-data.sh", {
+    app_name = var.app_name
+  })
+
+  tags = [
+    var.app_name,
+    var.environment,
+    "managed-by-terraform"
+  ]
+}
+
+# SSH Key for server access
+resource "digitalocean_ssh_key" "default" {
+  name       = "${var.app_name}-ssh-key-${var.environment}"
+  public_key = var.ssh_public_key
+}
+
+# Firewall configuration
+resource "digitalocean_firewall" "starter_app" {
+  name = "${var.app_name}-firewall-${var.environment}"
+
+  droplet_ids = [digitalocean_droplet.starter_app.id]
+
+  # Inbound rules
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "22"
+    source_addresses = var.ssh_allowed_cidrs
+  }
+
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "80"
+    source_addresses = ["0.0.0.0/0", "::/0"] # HTTP
+  }
+
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "443"
+    source_addresses = ["0.0.0.0/0", "::/0"] # HTTPS
+  }
+
+  # Outbound rules (allow all outbound)
+  outbound_rule {
+    protocol              = "tcp"
+    port_range            = "1-65535"
+    destination_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  outbound_rule {
+    protocol              = "udp"
+    port_range            = "1-65535"
+    destination_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  outbound_rule {
+    protocol              = "icmp"
+    destination_addresses = ["0.0.0.0/0", "::/0"]
+  }
+}
+
+# Domain configuration
+resource "digitalocean_domain" "starter_app" {
+  name = var.domain
+}
+
+resource "digitalocean_record" "starter_app_a" {
+  domain = digitalocean_domain.starter_app.name
+  type   = "A"
+  name   = "@"
+  value  = digitalocean_droplet.starter_app.ipv4_address
+  ttl    = 300
+}
+
+resource "digitalocean_record" "starter_app_aaaa" {
+  domain = digitalocean_domain.starter_app.name
+  type   = "AAAA"
+  name   = "@"
+  value  = digitalocean_droplet.starter_app.ipv6_address
+  ttl    = 300
+}
+
+# Optional managed database
+resource "digitalocean_database_cluster" "starter_app" {
+  count = var.enable_managed_database ? 1 : 0
+
+  name       = "${var.app_name}-db-${var.environment}"
+  engine     = "pg"
+  version    = "17" # POSTGRES_MAJOR in infra/versions.env (version-pins gate)
+  size       = var.database_size
+  region     = var.region
+  node_count = var.database_node_count
+
+  maintenance_window {
+    day  = "sunday"
+    hour = "02:00"
+  }
+
+  tags = [
+    var.app_name,
+    var.environment,
+    "managed-by-terraform"
+  ]
+}
+
+# Database firewall (allow connection from droplet)
+resource "digitalocean_database_firewall" "starter_app" {
+  count = var.enable_managed_database ? 1 : 0
+
+  cluster_id = digitalocean_database_cluster.starter_app[0].id
+
+  rule {
+    type  = "droplet"
+    value = digitalocean_droplet.starter_app.id
+  }
+}

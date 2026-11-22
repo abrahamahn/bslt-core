@@ -1,0 +1,148 @@
+{
+  "name": "@bslt/server-system",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Consolidated infrastructure adapters for bslt",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./logger": {
+      "source": "./src/logger/index.ts",
+      "types": "./dist/logger/index.d.ts",
+      "default": "./dist/logger/index.js"
+    },
+    "./logger/dev": {
+      "source": "./src/logger/dev.ts",
+      "types": "./dist/logger/dev.d.ts",
+      "default": "./dist/logger/dev.js"
+    },
+    "./cache": {
+      "source": "./src/cache/index.ts",
+      "types": "./dist/cache/index.d.ts",
+      "default": "./dist/cache/index.js"
+    },
+    "./config": {
+      "source": "./src/config/index.ts",
+      "types": "./dist/config/index.d.ts",
+      "default": "./dist/config/index.js"
+    },
+    "./security": {
+      "source": "./src/security/index.ts",
+      "types": "./dist/security/index.d.ts",
+      "default": "./dist/security/index.js"
+    },
+    "./http": {
+      "source": "./src/http/index.ts",
+      "types": "./dist/http/index.d.ts",
+      "default": "./dist/http/index.js"
+    },
+    "./routing": {
+      "source": "./src/http/index.ts",
+      "types": "./dist/http/index.d.ts",
+      "default": "./dist/http/index.js"
+    },
+    "./observability": {
+      "source": "./src/observability/index.ts",
+      "types": "./dist/observability/index.d.ts",
+      "default": "./dist/observability/index.js"
+    },
+    "./runtime": {
+      "source": "./src/runtime/index.ts",
+      "types": "./dist/runtime/index.d.ts",
+      "default": "./dist/runtime/index.js"
+    },
+    "./errors": {
+      "source": "./src/errors/index.ts",
+      "types": "./dist/errors/index.d.ts",
+      "default": "./dist/errors/index.js"
+    },
+    "./module": {
+      "source": "./src/module/index.ts",
+      "types": "./dist/module/index.d.ts",
+      "default": "./dist/module/index.js"
+    },
+    "./cron": {
+      "source": "./src/cron/index.ts",
+      "types": "./dist/cron/index.d.ts",
+      "default": "./dist/cron/index.js"
+    },
+    "./http/route.registry": {
+      "source": "./src/http/route.registry.ts",
+      "types": "./dist/http/route.registry.d.ts",
+      "default": "./dist/http/route.registry.js"
+    },
+    "./logger/formatter": {
+      "source": "./src/logger/formatter.ts",
+      "types": "./dist/logger/formatter.d.ts",
+      "default": "./dist/logger/formatter.js"
+    },
+    "./security/ip-blocklist": {
+      "source": "./src/security/ip-blocklist.ts",
+      "types": "./dist/security/ip-blocklist.d.ts",
+      "default": "./dist/security/ip-blocklist.js"
+    },
+    "./testing/database": {
+      "source": "./src/testing/database/index.ts",
+      "types": "./dist/testing/database/index.d.ts",
+      "default": "./dist/testing/database/index.js"
+    },
+    "./testing/real-db": {
+      "source": "./src/testing/real-db/index.ts",
+      "types": "./dist/testing/real-db/index.d.ts",
+      "default": "./dist/testing/real-db/index.js"
+    },
+    "./testing/subscribers": {
+      "source": "./src/testing/subscribers/index.ts",
+      "types": "./dist/testing/subscribers/index.d.ts",
+      "default": "./dist/testing/subscribers/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo && tsc -p tsconfig.json && bslt-esm-fix dist",
+    "clean": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo",
+    "type-check": "tsc -p tsconfig.lint.json",
+    "test": "vitest run --reporter=dot --silent=passed-only --passWithNoTests",
+    "lint": "eslint . --cache --cache-location ../../node_modules/.cache/eslint/.eslintcache-bslt-server-system --report-unused-disable-directives",
+    "migrate": "pnpm --filter @bslt/db migrate"
+  },
+  "keywords": [
+    "bslt",
+    "infra",
+    "infrastructure"
+  ],
+  "author": "",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abrahamahn/bslt.git",
+    "directory": "main/kernel/server"
+  },
+  "bugs": {
+    "url": "https://github.com/abrahamahn/bslt/issues"
+  },
+  "homepage": "https://github.com/abrahamahn/bslt#readme",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "sideEffects": false,
+  "dependencies": {
+    "@bslt/contract": "workspace:*",
+    "@bslt/db": "workspace:*",
+    "@bslt/protocols": "workspace:*",
+    "@bslt/schema": "workspace:*"
+  },
+  "devDependencies": {
+    "@bslt/build-config": "workspace:*",
+    "vitest": "^5.1.0"
+  }
+}

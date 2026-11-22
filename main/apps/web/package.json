@@ -3,30 +3,73 @@
   "version": "1.0.0",
   "description": "React web application for bslt",
   "type": "module",
+  "imports": {
+    "#app/*": {
+      "types": [
+        "./src/*.ts",
+        "./src/*.tsx",
+        "./src/*/index.ts",
+        "./src/*/index.tsx",
+        "./src/*"
+      ],
+      "default": "./src/*"
+    }
+  },
+  "exports": {
+    "./app": {
+      "source": "./src/app/index.ts"
+    },
+    "./app/ClientEnvironment": {
+      "source": "./src/app/ClientEnvironment.tsx"
+    },
+    "./app/dashboard": {
+      "source": "./src/app/dashboard/index.ts"
+    },
+    "./config": {
+      "source": "./src/config.ts"
+    },
+    "./i18n": {
+      "source": "./src/i18n/index.ts"
+    },
+    "./package.json": "./package.json"
+  },
   "scripts": {
     "dev": "vite",
-    "build": "vite build && pnpm build:server && node --import tsx scripts/prerender.ts",
+    "build": "vite build && pnpm build:server && node --conditions=source --import tsx ../../tools/bin/bslt.ts web prerender",
     "build:server": "VITE_SSR=true vite build",
     "start": "vite preview --port 4173",
     "type-check": "tsc -p tsconfig.lint.json",
+    "test": "NODE_OPTIONS=--max-old-space-size=4096 vitest run --reporter=dot --silent=passed-only",
+    "test:coverage": "NODE_OPTIONS=--max-old-space-size=6144 vitest run --reporter=dot --silent=passed-only --coverage.enabled=true",
+    "lint": "eslint . --cache --cache-location ../../node_modules/.cache/eslint/.eslintcache-bslt-web --report-unused-disable-directives",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@bslt/api": "workspace:*",
+    "@bslt/audit": "workspace:*",
     "@bslt/client-engine": "workspace:*",
+    "@bslt/compliance": "workspace:*",
+    "@bslt/contract": "workspace:*",
+    "@bslt/devtools": "workspace:*",
+    "@bslt/identity": "workspace:*",
     "@bslt/react": "workspace:*",
-    "@bslt/shared": "workspace:*",
+    "@bslt/schema": "workspace:*",
     "@bslt/ui": "workspace:*",
-    "@simplewebauthn/browser": "^14.0.0",
+    "@bslt/web-platform": "workspace:*",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
+    "@bslt/build-config": "workspace:*",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.2.1",
+    "eslint": "^9.39.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "vite": "^8.3.6",
-    "vite-tsconfig-paths": "^6.1.1"
-  },
-  "private": true
+    "vitest": "^5.1.0"
+  }
 }

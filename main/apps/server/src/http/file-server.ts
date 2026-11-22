@@ -13,9 +13,9 @@ import { mkdir, open, rename, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 
-import { HTTP_STATUS, MS_PER_MINUTE, SECONDS_PER_DAY } from '@bslt/shared/constants';
+import { HTTP_STATUS, MS_PER_MINUTE, SECONDS_PER_DAY } from '@bslt/contract';
 
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { HttpServer, HttpServerReply, HttpServerRequest } from '@bslt/server-system/http';
 
 interface FileSignatureData extends Record<string, string | number> {
   method: 'get' | 'put';
@@ -81,6 +81,15 @@ function toAtomicTempPath(targetPath: string): string {
   return `${targetPath}.${String(process.pid)}.${randomUUID()}.tmp`;
 }
 
+async function unlinkTempFile(tempPath: string): Promise<boolean> {
+  try {
+    await unlink(tempPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function writeContentAtomic(
   targetPath: string,
   body: Buffer | string,
@@ -102,7 +111,7 @@ async function writeContentAtomic(
     }
   } catch (error) {
     await fd.close();
-    await unlink(tempPath).catch(() => undefined);
+    await unlinkTempFile(tempPath);
     throw error;
   }
   await fd.close();
@@ -120,7 +129,7 @@ async function writeRequestStreamAtomic(
     await rename(tempPath, targetPath);
   } catch (error) {
     writeStream.destroy();
-    await unlink(tempPath).catch(() => undefined);
+    await unlinkTempFile(tempPath);
     throw error;
   }
 }
@@ -129,7 +138,7 @@ const RATE_LIMIT_WINDOW_MS = MS_PER_MINUTE;
 const RATE_LIMIT_MAX_REQUESTS = 180;
 const uploadRateLimit = new Map<string, { count: number; resetAt: number }>();
 
-function getRequesterId(request: FastifyRequest): string {
+function getRequesterId(request: HttpServerRequest): string {
   const forwardedFor = request.headers['x-forwarded-for'];
   if (typeof forwardedFor === 'string' && forwardedFor !== '') {
     return forwardedFor.split(',')[0]?.trim() ?? request.ip;
@@ -151,7 +160,7 @@ function pruneExpiredRateLimits(now: number): void {
   }
 }
 
-function isRateLimited(request: FastifyRequest): boolean {
+function isRateLimited(request: HttpServerRequest): boolean {
   const requester = getRequesterId(request);
   const now = Date.now();
   pruneExpiredRateLimits(now);
@@ -164,7 +173,7 @@ function isRateLimited(request: FastifyRequest): boolean {
   return current.count > RATE_LIMIT_MAX_REQUESTS;
 }
 
-export interface FilesConfig {
+interface FilesConfig {
   uploadDir: string;
   maxFileSize: number;
   signatureSecret: Buffer;
@@ -180,7 +189,7 @@ interface FileRouteQuery {
   signature: string;
 }
 
-type FileRequest = FastifyRequest<{
+type FileRequest = HttpServerRequest<{
   Params: FileRouteParams;
   Querystring: FileRouteQuery;
 }>;
@@ -188,7 +197,7 @@ type FileRequest = FastifyRequest<{
 function verifyFileRequest(
   config: FilesConfig,
   request: FileRequest,
-  reply: FastifyReply,
+  reply: HttpServerReply,
 ): boolean {
   const { id, filename } = request.params;
 
@@ -251,13 +260,13 @@ function getMimeType(filename: string): string {
 /** Rate limiting preHandler for file server routes */
 // Must be async: Fastify treats a sync two-argument hook as callback-style
 // and waits forever for a done() that never comes, hanging every request
-async function rateLimitHandler(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+function rateLimitHandler(request: HttpServerRequest, reply: HttpServerReply): void {
   if (isRateLimited(request)) {
-    await reply.status(HTTP_STATUS.TOO_MANY_REQUESTS).send('Too many requests.');
+    reply.status(HTTP_STATUS.TOO_MANY_REQUESTS).send('Too many requests.');
   }
 }
 
-export function registerFileServer(config: FilesConfig, app: FastifyInstance): void {
+export function registerFileServer(config: FilesConfig, app: HttpServer): void {
   const uploadDir = config.uploadDir;
 
   // Handle file uploads

@@ -22,9 +22,9 @@ import {
   DEFAULT_LOCALE as SHARED_DEFAULT_LOCALE,
   SUPPORTED_LOCALES as SHARED_SUPPORTED_LOCALES,
   type Locale,
-} from '@bslt/shared/constants/system';
+} from '@bslt/contract';
 
-import type { FastifyInstance } from 'fastify';
+import type { HttpServer } from '@bslt/server-system/http';
 
 // ============================================================================
 // Types
@@ -55,17 +55,6 @@ export const SUPPORTED_LOCALES: readonly SupportedLocale[] = SHARED_SUPPORTED_LO
 
 /** Default locale when no preference is detected or matched. */
 export const DEFAULT_LOCALE: SupportedLocale = SHARED_DEFAULT_LOCALE;
-
-// ============================================================================
-// Fastify Declaration Merging
-// ============================================================================
-
-declare module 'fastify' {
-  interface FastifyRequest {
-    /** Resolved locale from the Accept-Language header */
-    locale: SupportedLocale;
-  }
-}
 
 // ============================================================================
 // Parser
@@ -195,7 +184,7 @@ export function resolveLocale(entries: AcceptLanguageEntry[]): SupportedLocale {
  * });
  * ```
  */
-export function registerLocaleHook(app: FastifyInstance): void {
+export function registerLocaleHook(app: HttpServer): void {
   app.addHook('onRequest', (req, _reply, done) => {
     const acceptLanguage = req.headers['accept-language'] ?? '';
     const entries = parseAcceptLanguage(acceptLanguage);

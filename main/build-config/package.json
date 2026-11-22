@@ -1,0 +1,38 @@
+{
+  "name": "@bslt/build-config",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared build configuration: the Vite and Vitest factories (source condition), the ESM extension fixer and the ESLint preset. Dev tooling only.",
+  "bin": {
+    "bslt-esm-fix": "./bin/esm-fix.ts"
+  },
+  "exports": {
+    "./eslint": "./src/eslint.ts",
+    "./esm-fix": "./src/esm-fix.ts",
+    "./vite": "./src/vite.ts",
+    "./vitest": "./src/vitest.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "type-check": "tsc -p tsconfig.json",
+    "test": "vitest run --reporter=dot --silent=passed-only"
+  },
+  "devDependencies": {
+    "@eslint/compat": "^2.1.1",
+    "@eslint/js": "9.39.5",
+    "@types/node": "^26.6.6",
+    "eslint": "^9.39.2",
+    "eslint-plugin-boundaries": "^5.4.0",
+    "eslint-plugin-import-x": "^4.18.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-perfectionist": "^5.13.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-unused-imports": "^4.4.1",
+    "typescript-eslint": "^8.72.1",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0"
+  }
+}

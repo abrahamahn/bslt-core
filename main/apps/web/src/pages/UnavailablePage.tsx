@@ -3,7 +3,7 @@
  * Shown when the service is not offered where the visitor is.
  *
  * This is the page the geo gate's 403 points at (`unavailablePath` in the
- * `JURISDICTION_BLOCKED` body from `@bslt/shared/core/geo`). The tone is
+ * `JURISDICTION_BLOCKED` body from `@bslt/server-system/security`). The tone is
  * deliberate: nobody did anything wrong by arriving here. It is a fact about
  * where the service may operate, not a judgement about the visitor — so the
  * page explains the position and does not ask them to prove or plead anything.
@@ -12,15 +12,13 @@
 import { Link } from '@bslt/react/router';
 import { Heading, PageContainer, Text } from '@bslt/ui';
 
+import './PublicPages.css';
+
 import type { ReactElement } from 'react';
 
 export const UnavailablePage = (): ReactElement => (
   <PageContainer>
-    <section
-      className="flex-col gap-4 p-4"
-      style={{ maxWidth: '38rem', margin: '0 auto' }}
-      aria-labelledby="unavailable-title"
-    >
+    <section className="unavailable-section flex-col gap-4 p-4" aria-labelledby="unavailable-title">
       <Heading as="h1" size="xl" id="unavailable-title">
         This service isn&rsquo;t available where you are
       </Heading>

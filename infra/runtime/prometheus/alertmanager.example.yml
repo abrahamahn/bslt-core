@@ -1,0 +1,29 @@
+# Example Alertmanager configuration. Copy to alertmanager.yml and set a real
+# receiver. The default below posts to a generic webhook so it works with Slack,
+# Discord, Mattermost, PagerDuty events, or a custom endpoint — replace the URL.
+#
+# Slack: create an Incoming Webhook and use slack_configs instead of webhook_configs.
+
+route:
+  receiver: default
+  group_by: ['alertname']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers:
+        - severity = critical
+      receiver: default
+      repeat_interval: 1h
+
+receivers:
+  - name: default
+    # Replace with your channel. Example webhook receiver:
+    webhook_configs:
+      - url: 'https://example.com/your-alert-webhook'
+        send_resolved: true
+    # Slack alternative (uncomment and set api_url to your Incoming Webhook):
+    # slack_configs:
+    #   - api_url: 'https://hooks.slack.com/services/XXX/YYY/ZZZ'
+    #     channel: '#alerts'
+    #     send_resolved: true

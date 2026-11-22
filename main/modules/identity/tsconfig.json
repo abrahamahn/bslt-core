@@ -1,0 +1,41 @@
+{
+  "extends": "../../../config/tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": ".",
+    "jsx": "react-jsx",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "tsBuildInfoFile": "./node_modules/.cache/typescript/tsconfig.identity.tsbuildinfo"
+  },
+  "include": [
+    "module.ts",
+    "contract/**/*.ts",
+    "server/**/*.ts",
+    "web/**/*.ts",
+    "web/**/*.tsx",
+    "i18n/**/*.json"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "vitest.config.ts",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/*.real-db.test.ts",
+    "**/__tests__/**"
+  ],
+  "references": [
+    { "path": "../../kernel/client" },
+    { "path": "../../kernel/contract" },
+    { "path": "../../kernel/db" },
+    { "path": "../../kernel/protocols" },
+    { "path": "../../kernel/react" },
+    { "path": "../../kernel/schema" },
+    { "path": "../../kernel/server" },
+    { "path": "../../kernel/ui" },
+    { "path": "../../kernel/web" }
+  ]
+}

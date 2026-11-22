@@ -1,36 +1,22 @@
 // main/apps/web/src/lib/realtime.ts
 /**
- * The browser end of the invalidation bus.
+ * Browser end of the realtime invalidation bus (restructure plan §8.6).
  *
- * One socket for the whole tab, shared by every subscriber. The server sends
- * `{ type: 'update', key, version }` and nothing else — no payload — so this
- * module's entire job is to turn a frame into "that key changed" and let the
- * caller refetch over the authenticated HTTP route it already uses. Nothing
- * here holds application state, which is what keeps a dropped socket from
- * being a correctness problem rather than a latency one.
- *
- * Deliberately NOT a replacement for polling. Callers keep their poll as a
- * fallback: sockets drop, proxies close idle connections, and a notification
- * that only ever arrives over a live socket is one that silently never
- * arrives.
- *
- * CSRF: the token travels in the URL, because browsers cannot set headers on a
- * WebSocket handshake. It comes from `@bslt/api`'s `getCsrfToken` rather than a
- * local fetch, so the endpoint path is defined in exactly one place — a
- * hand-written `/csrf-token` is how the upstream version of this file spent a
- * long time never connecting in any environment while looking, from the
- * outside, like a working poll.
+ * Authenticates via single-use WebSocket tickets (`POST /api/realtime/ticket`
+ * through `@bslt/client-engine`'s `requestRealtimeTicket`) and subscribes with
+ * server-signed channel grants — never passing JWTs in `Sec-WebSocket-Protocol`.
  */
 
-import { getCsrfToken } from '@bslt/api';
+import { requestRealtimeTicket } from '@bslt/client-engine';
 
-import type { ServerMessage, SubscriptionKey } from '@bslt/shared/db';
+import type { ServerMessage, SubscriptionKey } from '@bslt/contract';
 
-import { getAccessToken } from '@/app/authToken';
-import { clientConfig } from '@/config';
+import { getAccessToken } from '#app/app/authToken';
+import { clientConfig } from '#app/config';
+import { reportError } from '#app/lib/errorReporter';
 
 /** Called when the server says a subscribed key changed. */
-export type InvalidationHandler = (key: SubscriptionKey, version: number) => void;
+type InvalidationHandler = (key: SubscriptionKey, version: number) => void;
 
 const RECONNECT_BASE_MS = 1_000;
 const RECONNECT_MAX_MS = 30_000;
@@ -42,6 +28,7 @@ interface Channel {
 }
 
 const channels = new Map<SubscriptionKey, Channel>();
+const channelGrants = new Map<SubscriptionKey, string>();
 
 let socket: WebSocket | null = null;
 let connecting = false;
@@ -69,21 +56,30 @@ function reconnectDelayMs(): number {
   return Math.min(RECONNECT_MAX_MS, RECONNECT_BASE_MS * 2 ** attempt);
 }
 
-function socketUrl(token: string): string {
+function socketUrl(ticket: string): string {
   const { protocol, host } = window.location;
   const scheme = protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${scheme}//${host}/ws?csrf=${encodeURIComponent(token)}`;
+  return `${scheme}//${host}/ws?ticket=${encodeURIComponent(ticket)}`;
 }
 
-function send(message: { type: string; key: SubscriptionKey }): void {
+function send(message: { type: string; key: SubscriptionKey; grant?: string | undefined }): void {
   if (socket === null || socket.readyState !== WebSocket.OPEN) return;
   socket.send(JSON.stringify(message));
+}
+
+function sendSubscribe(key: SubscriptionKey): void {
+  const grant = channelGrants.get(key);
+  send({
+    type: 'subscribe',
+    key,
+    ...(grant !== undefined ? { grant } : {}),
+  });
 }
 
 /** Re-subscribe everything after a reconnect: the server keeps no memory of us. */
 function resubscribeAll(): void {
   for (const key of channels.keys()) {
-    send({ type: 'subscribe', key });
+    sendSubscribe(key);
   }
 }
 
@@ -95,8 +91,6 @@ function handleFrame(raw: string): void {
     return;
   }
 
-  // Two frame shapes, and the union has no third — a live update, or the
-  // replay a reconnecting client asked for.
   const updates =
     message.type === 'update' ? [{ key: message.key, version: message.version }] : message.messages;
 
@@ -104,12 +98,10 @@ function handleFrame(raw: string): void {
     const channel = channels.get(update.key);
     if (channel === undefined) continue;
     for (const handler of channel.handlers) {
-      // One bad handler must not stop the others, or a single buggy consumer
-      // silently disables realtime for the whole tab.
       try {
         handler(update.key, update.version);
-      } catch {
-        /* consumer's problem, not the transport's */
+      } catch (error) {
+        reportError(error, 'error');
       }
     }
   }
@@ -149,9 +141,23 @@ async function connect(): Promise<void> {
   connecting = true;
 
   try {
-    const token = await getCsrfToken({ baseUrl: clientConfig.apiUrl });
+    const requestedKeys = [...channels.keys()];
+    const issued = await requestRealtimeTicket({
+      baseUrl: clientConfig.apiUrl,
+      getToken: () => accessToken,
+      channels: requestedKeys,
+    });
     if (channels.size === 0) return;
-    const next = new WebSocket(socketUrl(token), [accessToken]);
+    if (issued.ticket === null || issued.ticket === '') {
+      rejectedToken = accessToken;
+      scheduleTokenRecheck();
+      return;
+    }
+    for (const [ch, grant] of Object.entries(issued.grants)) {
+      channelGrants.set(ch as SubscriptionKey, grant);
+    }
+
+    const next = new WebSocket(socketUrl(issued.ticket));
     socket = next;
 
     next.addEventListener('open', () => {
@@ -176,7 +182,7 @@ async function connect(): Promise<void> {
       if (
         event instanceof CloseEvent &&
         event.code === 1008 &&
-        /(?:invalid token|authentication required)/iu.test(event.reason)
+        /(?:invalid token|authentication required|session revoked)/iu.test(event.reason)
       ) {
         if (reconnectTimer !== null) {
           clearTimeout(reconnectTimer);
@@ -191,8 +197,6 @@ async function connect(): Promise<void> {
     next.addEventListener('close', drop);
     next.addEventListener('error', drop);
   } catch {
-    // Auth not ready, offline, server down — retry on the backoff. The caller's
-    // poll keeps working throughout, which is why this can stay silent.
     scheduleReconnect();
   } finally {
     connecting = false;
@@ -214,7 +218,7 @@ export function subscribeToKey(key: SubscriptionKey, handler: InvalidationHandle
 
   if (existing === undefined) {
     channels.set(key, channel);
-    send({ type: 'subscribe', key });
+    sendSubscribe(key);
   }
   void connect();
 
@@ -223,10 +227,9 @@ export function subscribeToKey(key: SubscriptionKey, handler: InvalidationHandle
     if (channel.handlers.size > 0) return;
 
     channels.delete(key);
+    channelGrants.delete(key);
     send({ type: 'unsubscribe', key });
 
-    // Nothing left to listen for: drop the socket rather than hold one open
-    // for a tab that stopped caring.
     if (channels.size === 0) {
       if (reconnectTimer !== null) {
         clearTimeout(reconnectTimer);
@@ -252,6 +255,7 @@ export function resetRealtimeForTests(): void {
   attempt = 0;
   rejectedToken = null;
   channels.clear();
+  channelGrants.clear();
 }
 
 if (import.meta.hot !== undefined) {

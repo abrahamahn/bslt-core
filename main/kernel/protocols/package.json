@@ -1,0 +1,139 @@
+{
+  "name": "@bslt/protocols",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Owned standard protocols on Node built-ins, one subpath each, shipped with their RFC vectors",
+  "author": "Abraham Joongwhan Ahn",
+  "sideEffects": false,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bslt/bslt.git",
+    "directory": "main/kernel/protocols"
+  },
+  "bugs": {
+    "url": "https://github.com/bslt/bslt/issues"
+  },
+  "homepage": "https://github.com/bslt/bslt#readme",
+  "exports": {
+    "./cbor": {
+      "types": {
+        "source": "./src/cbor.ts",
+        "default": "./dist/cbor.d.ts"
+      },
+      "node": {
+        "source": "./src/cbor.ts",
+        "default": "./dist/cbor.js"
+      }
+    },
+    "./cose": {
+      "types": {
+        "source": "./src/cose.ts",
+        "default": "./dist/cose.d.ts"
+      },
+      "node": {
+        "source": "./src/cose.ts",
+        "default": "./dist/cose.js"
+      }
+    },
+    "./oauth": {
+      "types": {
+        "source": "./src/oauth.ts",
+        "default": "./dist/oauth.d.ts"
+      },
+      "node": {
+        "source": "./src/oauth.ts",
+        "default": "./dist/oauth.js"
+      }
+    },
+    "./otlp": {
+      "types": {
+        "source": "./src/otlp.ts",
+        "default": "./dist/otlp.d.ts"
+      },
+      "node": {
+        "source": "./src/otlp.ts",
+        "default": "./dist/otlp.js"
+      }
+    },
+    "./pg": {
+      "types": {
+        "source": "./src/pg.ts",
+        "default": "./dist/pg.d.ts"
+      },
+      "node": {
+        "source": "./src/pg.ts",
+        "default": "./dist/pg.js"
+      }
+    },
+    "./resp": {
+      "types": {
+        "source": "./src/resp.ts",
+        "default": "./dist/resp.d.ts"
+      },
+      "node": {
+        "source": "./src/resp.ts",
+        "default": "./dist/resp.js"
+      }
+    },
+    "./s3": {
+      "types": {
+        "source": "./src/s3.ts",
+        "default": "./dist/s3.d.ts"
+      },
+      "node": {
+        "source": "./src/s3.ts",
+        "default": "./dist/s3.js"
+      }
+    },
+    "./totp": {
+      "types": {
+        "source": "./src/totp.ts",
+        "default": "./dist/totp.d.ts"
+      },
+      "node": {
+        "source": "./src/totp.ts",
+        "default": "./dist/totp.js"
+      }
+    },
+    "./webpush": {
+      "types": {
+        "source": "./src/webpush.ts",
+        "default": "./dist/webpush.d.ts"
+      },
+      "node": {
+        "source": "./src/webpush.ts",
+        "default": "./dist/webpush.js"
+      }
+    },
+    "./ws": {
+      "types": {
+        "source": "./src/ws.ts",
+        "default": "./dist/ws.d.ts"
+      },
+      "node": {
+        "source": "./src/ws.ts",
+        "default": "./dist/ws.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo && tsc -p tsconfig.json && bslt-esm-fix dist",
+    "test": "vitest run --reporter=dot --silent=passed-only",
+    "lint": "eslint . --cache --cache-location ../../../node_modules/.cache/eslint/.eslintcache-bslt-protocols --report-unused-disable-directives --max-warnings 0",
+    "type-check": "tsc -p tsconfig.lint.json",
+    "clean": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo"
+  },
+  "devDependencies": {
+    "@bslt/build-config": "workspace:*",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

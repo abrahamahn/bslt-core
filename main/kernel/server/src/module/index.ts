@@ -1,0 +1,50 @@
+// main/kernel/server/src/module/index.ts
+
+export {
+  assertRequirements,
+  buildModuleRouteMap,
+  buildPlatformContextRouteMap,
+  collectModuleJobs,
+  createCapabilityResolver,
+  extractViewerFromRequest,
+  registerModuleCrons,
+  registerServerModules,
+  type CapabilityContextResolver,
+  type ExtraCapabilityContributor,
+  type ModuleHostOptions,
+  type PlatformContextRouteOptions,
+} from './host';
+
+export { collectModuleSubscribers, createOutboxDispatcher } from './outbox';
+
+export {
+  collectModuleActions,
+  collectModuleNotificationKinds,
+  collectModulePrivacy,
+  createKernelActionsService,
+  createKernelEventsService,
+  createKernelJobsService,
+  createKernelPrivacyService,
+  implementServer,
+  on,
+  onFlagged,
+  probeServiceStatus,
+  type AnyServerModule,
+  type Clock,
+  type ContextRequestMetadata,
+  type DeliveredEvent,
+  type DepApis,
+  type InstantiatedServerModule,
+  type KernelPrivacyService,
+  type KernelServices,
+  type KernelStorageService,
+  type ModuleActionHandler,
+  type ModulePrivacyHooks,
+  type NotificationTemplate,
+  type RequestContext,
+  type ServerImpls,
+  type ServerModule,
+  type Tx,
+  type WebhookVerifier,
+  type WebhookVerifierInput,
+} from './server-module';

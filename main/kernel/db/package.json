@@ -1,0 +1,83 @@
+{
+  "name": "@bslt/db",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Raw Postgres database client, the migration runner and the baselines it applies",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "source": "./src/client.ts",
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
+    },
+    "./schema": {
+      "source": "./src/schema/index.ts",
+      "types": "./dist/schema/index.d.ts",
+      "default": "./dist/schema/index.js"
+    },
+    "./repositories": {
+      "source": "./src/repositories/index.ts",
+      "types": "./dist/repositories/index.d.ts",
+      "default": "./dist/repositories/index.js"
+    },
+    "./migrate": {
+      "source": "./src/migrate/index.ts",
+      "types": "./dist/migrate/index.d.ts",
+      "default": "./dist/migrate/index.js"
+    },
+    "./builder": {
+      "source": "./src/builder/index.ts",
+      "types": "./dist/builder/index.d.ts",
+      "default": "./dist/builder/index.js"
+    },
+    "./utils": {
+      "source": "./src/utils/index.ts",
+      "types": "./dist/utils/index.d.ts",
+      "default": "./dist/utils/index.js"
+    },
+    "./queue": {
+      "source": "./src/queue/index.ts",
+      "types": "./dist/queue/index.d.ts",
+      "default": "./dist/queue/index.js"
+    },
+    "./testing": {
+      "source": "./src/testing/index.ts",
+      "types": "./dist/testing/index.d.ts",
+      "default": "./dist/testing/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "sql"
+  ],
+  "scripts": {
+    "build": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo && tsc -p tsconfig.json && bslt-esm-fix dist",
+    "clean": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo",
+    "type-check": "tsc -p tsconfig.lint.json",
+    "test": "vitest run --reporter=dot --silent=passed-only",
+    "lint": "eslint . --max-warnings 0"
+  },
+  "keywords": [
+    "postgres",
+    "database",
+    "raw",
+    "sql"
+  ],
+  "dependencies": {
+    "@bslt/contract": "workspace:*",
+    "@bslt/protocols": "workspace:*"
+  },
+  "devDependencies": {
+    "@bslt/build-config": "workspace:*",
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
+  }
+}

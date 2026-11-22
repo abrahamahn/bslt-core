@@ -6,7 +6,7 @@ This directory contains environment templates for the starter. The configuration
 
 **First time setup:**
 
-Run the setup wizard from the repository root:
+Run the bootstrap script from the repository root:
 
 ```bash
 pnpm bootstrap
@@ -30,23 +30,23 @@ Manual setup is still supported when you want to manage each step:
 
    ```bash
    docker compose --env-file config/env/.env.development -f infra/docker/development/docker-compose.dev.yml up -d
-   pnpm db:push
+   pnpm db:migrate
    pnpm db:seed
    ```
 
 3. Customize as needed by editing the env file you’re using.
 
-Optional systems such as billing, advanced admin, and workers should be enabled through dry-run recipes first. See [`docs/recipes/README.md`](../../docs/recipes/README.md).
+Optional systems such as billing, advanced admin, and workers stay off until a product feature needs them. Their env vars are listed in [`docs/deploy/env.md`](../../docs/deploy/env.md).
 
 > **Note:** The four main env files (`.env.development`, `.env.production`, `.env.test`, `.env.local`) are gitignored for security.
 
 Before preparing a public template release, run:
 
 ```bash
-pnpm audit:local-env-secrets
+pnpm bslt gate run local-env-secrets
 ```
 
-This checks ignored local env files for non-placeholder credential values without printing the values themselves. It is intentionally separate from `pnpm starter:verify` because product forks may have legitimate local secrets.
+This checks ignored local env files for non-placeholder credential values without printing the values themselves. It is intentionally separate from `pnpm bslt gate merge` because product forks may have legitimate local secrets.
 
 ## File Structure
 
@@ -88,6 +88,8 @@ Environment variables are loaded in this order (highest to lowest priority):
 **Purpose:** Production-ready configuration
 
 **Requires:** PostgreSQL database, SMTP email provider, cloud storage (S3)
+
+**Database roles:** the API never connects as the Postgres superuser. Set one URL per role, each with its own password (`openssl rand -hex 32`): `DATABASE_URL` (`bslt_app`), `WORKER_DATABASE_URL` (`bslt_worker`) and `MIGRATION_DATABASE_URL` (`bslt_owner`). `LISTEN_DATABASE_URL` repeats the worker role and password at the database server itself (not PgBouncer) for the pub/sub `LISTEN` connection. `POSTGRES_HOST` / `POSTGRES_PORT` name the separate database server (the production compose file runs none), and `POSTGRES_USER` / `POSTGRES_PASSWORD` are its superuser, used only by the role bootstrap and PgBouncer's lookups. See [Database roles](../../docs/deploy/env.md#database-roles).
 
 **Security:** SSL enabled, strong secrets required, localhost URLs disabled
 
@@ -175,7 +177,7 @@ ENV_FILE=.env pnpm dev
 - Rotate secrets regularly (at least quarterly)
 - Use different secrets for each environment
 - Document all variables in `.example` files
-- Run `pnpm audit:local-env-secrets` before public template release prep
+- Run `pnpm bslt gate run local-env-secrets` before public template release prep
 - Use environment-specific values (dev vs prod)
 
 ### DON'T
@@ -189,8 +191,7 @@ ENV_FILE=.env pnpm dev
 
 ## Related Documentation
 
-- **Shared Config Contracts:** [`main/shared/src/modules/system/config/`](../../main/shared/src/modules/system/config/)
-- **Server Config Runtime:** [`main/server/system/src/config/README.md`](../../main/server/system/src/config/README.md)
+- **Server Config Runtime:** [`main/kernel/server/src/config/README.md`](../../main/kernel/server/src/config/README.md)
 - **Environment Variables:** [`docs/deploy/env.md`](../../docs/deploy/env.md)
 
 ## Troubleshooting
@@ -214,7 +215,7 @@ Check the priority order above. Higher priority sources override lower ones. Deb
 
 ```javascript
 // Add after imports in your entry file
-import { initEnv } from '@bslt/shared/config';
+import { initEnv } from '@bslt/server-system/config';
 initEnv();
 console.log('MY_VAR:', process.env.MY_VAR);
 ```
@@ -234,4 +235,4 @@ brew services start postgresql
 sudo systemctl start postgresql
 ```
 
-**Production:** Verify `DATABASE_URL` is set correctly in your deployment platform's environment variables.
+**Production:** Verify `DATABASE_URL` (`bslt_app`), `WORKER_DATABASE_URL` (`bslt_worker`) and `LISTEN_DATABASE_URL` (`bslt_worker`, direct to the database server) are set, that `POSTGRES_HOST` is the database server's address, and that the two database jobs ran before the API started: `bootstrap-roles` (creates the roles), then `migrate`. The server refuses to start in production when `DATABASE_URL` is a superuser or table-owning role. See [`docs/deploy/migrations.md`](../../docs/deploy/migrations.md#production).

@@ -6,23 +6,19 @@
  * Uses the double-submit cookie pattern with signed tokens.
  */
 
+import { AUTH_CONSTANTS, CSRF_EXEMPT_PATHS, ForbiddenError, SAFE_METHODS } from '@bslt/contract';
+import {
+  extractCsrfToken,
+  type HttpServer,
+  type HttpServerReply,
+  type HttpServerRequest,
+} from '@bslt/server-system/http';
 import {
   encryptToken,
   generateToken,
   signToken,
   validateCsrfToken,
 } from '@bslt/server-system/security';
-import { AUTH_CONSTANTS, CSRF_EXEMPT_PATHS, SAFE_METHODS } from '@bslt/shared/constants';
-import { ForbiddenError, extractCsrfToken } from '@bslt/shared/system';
-
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-
-declare module 'fastify' {
-  interface FastifyContextConfig {
-    /** Set only by the installed-extension signed webhook registrar. */
-    extensionSignedWebhook?: boolean;
-  }
-}
 
 const { CSRF_COOKIE_NAME } = AUTH_CONSTANTS;
 
@@ -30,7 +26,7 @@ const { CSRF_COOKIE_NAME } = AUTH_CONSTANTS;
 // Types
 // ============================================================================
 
-export interface CsrfOptions {
+interface CsrfOptions {
   cookieName?: string;
   headerName?: string;
   secret: string;
@@ -54,7 +50,7 @@ export interface CsrfOptions {
  * @param server - The Fastify instance to register on
  * @param options - CSRF configuration options
  */
-export function registerCsrf(server: FastifyInstance, options: CsrfOptions): void {
+export function registerCsrf(server: HttpServer, options: CsrfOptions): void {
   const {
     cookieName = CSRF_COOKIE_NAME,
     headerName = 'x-csrf-token',
@@ -72,7 +68,7 @@ export function registerCsrf(server: FastifyInstance, options: CsrfOptions): voi
   } = cookieOpts;
 
   // Decorate reply with generateCsrf method
-  server.decorateReply('generateCsrf', function (this: FastifyReply): string {
+  server.decorateReply('generateCsrf', function (this: HttpServerReply): string {
     const token = generateToken();
     let finalToken = signed ? signToken(token, secret) : token;
 
@@ -95,7 +91,7 @@ export function registerCsrf(server: FastifyInstance, options: CsrfOptions): voi
   });
 
   // Validate CSRF in preHandler (after body parsing)
-  server.addHook('preHandler', async (req: FastifyRequest, _reply: FastifyReply) => {
+  server.addHook('preHandler', (req: HttpServerRequest) => {
     // Skip validation for safe methods
     if (SAFE_METHODS.has(req.method)) {
       return;
@@ -115,6 +111,17 @@ export function registerCsrf(server: FastifyInstance, options: CsrfOptions): voi
     ) {
       // These exact routes authenticate the raw payload with the provider's
       // signature. Browsers cannot supply a cookie in place of that signature.
+      return;
+    }
+    if (
+      req.method === 'POST' &&
+      req.routeOptions.config.webhookVerified === true &&
+      req.routeOptions.config.rawBody === true &&
+      req.routeOptions.url === urlPath &&
+      urlPath.startsWith('/api/')
+    ) {
+      // Contract-declared `auth: { webhook, rawBody: true }` routes verify the
+      // raw byte payload with their registered module WebhookVerifier.
       return;
     }
 

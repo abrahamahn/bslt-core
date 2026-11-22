@@ -11,18 +11,18 @@
  * - Easier to audit and understand
  */
 
-import { HTTP_STATUS, SECONDS_PER_DAY } from '@bslt/shared/constants';
-import { generateSecurityHeaders, type SecurityHeaderOptions } from '@bslt/shared/system';
+import { HTTP_STATUS, SECONDS_PER_DAY } from '@bslt/contract';
+import { generateSecurityHeaders, type SecurityHeaderOptions } from '@bslt/server-system/security';
 
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { HttpServerReply, HttpServerRequest } from '@bslt/server-system/http';
 
 /**
- * Apply security headers to a Fastify reply
- *
- * @param res - The Fastify reply object
- * @param options - Security header configuration options
+ * Apply security headers to an HTTP reply
  */
-export function applySecurityHeaders(res: FastifyReply, options: SecurityHeaderOptions = {}): void {
+export function applySecurityHeaders(
+  res: HttpServerReply,
+  options: SecurityHeaderOptions = {},
+): void {
   const headers = generateSecurityHeaders(options);
 
   for (const [key, value] of Object.entries(headers)) {
@@ -41,7 +41,7 @@ export function applySecurityHeaders(res: FastifyReply, options: SecurityHeaderO
  * Prevents back-button data leak: after logout, pressing back won't show
  * cached authenticated responses.
  */
-export function applyApiCacheHeaders(res: FastifyReply): void {
+export function applyApiCacheHeaders(res: HttpServerReply): void {
   res.header('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.header('Pragma', 'no-cache');
 }
@@ -50,7 +50,7 @@ export function applyApiCacheHeaders(res: FastifyReply): void {
 // CORS Headers (Replaces @fastify/cors)
 // ============================================================================
 
-export interface CorsOptions {
+interface CorsOptions {
   origin: string;
   credentials?: boolean;
   allowedHeaders?: string[];
@@ -68,12 +68,12 @@ const DEFAULT_CORS_OPTIONS: Required<Omit<CorsOptions, 'origin'>> = {
 /**
  * Apply CORS headers to the response.
  * Handles origin validation and header setting.
- *
- * @param req - The Fastify request object
- * @param res - The Fastify reply object
- * @param options - CORS configuration options
  */
-export function applyCors(req: FastifyRequest, res: FastifyReply, options: CorsOptions): void {
+export function applyCors(
+  req: HttpServerRequest,
+  res: HttpServerReply,
+  options: CorsOptions,
+): void {
   const {
     origin: allowedOrigin,
     credentials,
@@ -152,7 +152,7 @@ function hasWildcardOrigin(allowedOrigin: string): boolean {
  * @param res - The Fastify reply object
  * @returns true if the request was a preflight OPTIONS request
  */
-export function handlePreflight(req: FastifyRequest, res: FastifyReply): boolean {
+export function handlePreflight(req: HttpServerRequest, res: HttpServerReply): boolean {
   if (req.method === 'OPTIONS') {
     res.status(HTTP_STATUS.NO_CONTENT).send();
     return true;

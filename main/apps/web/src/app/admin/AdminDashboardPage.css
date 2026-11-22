@@ -1,0 +1,18 @@
+/* main/apps/web/src/app/admin/AdminDashboardPage.css */
+
+/* Signals + activity split: stacked on mobile, weighted two-pane from xl up. */
+.admin-dashboard-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--ui-gap-2xl);
+}
+
+@media (min-width: 80rem) {
+  .admin-dashboard-split {
+    grid-template-columns: minmax(0, 1.15fr) minmax(24rem, 0.85fr);
+  }
+}
+
+.admin-dashboard-metric-card {
+  min-height: 10rem;
+}

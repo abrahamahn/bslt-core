@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": true,
+    "types": ["@testing-library/jest-dom", "node"]
+  },
+  "include": [
+    "module.ts",
+    "contract/**/*.ts",
+    "server/**/*.ts",
+    "web/**/*.ts",
+    "web/**/*.tsx",
+    "i18n/**/*.json",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.real-db.test.ts"
+  ],
+  "exclude": ["node_modules", "dist", "vitest.config.ts"]
+}

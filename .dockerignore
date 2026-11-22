@@ -1,0 +1,73 @@
+# Docker build context hygiene.
+# Keep source, package metadata, docs, and tests available for workspace builds;
+# exclude local state and generated outputs that should never affect images.
+
+# VCS and agent-local state
+.git
+.git/
+.gitignore
+.agents/
+.codex/
+.claude/
+.gemini/
+.cursor/
+.antigravity/
+.playwright-mcp/
+
+# Dependencies and package-manager caches
+node_modules/
+**/node_modules/
+.pnpm-store/
+**/.pnpm-store/
+.cache/
+**/.cache/
+
+# Build outputs and local compiler caches
+dist/
+**/dist/
+out/
+**/out/
+.turbo/
+**/.turbo/
+*.tsbuildinfo
+
+# Local runtime data
+.data/
+project-data/
+main/apps/server/uploads/
+main/apps/server/**/uploads/
+
+# Environment files. Images should receive configuration at runtime.
+.env
+.env.*
+config/env/.env.local
+config/env/.env.production
+config/env/.env.test
+config/env/.env.development
+
+# Test and coverage output
+coverage/
+**/coverage/
+.vitest/
+**/.vitest/
+test-results/
+playwright-report/
+tests/e2e/reports/
+
+# Logs and temporary exports
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.tmp/
+changes.diff
+*.diff
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+*.swo
+*~

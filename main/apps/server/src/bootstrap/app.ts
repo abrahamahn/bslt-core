@@ -3,47 +3,51 @@
  * Fastify Server Factory + App DI Container
  *
  * HTTP composition root for the server process:
- * - `createServer()` assembles the Fastify instance (plugins, middleware, docs)
+ * - `createServer()` assembles the Fastify instance (plugins, middleware)
  * - `App` delegates all service access to the injected `InfraContext`
  */
 
 import path from 'node:path';
 
 import {
-  type DbClient,
-  type QueueStore,
-  type Repositories,
-  type ServerSearchProvider,
-  type SessionContext,
-  type WriteService,
-} from '@bslt/db';
-import {
-  RateLimiter,
-  RedisRateLimitStore,
-  createIpBlocklistMiddleware,
-  type RateLimitStore,
-} from '@bslt/server-system/security';
-import { HTTP_STATUS, LIMITS } from '@bslt/shared/constants';
-import {
+  HTTP_STATUS,
+  LIMITS,
   type EmailService,
   type ErrorTracker,
   type NotificationService,
   type StorageClient,
-} from '@bslt/shared/contracts';
+} from '@bslt/contract';
 import {
-  type HealthCheckCache,
-  type HealthCheckQueue,
+  type DbClient,
+  type QueueStore,
+  type ServerSearchProvider,
+  type SessionContext,
+} from '@bslt/db';
+import {
+  createHttpServer,
   type HttpRequest,
-  type Logger,
+  type HttpServer,
+  type HttpServerRequest,
+} from '@bslt/server-system/http';
+import {
+  createKernelEventsService,
+  type InstantiatedServerModule,
+  type KernelServices,
+} from '@bslt/server-system/module';
+import {
+  startDbHealthSampler,
+  startEventLoopLagSampler,
+  startOtlpHttpTelemetry,
+} from '@bslt/server-system/observability';
+import {
+  RateLimiter,
+  RedisRateLimitStore,
+  createIpBlocklistMiddleware,
   type RateLimitInfo,
-} from '@bslt/shared/system';
-import { AuthenticationError } from '@bslt/shared/system';
-import compress from '@fastify/compress';
-import swagger from '@fastify/swagger';
-import swaggerUI from '@fastify/swagger-ui';
-import fastify from 'fastify';
+  type RateLimitStore,
+} from '@bslt/server-system/security';
 
-import { registerRoutes } from '../http/router';
+import { registerRoutes, type RegisterRoutesOptions } from '../http/router';
 import {
   applyApiCacheHeaders,
   applyCors,
@@ -52,6 +56,7 @@ import {
   createGeoProvider,
   getProductionSecurityDefaults,
   handlePreflight,
+  registerCompression,
   registerCookies,
   registerCsrf,
   registerInputValidation,
@@ -69,7 +74,6 @@ import {
 } from '../plugin';
 
 import { contextualizeRequest } from './context';
-import { startDbHealthSampler } from './db-health-sampler';
 
 import type {
   AppContext,
@@ -78,38 +82,74 @@ import type {
   IServiceContainer,
   RequestWithCookies,
 } from './context';
-import type { SmsProvider } from '@bslt/shared/comms';
-import type { BillingService } from '@bslt/shared/core';
-import type { SubscriptionManager } from '@bslt/shared/db';
-import type { AppConfig } from '@bslt/shared/system/config';
-import type { FastifyBaseLogger, FastifyInstance, FastifyRequest } from 'fastify';
+import type { SmsProvider } from '@bslt/comms';
+import type { SubscriptionManager } from '@bslt/realtime';
+import type { AppConfig } from '@bslt/server-system/config';
+import type { Logger } from '@bslt/server-system/logger';
+import type { HealthCheckCache, HealthCheckQueue } from '@bslt/server-system/runtime';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export interface ServerDependencies {
+interface ServerDependencies {
   config: AppConfig;
   app: IServiceContainer & HasContext;
+  httpMode?: 'full' | 'probes-only' | undefined;
 }
 
-const SWAGGER_THEME_CSS = `
-body {
-  background: #ffffff;
+/** One route as the HTTP server registered it. */
+export interface AppRoute {
+  /** Upper-case HTTP method. A route registered for several methods is listed once per method. */
+  readonly method: string;
+  /** Full path, prefix included, with `:param` placeholders. */
+  readonly url: string;
 }
-`;
+
+const routeRecords = new WeakMap<HttpServer, AppRoute[]>();
+
+/**
+ * Record every route registered on `server` from now on, plugin routes
+ * included. Called first in `createServer`, before anything can add a route.
+ */
+function recordRoutes(server: HttpServer): void {
+  const routes: AppRoute[] = [];
+  routeRecords.set(server, routes);
+  server.addHook('onRoute', (route) => {
+    const methods = Array.isArray(route.method) ? route.method : [route.method];
+    for (const method of methods) {
+      routes.push({ method: method.toUpperCase(), url: route.url });
+    }
+  });
+}
+
+/**
+ * The routes registered on a server built by `createServer`, in registration
+ * order. Complete once the server is ready (plugins register theirs while it
+ * loads).
+ */
+function listRoutes(server: HttpServer): readonly AppRoute[] {
+  return [...(routeRecords.get(server) ?? [])];
+}
 
 // ============================================================================
 // Private Server Composition Helpers
 // ============================================================================
 
+/**
+ * Give every request its context: the boot context first (system pool), which
+ * the auth guard replaces with the user-session scope once it knows the user.
+ *
+ * Exported so the real-DB suites install exactly these hooks on their own
+ * HTTP server instance instead of imitating them.
+ */
 function registerContextHooks(
-  server: FastifyInstance,
+  server: HttpServer,
   app: IServiceContainer & HasContext,
   config: AppConfig,
 ): void {
   server.addHook('onRequest', (req, _reply, done) => {
-    (req as FastifyRequest & Partial<RequestWithCookies>).context = app.context;
+    (req as HttpServerRequest & Partial<RequestWithCookies>).context = app.context;
     done();
   });
 
@@ -138,8 +178,8 @@ function registerContextHooks(
   });
 }
 
-function registerCorePlugins(server: FastifyInstance, appLog: Logger): void {
-  void server.register(compress, { global: true });
+function registerCorePlugins(server: HttpServer, appLog: Logger): void {
+  registerCompression(server);
   registerPrototypePollutionProtection(server);
   registerMultipartFormParser(server);
   registerRawBodyCapture(server);
@@ -182,9 +222,10 @@ function createRateLimitStore(config: AppConfig): RateLimitStore | undefined {
 }
 
 function registerSecurityMiddleware(
-  server: FastifyInstance,
+  server: HttpServer,
   config: AppConfig,
   errorTracker: ErrorTracker,
+  httpMode: 'full' | 'probes-only' = 'full',
 ): void {
   const isProd = config.env === 'production';
   const isDev = config.env === 'development';
@@ -337,101 +378,21 @@ function registerSecurityMiddleware(
     },
   });
 
-  server.get('/api/csrf-token', async (_req, reply) => {
-    const token = reply.generateCsrf();
-    return { token };
-  });
+  if (httpMode !== 'probes-only') {
+    server.get('/api/csrf-token', (_req, reply) => {
+      const token = reply.generateCsrf();
+      return { token };
+    });
+  }
 
   void server.register(errorHandlerPlugin, { isProduction: isProd, errorTracker });
 
-  if (config.storage.provider === 'local') {
+  if (httpMode !== 'probes-only' && config.storage.provider === 'local') {
+    // Serves only URLs signed by the local provider (same secret), never bare paths.
     registerStaticServe(server, {
       root: path.resolve(config.storage.rootPath),
       prefix: '/uploads/',
-    });
-  }
-}
-
-async function registerDocs(server: FastifyInstance, config: AppConfig): Promise<void> {
-  const apiTitle = `${config.app.name} API`;
-
-  await server.register(swagger, {
-    openapi: {
-      info: {
-        title: apiTitle,
-        description: [
-          `API documentation for ${config.app.name}.`,
-          '',
-          '## Authentication',
-          'Most endpoints require a Bearer JWT token in the `Authorization` header.',
-          'Obtain a token via `POST /api/auth/login` or `POST /api/auth/register`.',
-          '',
-          '## Rate Limiting',
-          'All endpoints enforce rate limits. Response headers:',
-          '- `X-RateLimit-Limit` — max requests per window',
-          '- `X-RateLimit-Remaining` — requests remaining',
-          '- `X-RateLimit-Reset` — window reset time (Unix epoch seconds)',
-          '',
-          '## Error Format',
-          'All errors return a JSON body: `{ "code": "ERROR_CODE", "message": "Human-readable message" }`.',
-        ].join('\n'),
-        version: '1.0.0',
-      },
-      components: {
-        securitySchemes: {
-          bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
-        },
-        schemas: {
-          ApiError: {
-            type: 'object',
-            properties: {
-              code: {
-                type: 'string',
-                description: 'Machine-readable error code',
-              },
-              message: {
-                type: 'string',
-                description: 'Human-readable error message',
-              },
-              details: {
-                type: 'object',
-                description: 'Optional field-level validation errors',
-                additionalProperties: true,
-              },
-            },
-            required: ['code', 'message'],
-          },
-        },
-      },
-    },
-  });
-
-  await server.register(swaggerUI, {
-    routePrefix: '/api/docs',
-    uiConfig: { docExpansion: 'list', deepLinking: true },
-    theme: {
-      title: apiTitle,
-      css: [{ filename: 'theme.css', content: SWAGGER_THEME_CSS }],
-    },
-  });
-
-  // Protect docs in non-development — require an authenticated session.
-  if (config.env !== 'development') {
-    server.addHook('preHandler', (request, _reply, done) => {
-      const requestWithContext = request as typeof request & Partial<RequestWithCookies>;
-      if (
-        request.url.startsWith('/api/docs') &&
-        requestWithContext.user === undefined &&
-        !request.url.includes('/api/docs/static/') &&
-        !request.url.endsWith('json') &&
-        !request.url.endsWith('yaml')
-      ) {
-        throw new AuthenticationError(
-          'Authentication required to view documentation',
-          'DOCS_AUTH_REQUIRED',
-        );
-      }
-      done();
+      signingSecret: config.storage.signingSecret,
     });
   }
 }
@@ -447,22 +408,26 @@ async function registerDocs(server: FastifyInstance, config: AppConfig): Promise
  *                   attaches `app.context` to every request, enabling RLS scoping.
  * @returns Configured Fastify instance (ready for `listen`).
  */
-export async function createServer(deps: ServerDependencies): Promise<FastifyInstance> {
-  const { config, app } = deps;
+export async function createServer(deps: ServerDependencies): Promise<HttpServer> {
+  const { config, app, httpMode = 'full' } = deps;
   const appLog: Logger = app.context.log;
 
-  const server = fastify({
+  const server = createHttpServer({
     loggerInstance: app.context.log,
     disableRequestLogging: true,
     trustProxy: config.server.trustProxy,
     bodyLimit: LIMITS.HTTP_BODY_LIMIT_BYTES,
   });
 
+  recordRoutes(server);
   registerContextHooks(server, app, config);
   registerCorePlugins(server, appLog);
-  registerSecurityMiddleware(server, config, app.errorTracker);
+  registerSecurityMiddleware(server, config, app.errorTracker, httpMode);
   registerInputValidation(server);
-  await registerDocs(server, config);
+  // Load the plugins queued above (the error handler) before returning, so the
+  // routes and hooks the caller adds next land on a configured server in both
+  // HTTP modes, not on one whose plugins load later, at ready().
+  await server.after();
 
   return server;
 }
@@ -485,26 +450,43 @@ export function isAddrInUse(error: unknown): boolean {
 
 export class App implements IServiceContainer {
   readonly config: AppConfig;
+  readonly events: KernelServices['events'];
 
   /** Shared pub/sub manager composed during infra bootstrap. */
   public get pubsub(): SubscriptionManager {
     return this.infraContext.pubsub;
   }
 
-  private _server: FastifyInstance | null = null;
+  private _server: HttpServer | null = null;
+  private _moduleInstances: ReadonlyMap<string, InstantiatedServerModule> = new Map();
 
   constructor(
     config: AppConfig,
     private readonly infraContext: InfraContext,
+    private readonly routeOptions: RegisterRoutesOptions = {},
   ) {
     this.config = config;
+    this.events = createKernelEventsService({
+      sealSecret: config.auth.jwt.secret,
+      clock: { now: () => new Date() },
+    });
   }
 
   async init(): Promise<void> {
     if (this._server) return;
-    this._server = await createServer({ config: this.config, app: this });
-    await registerRoutes(this._server, this.context);
+    this._server = await createServer({
+      config: this.config,
+      app: this,
+      ...(this.routeOptions.httpMode !== undefined ? { httpMode: this.routeOptions.httpMode } : {}),
+    });
+    this._moduleInstances = await registerRoutes(this._server, this.context, this.routeOptions);
     startDbHealthSampler(this._server, this.db);
+    startEventLoopLagSampler(this._server);
+    startOtlpHttpTelemetry(this._server);
+  }
+
+  get moduleInstances(): ReadonlyMap<string, InstantiatedServerModule> {
+    return this._moduleInstances;
   }
 
   async start(port: number, host: string): Promise<void> {
@@ -524,25 +506,25 @@ export class App implements IServiceContainer {
       config: this.config,
       db: this.db,
       repos: this.repos,
+      system: this.system,
       email: this.email,
       storage: this.storage,
       notifications: this.notifications,
-      billing: this.billing,
       search: this.search,
       queue: this.queue,
       queueStore: this.queueStore,
-      write: this.write,
       pubsub: this.pubsub,
       cache: this.cache,
       emailTemplates: this.emailTemplates,
       sms: this.sms,
       errorTracker: this.errorTracker,
+      events: this.events,
       log: this.log,
       contextualize: this.contextualize.bind(this),
     };
   }
 
-  get server(): FastifyInstance {
+  get server(): HttpServer {
     if (this._server === null) throw new Error('App not initialized — call init() first');
     return this._server;
   }
@@ -552,16 +534,20 @@ export class App implements IServiceContainer {
     return { ...this.context, db, repos };
   }
 
-  get log(): FastifyBaseLogger {
+  get log(): Logger {
     if (this._server) return this._server.log;
-    return this.infraContext.log as FastifyBaseLogger;
+    return this.infraContext.log;
   }
 
   get db(): DbClient {
     return this.infraContext.db;
   }
-  get repos(): Repositories {
+  get repos(): IServiceContainer['repos'] {
     return this.infraContext.repos;
+  }
+  /** Always the boot handles: `contextualize` replaces `db`/`repos`, never these. */
+  get system(): IServiceContainer['system'] {
+    return { db: this.infraContext.db, repos: this.infraContext.repos };
   }
   get email(): EmailService | undefined {
     return this.infraContext.email;
@@ -572,9 +558,6 @@ export class App implements IServiceContainer {
   get notifications(): NotificationService | undefined {
     return this.infraContext.notifications;
   }
-  get billing(): BillingService | undefined {
-    return this.infraContext.billing;
-  }
   get search(): ServerSearchProvider {
     return this.infraContext.search;
   }
@@ -583,9 +566,6 @@ export class App implements IServiceContainer {
   }
   get queueStore(): QueueStore {
     return this.infraContext.queueStore;
-  }
-  get write(): WriteService {
-    return this.infraContext.write;
   }
   get cache(): HealthCheckCache {
     return this.infraContext.cache;
@@ -598,6 +578,11 @@ export class App implements IServiceContainer {
   }
   get errorTracker(): ErrorTracker {
     return this.infraContext.errorTracker;
+  }
+
+  /** Every route registered on the server so far (see `listRoutes`). */
+  routes(): readonly AppRoute[] {
+    return this._server === null ? [] : listRoutes(this._server);
   }
 
   countRegisteredRoutes(): number {

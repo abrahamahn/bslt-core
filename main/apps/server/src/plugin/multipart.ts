@@ -3,17 +3,20 @@
  * Reusable Fastify multipart parser registration.
  */
 
-import { BadRequestError } from '@bslt/shared/system';
-import { parseMultipartFile, type ParsedMultipartFile } from '@bslt/shared/system';
+import { BadRequestError } from '@bslt/contract';
+import {
+  parseMultipartFile,
+  type HttpServer,
+  type HttpServerRequest,
+  type ParsedMultipartFile,
+} from '@bslt/server-system/http';
 
-import type { FastifyInstance, FastifyRequest } from 'fastify';
-
-export function registerMultipartFormParser(server: FastifyInstance): void {
+export function registerMultipartFormParser(server: HttpServer): void {
   server.addContentTypeParser(
     /^multipart\/form-data/i,
     { parseAs: 'buffer' },
     (
-      request: FastifyRequest,
+      request: HttpServerRequest,
       body: Buffer,
       done: (error: Error | null, body?: ParsedMultipartFile | Record<string, never>) => void,
     ) => {

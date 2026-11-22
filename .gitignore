@@ -3,8 +3,12 @@ node_modules/
 .pnpm-store/
 .cache/
 
-# Agents
-.claude/
+# Agents (track cloud session bootstrap & shared instructions; ignore local state)
+.claude/*
+!.claude/CLAUDE.md
+!.claude/settings.json
+!.claude/hooks/
+!.claude/hooks/session-start.sh
 .gemini/
 .cursor/
 .antigravity/
@@ -20,7 +24,6 @@ _graphs/
 *.js.map
 *.d.ts.map
 *.txt
-!main/apps/storefront/public/robots.txt
 vitest.config.d.ts
 vite.config.d.ts
 eslint.config.js
@@ -37,16 +40,13 @@ main/**/*.d.ts.map
 main/tools/**/*.js
 main/tools/**/*.d.ts
 
-# Source-adjacent emits from profile and theme helper modules are artifacts.
-main/profiles/*.js
-main/profiles/*.d.ts
-main/client/ui/src/theme/*.js
-main/client/ui/src/theme/*.d.ts
+# Source-adjacent emits from theme helper modules are artifacts.
+main/kernel/ui/src/theme/*.js
+main/kernel/ui/src/theme/*.d.ts
 vitest.config.js
 
-# Keep postbuild helper script tracked (path includes "/build/")
+# Keep the build scripts tracked (path includes "/build/")
 !main/tools/scripts/build/
-!main/tools/scripts/build/ensure-js-extensions.ts
 
 # Allow Vite config for web build
 !config/build/

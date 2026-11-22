@@ -1,0 +1,387 @@
+/* main/apps/web/src/app/shells/Shells.css */
+
+.shell-public,
+.shell-auth,
+.shell-app,
+.shell-console {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--ui-color-bg);
+  color: var(--ui-color-text);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+/* ============================================================================
+ * Shared Shell Header
+ * ========================================================================== */
+
+.shell-header__left,
+.shell-header__right {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-gap-sm);
+  min-width: 0;
+}
+
+.shell-header__brand-link {
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.shell-header__title {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shell-header__nav-toggle {
+  display: none;
+}
+
+.shell-header__nav-toggle--always {
+  display: inline-flex;
+}
+
+.shell-header__public-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--ui-gap-xs);
+}
+
+.shell-header__public-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: var(--ui-gap-xs) var(--ui-gap-sm);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  text-decoration: none;
+}
+
+.shell-header__public-link[aria-current='page'] {
+  background: var(--ui-color-active);
+  color: var(--ui-color-text);
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+.shell-header__search {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-gap-xs);
+}
+
+.shell-header__avatar[data-initials]:empty::before {
+  content: attr(data-initials);
+  width: auto;
+  height: auto;
+  background-color: transparent;
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
+.shell-header__account-menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-xs);
+  min-width: 14rem;
+}
+
+.shell-header__account-identity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-xs);
+  padding: var(--ui-gap-sm) var(--ui-gap-md);
+}
+
+.shell-header__account-name {
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+.shell-header__account-item {
+  justify-content: flex-start;
+  min-height: var(--ui-touch-target);
+  padding: var(--ui-gap-sm) var(--ui-gap-md);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+}
+
+/* ============================================================================
+ * Primary Navigation (Left Sidebar & Mobile Bottom Bar)
+ * ========================================================================== */
+
+.shell-primary-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-xs);
+  padding: var(--ui-gap-sm);
+}
+
+.shell-primary-nav__loading {
+  display: grid;
+  gap: var(--ui-gap-md);
+  padding: var(--ui-gap-sm) var(--ui-gap-md);
+}
+
+.shell-primary-nav__link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.shell-primary-nav__item {
+  min-height: 2.5rem;
+  justify-content: flex-start;
+  padding: var(--ui-gap-sm) var(--ui-gap-md);
+  border-radius: var(--ui-radius-md);
+}
+
+.shell-primary-nav__item[data-selected='true'] {
+  background: var(--ui-color-active);
+  color: var(--ui-color-text);
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+.shell-mobile-bottombar {
+  display: none;
+}
+
+.shell-mobile-nav {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-around;
+  gap: var(--ui-gap-xs);
+}
+
+.shell-mobile-nav__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  padding: var(--ui-gap-xs) var(--ui-gap-sm);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-medium);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.shell-mobile-nav__link[aria-current='page'] {
+  background: var(--ui-color-active);
+  color: var(--ui-color-text);
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+/* ============================================================================
+ * PublicShell, AuthShell, AppShell, ConsoleShell Bodies
+ * ========================================================================== */
+
+.shell-public__main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.shell-public__content {
+  flex: 1;
+  width: 100%;
+  max-width: var(--ui-content-max);
+  margin-inline: auto;
+  padding: clamp(var(--ui-gap-lg), 2vw, var(--ui-gap-2xl));
+}
+
+.shell-auth__main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ui-gap-lg);
+}
+
+.shell-auth__content {
+  width: 100%;
+  max-width: 28rem;
+}
+
+.shell-app__body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.shell-app__sidebar {
+  flex-shrink: 0;
+}
+
+.shell-app__main,
+.shell-console__main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.shell-app__content,
+.shell-console__content {
+  min-height: 100%;
+  width: 100%;
+  max-width: var(--ui-content-max);
+  margin-inline: auto;
+  padding: clamp(var(--ui-gap-lg), 2vw, var(--ui-gap-2xl));
+}
+
+.shell-console__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.shell-console__pane {
+  background: var(--ui-color-bg);
+  height: 100%;
+}
+
+.shell-console__pane--left {
+  border-inline-end: var(--ui-border-width) solid var(--ui-color-border);
+}
+
+.shell-console__pane--right {
+  border-inline-start: var(--ui-border-width) solid var(--ui-color-border);
+  padding: var(--ui-gap-md);
+  overflow-y: auto;
+}
+
+/* ============================================================================
+ * Footer, Route Loading Fallback & Admin Control Center Sidebar
+ * ========================================================================== */
+
+.shell-footer {
+  border-top: var(--ui-border-width) solid var(--ui-color-border);
+  padding: var(--ui-gap-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-md);
+  background: var(--ui-color-bg);
+}
+
+.shell-footer__nav {
+  display: grid;
+  gap: var(--ui-gap-lg);
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+}
+
+.app-route-loading {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: max(18rem, calc(100dvh - 10rem));
+}
+
+.app-route-loading__indicator {
+  padding: 0;
+}
+
+.control-center-sidebar {
+  display: flex;
+  height: 100%;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.control-center-sidebar__header {
+  padding-bottom: var(--ui-gap-lg);
+  border-bottom: var(--ui-border-width) solid var(--ui-color-border);
+}
+
+.control-center-sidebar__nav {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--ui-gap-xs);
+  padding-block: var(--ui-gap-md);
+}
+
+.control-center-sidebar__button {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.control-center-sidebar__button[data-active='true'] {
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+/* ============================================================================
+ * Responsive Adaptations
+ * ========================================================================== */
+
+@media (max-width: 48rem) {
+  .shell-header__nav-toggle {
+    display: inline-flex;
+  }
+
+  .shell-header__title {
+    font-size: var(--ui-font-size-md);
+  }
+
+  .shell-app__sidebar {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    z-index: var(--ui-z-header);
+    box-shadow: var(--ui-elevation-lg);
+  }
+
+  .shell-app__sidebar[data-open='false'] {
+    display: none;
+  }
+
+  .shell-mobile-bottombar {
+    display: flex;
+  }
+
+  .shell-public__content,
+  .shell-app__content,
+  .shell-console__content {
+    padding: var(--ui-gap-md);
+  }
+
+  .app-route-loading {
+    min-height: max(16rem, calc(100dvh - 8rem));
+  }
+}
+
+@media (max-width: 30rem) {
+  .shell-header__brand-link {
+    display: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .shell-primary-nav__item,
+  .control-center-sidebar__button {
+    min-height: var(--ui-touch-target);
+  }
+}

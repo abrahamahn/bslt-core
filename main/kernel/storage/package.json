@@ -1,0 +1,61 @@
+{
+  "name": "@bslt/storage",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Storage adapters/providers/signing for bslt (server-only)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./providers": {
+      "source": "./src/providers/index.ts",
+      "types": "./dist/providers/index.d.ts",
+      "default": "./dist/providers/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@bslt/contract": "workspace:*",
+    "@bslt/protocols": "workspace:*"
+  },
+  "scripts": {
+    "build": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo && tsc -p tsconfig.json && bslt-esm-fix dist",
+    "clean": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo",
+    "type-check": "tsc -p tsconfig.lint.json",
+    "test": "vitest run --reporter=dot --silent=passed-only --passWithNoTests",
+    "lint": "eslint . --cache --cache-location ../../node_modules/.cache/eslint/.eslintcache-bslt-storage --report-unused-disable-directives"
+  },
+  "keywords": [
+    "bslt",
+    "storage",
+    "s3",
+    "file-storage"
+  ],
+  "author": "",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abrahamahn/bslt.git",
+    "directory": "main/kernel/storage"
+  },
+  "bugs": {
+    "url": "https://github.com/abrahamahn/bslt/issues"
+  },
+  "homepage": "https://github.com/abrahamahn/bslt#readme",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "sideEffects": false,
+  "devDependencies": {
+    "@bslt/build-config": "workspace:*",
+    "vitest": "^5.1.0"
+  }
+}

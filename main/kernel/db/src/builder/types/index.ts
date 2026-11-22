@@ -1,0 +1,20 @@
+// main/kernel/db/src/builder/types/index.ts
+export {
+  combine,
+  EMPTY_FRAGMENT,
+  escapeIdentifier,
+  formatTable,
+  fragment,
+  isSqlFragment,
+  param,
+  raw,
+  type DbValue,
+  type JoinSpec,
+  type QueryBuilder,
+  type QueryResult,
+  type SortDirection,
+  type SortSpec,
+  type SqlFragment,
+  type SqlText,
+  type TableSpec,
+} from './types';

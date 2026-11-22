@@ -11,10 +11,8 @@
  *
  * 1. IT IS A SIBLING OF #root, NEVER A CHILD, and it is torn down from here —
  *    never by React. Markup inside #root is markup React reconciles against on
- *    mount. A prerendered page already puts a tree in there that the client does
- *    not render (see src/ssr/ServerApp.tsx: the DOCUMENT, without the app shell),
- *    which is why `bootstrapClientApp` drops it; putting the splash in there too
- *    would re-arm exactly the mismatch we just disarmed.
+ *    mount; keeping #app-splash as a sibling ensures neither `createRoot` nor
+ *    `hydratePublic` ever reconciles against the splash overlay.
  *
  * 2. IT ALWAYS REVEALS. Every signal below can simply fail to arrive — one hung
  *    image and `load` never fires, one stalled auth call and the session never
@@ -48,7 +46,7 @@ export const SPLASH_FAILSAFE_MS = 5_000;
 /** Must match the `transition: opacity` on `#app-splash` in index.html. */
 export const SPLASH_FADE_OUT_MS = 240;
 
-export interface RevealOptions {
+interface RevealOptions {
   /** The React root. The first route rendering INTO it is one of the signals. */
   readonly root: HTMLElement;
   /**

@@ -14,6 +14,8 @@ import type { Locale } from './types';
 // Formatter Cache
 // ============================================================================
 
+type IntlLocale = Locale | (string & {});
+
 type CachedFormatter = Intl.DateTimeFormat | Intl.NumberFormat | Intl.RelativeTimeFormat;
 
 /**
@@ -25,7 +27,7 @@ const formatterCache = new Map<string, CachedFormatter>();
 
 function getCachedFormatter<T extends CachedFormatter>(
   kind: string,
-  locale: Locale,
+  locale: IntlLocale,
   options: object | undefined,
   create: () => T,
 ): T {
@@ -55,7 +57,7 @@ export const AUTO_TIMEZONE = 'auto';
  * Read the stored timezone preference.
  *
  * SSR-safe: returns {@link AUTO_TIMEZONE} when `window`/localStorage is
- * unavailable (entry-server rendering, storage access denied).
+ * unavailable (Node SSR rendering, storage access denied).
  */
 export function getTimezonePreference(): string {
   if (typeof window === 'undefined') return AUTO_TIMEZONE;
@@ -129,7 +131,7 @@ function withPreferredTimeZone(
  */
 export function formatDate(
   date: Date | string,
-  locale: Locale,
+  locale: IntlLocale,
   options?: Intl.DateTimeFormatOptions,
 ): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
@@ -173,7 +175,7 @@ export function formatDate(
  */
 export function formatNumber(
   num: number,
-  locale: Locale,
+  locale: IntlLocale,
   options?: Intl.NumberFormatOptions,
 ): string {
   return getCachedFormatter(
@@ -213,7 +215,7 @@ export function formatNumber(
  *
  * @complexity O(1)
  */
-export function formatCurrency(amount: number, currency: string, locale: Locale): string {
+export function formatCurrency(amount: number, currency: string, locale: IntlLocale): string {
   return getCachedFormatter(
     `currency:${currency}`,
     locale,
@@ -270,7 +272,7 @@ const RELATIVE_TIME_THRESHOLDS: Array<{
  *
  * @complexity O(1) - bounded iteration over threshold list
  */
-export function formatRelativeTime(date: Date | string, locale: Locale): string {
+export function formatRelativeTime(date: Date | string, locale: IntlLocale): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   const now = Date.now();
   const elapsedSeconds = Math.round((dateObj.getTime() - now) / 1000);

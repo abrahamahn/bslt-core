@@ -77,7 +77,7 @@ function MyComponent() {
 
 ## Features
 
-### Auth (`src/features/auth/`)
+### Auth (`@bslt/identity/web`)
 
 Complete authentication UI with all flows.
 
@@ -161,7 +161,7 @@ src/
     └── icons/                # PWA icons (192, 512, apple-touch, favicon)
 ```
 
-**Organized by feature**, not by type. Everything about auth lives in `features/auth/`.
+**Organized by vertical module**, not by horizontal layer. Authentication and identity UI live in `@bslt/identity/web`.
 
 ## Routes
 
@@ -194,43 +194,37 @@ All pages are lazy-loaded using `React.lazy()` for automatic code splitting.
 
 ## API Integration
 
-Use the shared typed API client directly:
+Use module endpoint clients over the shared `TransportProvider`:
 
 ```typescript
-import { getApiClient } from '@bslt/api';
+import { createEndpointClient } from '@bslt/client-engine';
+import { identityModule } from '@bslt/identity/module';
+import { useTransport } from '@bslt/react';
 
-const api = getApiClient({ baseUrl: '/api' });
-const user = await api.getCurrentUser();
+const client = createEndpointClient(identityModule, useTransport());
+const user = await client.me();
 ```
 
-The client is fully typed and shared across apps/packages.
+Each vertical module owns its typed contract and hooks (`@bslt/<module>/web`).
 
-## Path Aliases
+## App-Internal Imports
 
-Auto-generated. No deep relative imports.
+No path aliases and no deep relative imports. Files under `src/` import each other through the
+package.json `imports` key `#app/*`, which maps to `./src/*`:
 
 ```typescript
-// Instead of '../../../features/auth/hooks/useAuth'
-import { useAuth } from '@auth/hooks';
+import { useClientEnvironment } from '#app/app/ClientEnvironment';
 ```
 
-| Alias         | Path                             |
-| ------------- | -------------------------------- |
-| `@`           | `./src/*`                        |
-| `@app`        | `./src/app`                      |
-| `@auth`       | `./src/features/auth`            |
-| `@components` | `./src/features/auth/components` |
-| `@config`     | `./src/config`                   |
-| `@dashboard`  | `./src/features/dashboard`       |
-| `@demo`       | `./src/demo`                     |
-| `@features`   | `./src/features`                 |
-| `@hooks`      | `./src/features/auth/hooks`      |
-| `@pages`      | `./src/pages`                    |
+Workspace packages are imported by name (`@bslt/ui`, `@bslt/react/router`) and resolve to their
+source through the `source` export condition. Other packages (such as `tests/`) reach web files
+only through the subpaths this package's `exports` lists. See
+[`docs/dev/configuration.md`](../../../docs/dev/configuration.md#module-resolution-no-aliases).
 
 ## Configuration
 
 ```typescript
-import { clientConfig } from '@config';
+import { clientConfig } from '#app/config';
 
 clientConfig.apiUrl; // API URL (empty = relative, Vite proxies)
 clientConfig.isDev; // true in development
@@ -240,17 +234,17 @@ clientConfig.tokenRefreshInterval; // 13 minutes (780000ms)
 clientConfig.uiVersion; // UI version string
 ```
 
-Common env vars: `VITE_API_URL` (optional, defaults to relative URLs), `VITE_APP_NAME`, and `VITE_ENABLE_DEV_TOOLS`.
+Common env vars: `VITE_API_URL` (optional, defaults to relative URLs) and `VITE_APP_NAME`. Runtime capability flags come from `/api/platform/context`.
 
 ## UI Library Catalog Components
 
 The `/ui-library` route showcases 57 components across 3 categories when developer tools are enabled:
 
-**Components (11):**
-Box, Button, Card, Input, Spinner, AppShell, Badge, FormField, LoadingContainer, ToastContainer
+**Components (10):**
+Box, Button, Card, Input, Spinner, AppShell, Badge, FormField, AsyncBoundary, Toaster
 
-**Elements (38):**
-Accordion, Alert, Avatar, Card (structured), Checkbox, Divider, Dropdown, Heading, MenuItem, Modal, Overlay, Pagination, Popover, Progress, Radio, RadioGroup, Select, Skeleton, Slider, Switch, Tabs, Text, VisuallyHidden, TextArea, Tooltip, Table, Toast, ResizablePanel, ScrollArea, Dialog, Image, CloseButton, EnvironmentBadge, Kbd, PasswordInput, Toaster, VersionBadge
+**Elements (36):**
+Accordion, Alert, Avatar, Card (structured), Checkbox, Divider, Dropdown, Heading, Icon, MenuItem, Overlay, Pagination, Popover, Progress, Radio, RadioGroup, Select, Skeleton, Slider, Switch, Tabs, Text, VisuallyHidden, TextArea, Tooltip, Table, ResizablePanel, ScrollArea, Dialog, Image, CloseButton, EnvironmentBadge, Kbd, PasswordInput, Toaster, VersionBadge
 
 **Layouts (8):**
 Container, AuthLayout, PageContainer, LeftSidebarLayout (with AppShell), StackedLayout, TopbarLayout, BottombarLayout, RightSidebarLayout
@@ -317,9 +311,9 @@ The custom query cache is persisted to IndexedDB (24-hour max age):
 
 **Internal:**
 
-- `@bslt/shared` - types, validation, stores
+- `@bslt/contract` / `@bslt/schema` - shared contracts, constants, and schemas
 - `@bslt/ui` - React components
-- `@bslt/client-engine` - client engine + query/runtime utilities
+- `@bslt/client-engine` / `@bslt/web-platform` - client transport, query cache, and web module platform
 
 **External:**
 

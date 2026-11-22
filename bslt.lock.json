@@ -1,0 +1,11 @@
+{
+  "orgPermissionBits": {},
+  "tombstoned": [],
+  "migrations": {
+    "audit/0001_audit.sql": "62fee6f24305f8c31dd8e4608cdf5adf41bd998b2e942a3fa6008f8b556afbd9",
+    "compliance/0001_compliance.sql": "9f6019dbe41143100bcb1f2196aa153eb1fb0f8650f807e16f216c646e8a3a54",
+    "identity/0001_identity.sql": "bf64bb90cc2cdc3983e5db263307753d1dfe306e3f5bef665eecc42c7b0c6679",
+    "kernel/0001_sys.sql": "af634ad422e4867c437cef490dc0491da37bb961c653e20ac47284642f2a1b5a",
+    "kernel/0002_sys_optional_orgs_guard.sql": "03bdeedf16a99c08f0fe03e19529fd6a868045a231db31765642f87bcf5a6b74"
+  }
+}

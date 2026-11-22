@@ -1,0 +1,82 @@
+// main/kernel/web/src/index.ts
+export {
+  eagerModulePage,
+  implementWeb,
+  lazyModulePage,
+  useModuleMessages,
+  type LazyPageDescriptor,
+  type ModuleAdminSurface,
+  type ModuleNotificationRouteRule,
+  type ModuleSettingsSection,
+  type ModuleSitePage,
+  type NavSlot,
+  type NotificationRouteResolver,
+  type ShellName,
+  type SiteSectionId,
+  type WebImpls,
+  type WebModule,
+  type WebNavItem,
+  type WebRoute,
+} from './web-module';
+
+export { AppLayoutContext, useAppRightSidebar, type AppLayoutContextValue } from './layout-context';
+
+export {
+  canAccessCapability,
+  CapabilityProvider,
+  EMPTY_CAPABILITY_CONTEXT,
+  useCapabilities,
+  type CapabilitiesValue,
+  type CapabilityLoadStatus,
+  type CapabilityProviderProps,
+  type CapabilityTarget,
+} from './capabilities';
+
+export {
+  createWebApp,
+  DEFAULT_SITE_SECTIONS,
+  type AppFrameConfig,
+  type ComposedAppRoute,
+  type FrameAdminSurfaceContribution,
+  type FrameChildRoute,
+  type FrameDashboardActionContribution,
+  type FrameDashboardTileContribution,
+  type FramePaletteContribution,
+  type FramePrimaryNavContribution,
+  type FrameRouteContribution,
+  type FrameRouteSlot,
+  type FrameSettingsSectionContribution,
+  type FrameSitePageContribution,
+  type PrimaryNavHint,
+  type ResolvedAdminSurface,
+  type ResolvedDeclaredRoute,
+  type ResolvedPaletteEntry,
+  type ResolvedSettingsSection,
+  type ResolvedSitePage,
+  type SiteSection,
+  type WebApp,
+  type WebShellConfig,
+} from './create-web-app';
+
+export {
+  AnonymousSdkViolationError,
+  buildRobotsTxt,
+  buildRuntimeSitemapXml,
+  createAnonymousSdk,
+  definePublicRoute,
+  formatHeadTags,
+  hydratePublic,
+  injectPublicSsrHtml,
+  renderPublic,
+  serializeDehydratedState,
+  SSR_STATE_ELEMENT_ID,
+  type AnonymousSdk,
+  type AnonymousSdkForModules,
+  type HeadTags,
+  type HydratePublicHandle,
+  type PublicRoute,
+  type SsrEnv,
+  type SsrResult,
+} from './ssr/public-route';
+
+export { GENERATED_EDGE_CSP, GENERATED_PERMISSIONS_POLICY } from './ssr/security-headers.generated';

@@ -6,6 +6,8 @@
  * These routes are intentionally unprefixed (no /api).
  */
 
+import { HTTP_STATUS } from '@bslt/contract';
+import { getWebSocketStats } from '@bslt/realtime';
 import {
   createRouteMap,
   createScopedRouteHelpers,
@@ -13,16 +15,17 @@ import {
   type RouteMap,
 } from '@bslt/server-system/http';
 import { formatPrometheusMetrics, getMetricsCollector } from '@bslt/server-system/observability';
-import { checkDbStatus, getDetailedHealth, type HealthContext } from '@bslt/server-system/runtime';
-import { HTTP_STATUS } from '@bslt/shared/constants';
+import {
+  checkDbStatus,
+  getDetailedHealth,
+  type HealthContext,
+  type LiveResponse,
+  type ReadyResponse,
+} from '@bslt/server-system/runtime';
 
-import { isServerCapabilityEnabled } from '../bootstrap/generated/profile.generated';
-import { importOptionalCapability } from '../bootstrap/optional-import';
 import { createGeoProvider } from '../middleware/geo';
 
-import type { GeoHeaders } from '@bslt/shared/core/geo';
-import type { LiveResponse, ReadyResponse } from '@bslt/shared/system';
-import type { WebSocketStats } from '@bslt/shared/system/runtime';
+import type { GeoHeaders } from '@bslt/server-system/security';
 
 const { publicRoute: systemPublicRoute, protectedRoute: systemProtectedRoute } =
   createScopedRouteHelpers<HealthContext>((ctx: HandlerContext) => ctx as HealthContext);
@@ -80,17 +83,6 @@ function geoProbe(
           'visitor-location transform or the region gate is inert',
     },
   };
-}
-
-async function getEnabledWebSocketStats(): Promise<WebSocketStats | undefined> {
-  if (!isServerCapabilityEnabled('realtime')) return undefined;
-
-  const mod = await importOptionalCapability('@bslt/realtime', 'realtime');
-  const getWebSocketStats = mod['getWebSocketStats'];
-  if (typeof getWebSocketStats !== 'function') {
-    throw new Error('Optional realtime module is missing getWebSocketStats export');
-  }
-  return (getWebSocketStats as () => WebSocketStats)();
 }
 
 export const systemRoutes: RouteMap = createRouteMap([
@@ -172,7 +164,8 @@ export const systemRoutes: RouteMap = createRouteMap([
     systemProtectedRoute(
       'GET',
       async (ctx, _body, _req, reply) => {
-        const websocketStats = await getEnabledWebSocketStats();
+        const stats = getWebSocketStats();
+        const websocketStats = stats.pluginRegistered ? stats : undefined;
         const detailed = await getDetailedHealth(
           ctx,
           websocketStats !== undefined ? { websocketStats } : undefined,

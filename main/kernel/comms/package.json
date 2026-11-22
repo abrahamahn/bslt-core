@@ -1,0 +1,60 @@
+{
+  "name": "@bslt/comms",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Communication infrastructure adapters (email, sms, notifications) for bslt",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./email": {
+      "source": "./src/email/index.ts",
+      "types": "./dist/email/index.d.ts",
+      "default": "./dist/email/index.js"
+    },
+    "./email/console": {
+      "source": "./src/email/console.ts",
+      "types": "./dist/email/console.d.ts",
+      "default": "./dist/email/console.js"
+    },
+    "./email/smtp": {
+      "source": "./src/email/smtp.ts",
+      "types": "./dist/email/smtp.d.ts",
+      "default": "./dist/email/smtp.js"
+    },
+    "./sms": {
+      "source": "./src/sms/index.ts",
+      "types": "./dist/sms/index.d.ts",
+      "default": "./dist/sms/index.js"
+    },
+    "./notifications/providers": {
+      "source": "./src/notifications/providers/index.ts",
+      "types": "./dist/notifications/providers/index.d.ts",
+      "default": "./dist/notifications/providers/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@bslt/contract": "workspace:*",
+    "@bslt/protocols": "workspace:*"
+  },
+  "scripts": {
+    "build": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo && tsc -p tsconfig.json && bslt-esm-fix dist",
+    "clean": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo",
+    "type-check": "tsc -p tsconfig.lint.json",
+    "test": "vitest run --reporter=dot --silent=passed-only --passWithNoTests",
+    "lint": "eslint . --cache --cache-location ../../node_modules/.cache/eslint/.eslintcache-bslt-comms --report-unused-disable-directives"
+  },
+  "sideEffects": false,
+  "devDependencies": {
+    "@bslt/build-config": "workspace:*",
+    "vitest": "^5.1.0"
+  }
+}

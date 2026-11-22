@@ -1,0 +1,378 @@
+# infra/docker/production/docker-compose.prod.yml
+# Production Docker Compose for the app server
+#
+# This file runs no database. Postgres lives on its own server
+# (docker-compose.db.yml next to this file, or any Postgres of the pinned major
+# with a superuser); set that server up first. A deploy of this file therefore
+# never restarts, replaces or reads the database's data directory.
+#
+# Usage (the same steps, in this order, on every deploy; `&&` so the API does
+# not start after a failed database step):
+#   compose() { docker compose --env-file config/env/.env.production -f infra/docker/production/docker-compose.prod.yml "$@"; }
+#   compose --profile ops build && compose run --rm bootstrap-roles && compose run --rm migrate && compose up -d
+#
+# Prerequisites:
+#   1. A reachable database server (docs/deploy/README.md#two-servers)
+#   2. Create config/env/.env.production from config/env/.env.production.example
+#   3. Set strong secrets: JWT_SECRET, COOKIE_SECRET, OAUTH_TOKEN_ENCRYPTION_KEY
+#   4. Set the database server: POSTGRES_HOST (its private address), POSTGRES_PORT,
+#      POSTGRES_DB, and the superuser POSTGRES_USER / POSTGRES_PASSWORD
+#   5. Set the database role URLs: DATABASE_URL, WORKER_DATABASE_URL (both at
+#      pgbouncer:5432), MIGRATION_DATABASE_URL, LISTEN_DATABASE_URL (both at
+#      POSTGRES_HOST:POSTGRES_PORT) (docs/deploy/env.md#database-roles)
+#   6. Set DOMAIN and ACME_EMAIL for automatic TLS certificates
+#
+# Architecture:
+#   Internet -> Caddy (80/443) -> Internal Network
+#                  |
+#                  +-> /health* -> api:8080
+#                  +-> /ws      -> api:8080 (WebSocket)
+#                  +-> /api/*   -> api:8080
+#                  +-> /*       -> web:80
+#
+#   api:8080 -> pgbouncer:5432 (pool) -> POSTGRES_HOST:POSTGRES_PORT (database server)
+#   api:8080 -> POSTGRES_HOST:POSTGRES_PORT (one pub/sub LISTEN connection, LISTEN_DATABASE_URL)
+#   api:8080 -> redis:6379 (cache + distributed rate limiting)
+#
+# Traffic to the database server leaves this host. Keep both servers on one
+# private network and let the database server admit only this host
+# (docker-compose.db.yml does both); see docs/deploy/production-postgres.md#ssl-configuration
+# for TLS between the two.
+
+name: abe-prod
+
+services:
+  # ===========================================================================
+  # Caddy Reverse Proxy (TLS Termination)
+  # ===========================================================================
+  caddy:
+    image: caddy:2-alpine
+    container_name: ${RESOURCE_PREFIX:-abe}-caddy
+    ports:
+      # Parameterized so a second environment can co-exist on one host. Defaults
+      # are 80/443, so an existing single-app droplet is unaffected.
+      - '${HTTP_PORT:-80}:80'
+      - '${HTTPS_PORT:-443}:443'
+      - '${HTTPS_PORT:-443}:443/udp' # HTTP/3 (QUIC)
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@example.com}
+    volumes:
+      - ../../runtime/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - internal
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:80']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+        reservations:
+          memory: 64M
+
+  # ===========================================================================
+  # PgBouncer — Connection Pooler
+  # Sits between the API and the database server to pool connections. Without
+  # this, each Fastify worker holds a direct Postgres connection; under load
+  # the server hits pg's max_connections limit and drops requests.
+  #
+  # Pool mode: session by default because the API starts Postgres LISTEN/NOTIFY
+  # pubsub during bootstrap. Transaction pooling does not support LISTEN/NOTIFY.
+  # ===========================================================================
+  pgbouncer:
+    # bitnami/pgbouncer no longer publishes any tag (`latest` is a 404), so the
+    # stack could not be pulled. This is the last build in Bitnami's frozen
+    # legacy repository: it receives no updates. Replace the pooler image before
+    # relying on this stack long term. Pinned by tag and digest in
+    # infra/versions.env (PGBOUNCER_IMAGE); the version-pins gate holds this
+    # line to it, as it holds the postgres image in docker-compose.db.yml to
+    # POSTGRES_IMAGE.
+    image: bitnamilegacy/pgbouncer:1.24.1-debian-12-r10@sha256:32c2aefdd8c144f08ee8a0776d4a17387e34f1b77dd9ac8ce92af259d4a7c632
+    container_name: ${RESOURCE_PREFIX:-abe}-pgbouncer
+    environment:
+      # The database server, not a service of this file.
+      POSTGRESQL_HOST: ${POSTGRES_HOST:?POSTGRES_HOST (the database server address) is required}
+      POSTGRESQL_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRESQL_USERNAME: ${POSTGRES_USER:-postgres}
+      POSTGRESQL_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRESQL_DATABASE: ${POSTGRES_DB:-abe_prod}
+      PGBOUNCER_DATABASE: ${POSTGRES_DB:-abe_prod}
+      # The API logs in as bslt_app and bslt_worker (database role split), not
+      # as the superuser above. PgBouncer looks their SCRAM secrets up through
+      # the superuser with its default auth_query, so the roles' passwords live
+      # only in Postgres and in the role URLs.
+      PGBOUNCER_AUTH_USER: ${POSTGRES_USER:-postgres}
+      PGBOUNCER_POOL_MODE: ${PGBOUNCER_POOL_MODE:-session}
+      PGBOUNCER_MAX_CLIENT_CONN: 100
+      # Per database and user. In session mode a client keeps its server
+      # connection, and the API opens up to DB_MAX_CONNECTIONS (default 20)
+      # clients on each of its two roles, so each role's pool must hold a full
+      # application pool. Two pools of 25 fit Postgres' default max_connections
+      # of 100; raise both together if you raise DB_MAX_CONNECTIONS.
+      PGBOUNCER_DEFAULT_POOL_SIZE: ${PGBOUNCER_DEFAULT_POOL_SIZE:-25}
+      PGBOUNCER_PORT: 5432
+    networks:
+      - internal
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -p 5432 -U ${POSTGRES_USER:-postgres}']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.25'
+        reservations:
+          memory: 32M
+
+  # ===========================================================================
+  # Redis — Cache + Distributed Rate Limiting
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: ${RESOURCE_PREFIX:-abe}-redis
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+        reservations:
+          memory: 64M
+
+  # ===========================================================================
+  # API Server (Fastify)
+  # ===========================================================================
+  api:
+    build:
+      context: ../../..
+      dockerfile: infra/docker/Dockerfile
+    container_name: ${RESOURCE_PREFIX:-abe}-api
+    env_file:
+      - ../../../config/env/.env.production
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 8080
+      # Public origin. Production config rejects the http://localhost defaults,
+      # and the bundled Caddy serves the app and /api from the same DOMAIN.
+      API_BASE_URL: ${API_BASE_URL:-https://${DOMAIN:-localhost}}
+      APP_URL: ${APP_URL:-https://${DOMAIN:-localhost}}
+      # Database role split (docs/deploy/env.md#database-roles). The runtime
+      # connects as bslt_app (user sessions) and bslt_worker (everything
+      # sessionless), never as the POSTGRES_USER superuser — the server refuses
+      # to start if DATABASE_URL can bypass RLS. Point both at pgbouncer:5432.
+      # Before the first start (and safely on every deploy) run, in this order:
+      #   docker compose ... run --rm bootstrap-roles
+      #   docker compose ... run --rm migrate
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL (bslt_app role) is required}
+      WORKER_DATABASE_URL: ${WORKER_DATABASE_URL:?WORKER_DATABASE_URL (bslt_worker role) is required}
+      # The pub/sub listener (Postgres LISTEN/NOTIFY): the bslt_worker role
+      # again, but at the database server itself (POSTGRES_HOST:POSTGRES_PORT),
+      # because PgBouncer's transaction pooling does not carry a LISTEN session.
+      LISTEN_DATABASE_URL: ${LISTEN_DATABASE_URL:?LISTEN_DATABASE_URL (bslt_worker role, direct to the database server) is required}
+      # The running API never holds the superuser or owner credentials. They are
+      # blanked here because env_file above would otherwise pass them through
+      # from .env.production; only the bootstrap-roles and migrate one-shot
+      # services below receive them.
+      MIGRATION_DATABASE_URL: ''
+      DATABASE_ADMIN_URL: ''
+      POSTGRES_USER: ''
+      POSTGRES_PASSWORD: ''
+      # Internal API -> PgBouncer traffic stays on the Docker network. Set this
+      # to true only after configuring PgBouncer client TLS certificates. The
+      # one switch also covers the listener's direct connection to the database
+      # server, which is why that hop needs a private network.
+      DB_SSL: 'false'
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      COOKIE_SECRET: ${COOKIE_SECRET:?COOKIE_SECRET is required}
+      OAUTH_TOKEN_ENCRYPTION_KEY: ${OAUTH_TOKEN_ENCRYPTION_KEY:?OAUTH_TOKEN_ENCRYPTION_KEY is required}
+      # Trust reverse proxy for correct IP extraction
+      TRUST_PROXY: ${TRUST_PROXY:-true}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-172.16.0.0/12,10.0.0.0/8}
+      MAX_PROXY_DEPTH: ${MAX_PROXY_DEPTH:-1}
+      # Cache + distributed rate limiting
+      CACHE_PROVIDER: ${CACHE_PROVIDER:-redis}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      # Storage configuration
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
+      STORAGE_ROOT_PATH: ${STORAGE_ROOT_PATH:-/app/uploads}
+      STORAGE_PUBLIC_BASE_URL: ${STORAGE_PUBLIC_BASE_URL:-/uploads}
+      # Email configuration
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-console}
+      EMAIL_FROM_NAME: '${EMAIL_FROM_NAME:-Abe}'
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:?EMAIL_FROM_ADDRESS is required}
+      SMTP_HOST: ${SMTP_HOST:?SMTP_HOST is required}
+      # Passed through by name: the value comes from the same place as the
+      # `${...}` references above (--env-file, or the .env the Deploy workflow
+      # writes, which removes `env_file` from this service). Left unset, they
+      # change nothing and the mail server is used without authentication.
+      SMTP_USER:
+      SMTP_PASS:
+    volumes:
+      # Persistent storage for uploaded files (if using local storage)
+      - uploads_data:/app/uploads
+    networks:
+      - internal
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:8080/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+
+  # ===========================================================================
+  # One-shot database jobs (profile "ops": `up` never starts them)
+  # The only containers that receive the superuser / owner credentials.
+  #   docker compose ... run --rm bootstrap-roles   # superuser: create/repair roles
+  #   docker compose ... run --rm migrate           # bslt_owner: apply migrations
+  # Both connect to the database server directly, not through PgBouncer.
+  # ===========================================================================
+  bootstrap-roles:
+    build:
+      context: ../../..
+      dockerfile: infra/docker/Dockerfile
+    profiles: ['ops']
+    command: ['node', 'dist/src/bootstrap-roles.js']
+    environment:
+      NODE_ENV: production
+      DATABASE_ADMIN_URL: ${DATABASE_ADMIN_URL:-}
+      POSTGRES_HOST: ${POSTGRES_HOST:?POSTGRES_HOST (the database server address) is required}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-abe_prod}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      # Read for the passwords they carry: each becomes its role's password.
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL (bslt_app role) is required}
+      WORKER_DATABASE_URL: ${WORKER_DATABASE_URL:?WORKER_DATABASE_URL (bslt_worker role) is required}
+      # Not `:?`: compose interpolates every service on every command, and a
+      # plain `up` must not need the owner URL. The job itself refuses to run
+      # without it.
+      MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL:-}
+    networks:
+      - internal
+    healthcheck:
+      disable: true
+    restart: 'no'
+
+  migrate:
+    build:
+      context: ../../..
+      dockerfile: infra/docker/Dockerfile
+    profiles: ['ops']
+    # The migration runner of @bslt/db, on the baselines it ships in the image.
+    command: ['node', 'node_modules/@bslt/db/dist/migrate/entry.js']
+    environment:
+      NODE_ENV: production
+      MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL:-}
+    networks:
+      - internal
+    healthcheck:
+      disable: true
+    restart: 'no'
+
+  # ===========================================================================
+  # Web Server (PROCESS_ROLE=web: owned Node.js static + PublicRoute SSR)
+  # ===========================================================================
+  web:
+    build:
+      context: ../../..
+      dockerfile: infra/docker/Dockerfile.web
+      args:
+        # Empty = relative URLs (reverse proxy handles /api routing)
+        VITE_API_URL: ${VITE_API_URL:-}
+        VITE_APP_NAME: '${VITE_APP_NAME:-Abe}'
+        PUBLIC_STRIPE_ID: ${VITE_STRIPE_PUBLISHABLE_KEY:-}
+    container_name: ${RESOURCE_PREFIX:-abe}-web
+    environment:
+      NODE_ENV: production
+      PROCESS_ROLE: web
+      PORT: 80
+      API_INTERNAL_URL: http://api:8080
+      SITE_URL: ${SITE_URL:-https://${DOMAIN:-localhost}}
+    networks:
+      - internal
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:80/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+        reservations:
+          memory: 64M
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  uploads_data:
+    name: ${RESOURCE_PREFIX:-abe}-uploads-data
+  redis_data:
+    name: ${RESOURCE_PREFIX:-abe}-redis-data
+  caddy_data:
+    name: ${RESOURCE_PREFIX:-abe}-caddy-data
+  caddy_config:
+    name: ${RESOURCE_PREFIX:-abe}-caddy-config

@@ -2,14 +2,15 @@
 
 import net from 'node:net';
 
-import { uniquePorts } from '@bslt/shared/system';
+import { uniquePorts } from '@bslt/server-system/runtime';
 
 import { App, isAddrInUse } from '../app';
 
+import type { RegisterRoutesOptions } from '../../http/router';
 import type { InfraContext } from '../context';
-import type { AppConfig } from '@bslt/shared/system/config';
+import type { AppConfig } from '@bslt/server-system/config';
 
-export interface HttpPhaseState {
+interface HttpPhaseState {
   app: App;
   port: number;
 }
@@ -54,8 +55,9 @@ async function pickAvailablePort(
 export async function initHttpPhase(
   config: AppConfig,
   context: InfraContext,
+  routeOptions?: RegisterRoutesOptions,
 ): Promise<HttpPhaseState> {
-  const app = new App(config, context);
+  const app = new App(config, context, routeOptions);
   await app.init();
   return { app, port: 0 };
 }

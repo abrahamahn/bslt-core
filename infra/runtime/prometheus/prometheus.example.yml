@@ -1,0 +1,26 @@
+# Example Prometheus configuration for scraping the abe API and loading the
+# bundled alert rules. Copy to prometheus.yml and adjust targets for your deploy.
+#
+# The API exposes metrics at GET /metrics/prometheus. With the production Caddy
+# proxy, scrape the internal api service directly (not through TLS) where possible.
+
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+rule_files:
+  - alerts.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+scrape_configs:
+  - job_name: abe-api
+    metrics_path: /metrics/prometheus
+    static_configs:
+      # In the Docker production network, the API is reachable as api:8080.
+      - targets:
+          - api:8080

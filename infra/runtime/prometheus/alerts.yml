@@ -1,0 +1,106 @@
+# Prometheus alert rules for the abe API.
+#
+# Metric names match what the server exposes at GET /metrics/prometheus
+# (see main/kernel/server/src/observability/metrics.ts) and the backup
+# freshness gauges written by infra/runtime/backup/backup.sh.
+#
+# Deployed onto $DEPLOY_ROOT/prometheus/alerts.yml by .github/workflows/deploy.yml;
+# wire into Prometheus via `rule_files` (see prometheus.example.yml) and
+# route firing alerts through Alertmanager (see alertmanager.example.yml).
+
+groups:
+  - name: abe-availability
+    rules:
+      - alert: TargetDown
+        expr: up{job="abe-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'Abe API target is down'
+          description: 'Prometheus cannot scrape the API for 2m. Check the container and readiness probe. Runbook: docs/deploy/runbooks.md#1-database-is-down--unreachable / #2.'
+
+  - name: abe-http
+    rules:
+      - alert: HighErrorRate
+        # 5xx share of traffic over 5m, guarded against divide-by-zero on idle.
+        expr: |
+          sum(rate(bslt_requests_by_status_total{status=~"5.."}[5m]))
+            / clamp_min(sum(rate(bslt_requests_total[5m])), 1) > 0.05
+          and sum(rate(bslt_requests_total[5m])) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'High 5xx error rate (>5%)'
+          description: 'Server error ratio exceeded 5% for 5m. Runbook: docs/deploy/runbooks.md#3-high-error-rate.'
+
+      - alert: HighLatencyP99
+        expr: max(bslt_request_latency_ms{quantile="0.99"}) > 1500
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'p99 latency above 1.5s'
+          description: 'Request p99 latency exceeded 1500ms for 10m. Runbook: docs/deploy/runbooks.md#4-high-latency.'
+
+      - alert: EventLoopLagHigh
+        expr: max(bslt_event_loop_lag_ms{quantile="0.99"}) > 250
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Node.js event-loop p99 lag above 250ms'
+          description: 'Sustained event-loop lag above 250ms indicates synchronous CPU blocking or memory pressure.'
+
+      - alert: DeadBackgroundJobs
+        expr: bslt_jobs_dead_gauge > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Background jobs stuck in dead-letter state'
+          description: 'One or more jobs exhausted retries in sys_jobs. Inspect dead jobs in the admin console.'
+
+  - name: abe-database
+    rules:
+      - alert: DatabaseDown
+        # bslt_db_up reflects the latest periodic health probe (1 = reachable).
+        expr: bslt_db_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'Database health probe failing'
+          description: 'The periodic DB probe could not reach Postgres for 1m. Runbook: docs/deploy/runbooks.md#1-database-is-down--unreachable.'
+
+      - alert: DatabaseSlow
+        # Probe latency rises under outage AND pool saturation, so this is the
+        # saturation signal too.
+        expr: bslt_db_check_duration_ms > 500
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Database probe latency high (>500ms)'
+          description: 'Slow DB health probes suggest pool saturation or an overloaded database. Runbook: docs/deploy/runbooks.md#4-high-latency.'
+
+      - alert: BackupStale
+        expr: (time() - bslt_backup_last_success_timestamp_seconds) > 93600
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'Encrypted offsite database backup is stale (>26h)'
+          description: 'No verified encrypted offsite dump recorded in 26h. Check infra/runtime/backup/backup.sh cron and S3 credentials.'
+
+  - name: abe-auth
+    rules:
+      - alert: LoginFailureSpike
+        expr: sum(rate(bslt_auth_events_total{event="login_failure"}[5m])) > 5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Elevated login failures'
+          description: 'Sustained login-failure rate may indicate credential stuffing. Confirm rate limiting and lockouts are engaging.'

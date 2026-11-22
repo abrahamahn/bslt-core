@@ -1,13 +1,9 @@
 // main/apps/server/src/plugin/correlation-id.ts
-import { generateCorrelationId, isValidCorrelationId } from '@bslt/server-system/http';
-
-import type { FastifyInstance } from 'fastify';
-
-declare module 'fastify' {
-  interface FastifyRequest {
-    correlationId: string;
-  }
-}
+import {
+  generateCorrelationId,
+  isValidCorrelationId,
+  type HttpServer,
+} from '@bslt/server-system/http';
 
 export interface CorrelationIdOptions {
   headerName?: string;
@@ -17,13 +13,13 @@ export interface CorrelationIdOptions {
 const DEFAULT_HEADER_NAME = 'x-correlation-id';
 
 export function registerCorrelationIdHook(
-  app: FastifyInstance,
+  app: HttpServer,
   options: CorrelationIdOptions = {},
 ): void {
   const { headerName = DEFAULT_HEADER_NAME, trustProxy = true } = options;
   const headerNameLower = headerName.toLowerCase();
 
-  app.addHook('onRequest', async (req, reply) => {
+  app.addHook('onRequest', (req, reply) => {
     let correlationId: string | undefined;
 
     if (trustProxy) {

@@ -1,0 +1,35 @@
+// main/kernel/ui/src/components/index.ts
+// Components - Composed multi-part components with complex state/behavior
+export { Accordion } from './Accordion';
+export { AsyncBoundary } from './AsyncBoundary';
+export { AuthFormLayout } from './AuthForm';
+export { Card } from './Card';
+export { DelayedFallback, type DelayedFallbackProps } from './DelayedFallback';
+export { Dialog } from './Dialog';
+export { EmptyState } from './EmptyState';
+export type { EmptyStateProps } from './EmptyState';
+export { Dropdown } from './Dropdown';
+export { ErrorBoundary } from './ErrorBoundary';
+export type { ErrorBoundaryProps } from './ErrorBoundary';
+export { FocusTrap } from './FocusTrap';
+export { FeatureHint } from './FeatureHint';
+export type { FeatureHintProps } from './FeatureHint';
+export { FormField } from './FormField';
+export { Image } from './Image';
+export { LabeledValueRow } from './LabeledValueRow';
+export type { LabeledValueRowProps } from './LabeledValueRow';
+export { Markdown } from './Markdown';
+export { MetricValue } from './MetricValue';
+export type { MetricValueProps } from './MetricValue';
+export { Pagination } from './Pagination';
+export { Popover } from './Popover';
+export { Radio } from './Radio';
+export { RadioGroup } from './RadioGroup';
+export { Select } from './Select';
+export { Slider } from './Slider';
+export { StatusBadge } from './StatusBadge';
+export type { StatusBadgeProps, StatusBadgeTone } from './StatusBadge';
+export { Tabs, type TabsProps, type TabItem } from './Tabs';
+export { TitledCardSection } from './TitledCardSection';
+export type { TitledCardSectionProps } from './TitledCardSection';
+export { PeekLink, type PeekLinkProps } from './PeekLink';

@@ -1,0 +1,15 @@
+{
+  "extends": "../../config/tsconfig.node.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "typeRoots": ["../../node_modules/@types"],
+    "rootDir": ".",
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "erasableSyntaxOnly": true,
+    "tsBuildInfoFile": "./node_modules/.cache/typescript/tsconfig.build-config.tsbuildinfo"
+  },
+  "include": ["bin/**/*.ts", "src/**/*.ts", "vitest.config.ts"]
+}

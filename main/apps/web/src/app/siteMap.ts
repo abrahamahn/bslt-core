@@ -3,7 +3,7 @@
  * The public surface: every page a signed-out visitor — or a crawler — can land on.
  *
  * Declared once, because three things have to agree and they are built in
- * different files: the router (routes.tsx), the footer (layouts/AppFooter.tsx),
+ * different files: the router (routes.tsx), the footer (shells/SiteFooter.tsx),
  * and the build-time prerenderer. When they drift, the footer advertises a 404
  * and the prerenderer ships HTML for a path nobody serves.
  *
@@ -22,21 +22,14 @@
  * visitor into a login wall. A fork that makes pricing public adds it here.
  */
 
-import type { DocumentType } from '@bslt/shared/core';
+import { webApp } from './webApp';
 
-/** A footer column. Ordered as declared; a section with no live page renders nothing. */
-export type SiteSectionId = 'product' | 'legal' | 'support';
+import type { DocumentType } from '@bslt/compliance/contract';
+import type { SiteSection, SiteSectionId } from '@bslt/web-platform';
 
-export interface SiteSection {
-  readonly id: SiteSectionId;
-  readonly label: string;
-}
+export type { SiteSection, SiteSectionId };
 
-export const SITE_SECTIONS: readonly SiteSection[] = [
-  { id: 'product', label: 'Product' },
-  { id: 'legal', label: 'Legal' },
-  { id: 'support', label: 'Support' },
-];
+export const SITE_SECTIONS: readonly SiteSection[] = webApp.siteSections;
 
 export interface SitePage {
   /**
@@ -59,8 +52,8 @@ export interface SitePage {
   /**
    * The DB-published legal document that fills the page. Only Terms and
    * Privacy carry one — the ToS acceptance gate keys on their version numbers.
-   * The other legal pages are file-owned (docs/legal/, rendered by
-   * `@features/content`) and have no document.
+   * The other legal pages are file-owned (`@bslt/compliance` seeds, rendered by
+   * `@bslt/compliance/web`) and have no document.
    */
   readonly document?: DocumentType;
   /** True once the router serves `path`. False = declared, not built: nothing links it. */
@@ -68,69 +61,19 @@ export interface SitePage {
 }
 
 /** A page whose route exists today. The only kind the footer and the prerenderer accept. */
-export type LiveSitePage = SitePage & { readonly live: true };
+type LiveSitePage = SitePage & { readonly live: true };
 
-export const SITE_MAP: readonly SitePage[] = [
-  { path: '/', title: 'Home', section: 'product', live: true },
-  {
-    path: '/terms',
-    title: 'Terms of Service',
-    description: 'The agreement between you and this service.',
-    section: 'legal',
-    document: 'terms_of_service',
-    live: true,
-  },
-  {
-    path: '/privacy',
-    title: 'Privacy Policy',
-    description: 'What personal data this service collects, why, and your rights over it.',
-    section: 'legal',
-    document: 'privacy_policy',
-    live: true,
-  },
-  {
-    path: '/cookies',
-    title: 'Cookie Policy',
-    description: 'Which cookies and local storage this service uses, and why.',
-    section: 'legal',
-    live: true,
-  },
-  {
-    path: '/acceptable-use',
-    title: 'Acceptable Use Policy',
-    description: 'What you may and may not do with this service.',
-    section: 'legal',
-    live: true,
-  },
-  { path: '/disclaimer', title: 'Disclaimer', section: 'legal', live: true },
-  {
-    path: '/support',
-    title: 'Support',
-    description: 'Get help, report a problem, or contact the team.',
-    section: 'support',
-    live: false,
-  },
-  {
-    path: '/status',
-    title: 'Status',
-    description: 'Current service availability and recent incidents.',
-    section: 'support',
-    live: false,
-  },
-];
+export const SITE_MAP: readonly SitePage[] = webApp.sitePages;
 
 /**
  * The pages that actually exist. Every consumer that renders or crawls a link
  * goes through here — the filter lives in one place so it cannot be forgotten in
  * another. The prerenderer gets exactly what it needs: `path` and `title`.
  */
-export function livePages(pages: readonly SitePage[] = SITE_MAP): readonly LiveSitePage[] {
+export function livePages(
+  pages: readonly SitePage[] = SITE_MAP,
+): readonly (SitePage & { readonly live: true })[] {
   return pages.filter((page): page is LiveSitePage => page.live);
-}
-
-export interface SiteSectionPages {
-  readonly section: SiteSection;
-  readonly pages: readonly LiveSitePage[];
 }
 
 /**
@@ -138,9 +81,10 @@ export interface SiteSectionPages {
  * A section whose pages are all dark is dropped entirely — an empty column with
  * a heading reads as breakage, not as "coming soon".
  */
-export function liveSiteSections(
-  pages: readonly SitePage[] = SITE_MAP,
-): readonly SiteSectionPages[] {
+export function liveSiteSections(pages: readonly SitePage[] = SITE_MAP): readonly {
+  readonly section: SiteSection;
+  readonly pages: readonly (SitePage & { readonly live: true })[];
+}[] {
   const live = livePages(pages);
   return SITE_SECTIONS.flatMap((section) => {
     const sectionPages = live.filter((page) => page.section === section.id);
@@ -153,4 +97,4 @@ export function liveSiteSections(
  * sentence on the landing page and in the footer — two surfaces saying two
  * different things about what this is, is how a product ends up with no story.
  */
-export const PRODUCT_TAGLINE = 'Clone-and-own SaaS starter';
+export { PRODUCT_TAGLINE } from './productMeta';

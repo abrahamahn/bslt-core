@@ -6,23 +6,23 @@
  * service-worker registration in one place so both entry files stay thin.
  */
 
-import { QueryCache } from '@bslt/client-engine';
-import { MS_PER_DAY, MS_PER_MINUTE } from '@bslt/shared/constants/time';
-import { createAuthService } from '@features/auth';
+import { createTransport, QueryCache, tokenStore, type Transport } from '@bslt/client-engine';
+import { startConsentSync } from '@bslt/compliance/web';
+import { MS_PER_DAY, MS_PER_MINUTE } from '@bslt/contract';
+import { createAuthService } from '@bslt/identity/web';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import { isWebCapabilityEnabled } from './generated/profile.generated';
 import { revealAppWhenReady } from './splash';
 
-import type { ClientEnvironment } from '@/app/ClientEnvironment';
+import type { ClientEnvironment } from '#app/app/ClientEnvironment';
 
-import { App } from '@/app/App';
-import { onTosRequired } from '@/app/tosHandler';
-import { clientConfig } from '@/config';
-import { startConsentSync } from '@/lib/consent';
-import { gateSentryOnAnalyticsConsent, initSentry } from '@/lib/sentry';
-import { registerServiceWorker, unregisterAllServiceWorkers } from '@/utils/registerServiceWorker';
+import { App } from '#app/app/App';
+import { getAccessToken } from '#app/app/authToken';
+import { onTosRequired } from '#app/app/tosHandler';
+import { clientConfig } from '#app/config';
+import { reportError, startErrorReporter } from '#app/lib/errorReporter';
+import { unregisterAllServiceWorkers } from '#app/utils/registerServiceWorker';
 
 import '@bslt/ui/styles/elements.css';
 
@@ -69,6 +69,8 @@ export function resolveDocumentTitle(appName: string): string {
 
 interface BootstrappedEnvironment {
   readonly environment: ClientEnvironment;
+  /** The environment's transport, which `ClientEnvironment` types as optional. */
+  readonly transport: Transport;
   /** The session restore, for the splash to wait on. See `revealAppWhenReady`. */
   readonly authSettled: Promise<unknown>;
 }
@@ -83,13 +85,20 @@ function createEnvironment(): BootstrappedEnvironment {
 
   const auth = createAuthService({
     config: clientConfig,
+    tokenStore,
     onTosRequired,
+  });
+
+  const transport = createTransport({
+    baseUrl: clientConfig.apiUrl,
+    getToken: getAccessToken,
   });
 
   const environment: ClientEnvironment = {
     config: clientConfig,
     queryCache,
     auth,
+    transport,
   };
 
   // Non-blocking auth restore from refresh cookie. The app renders immediately;
@@ -108,7 +117,7 @@ function createEnvironment(): BootstrappedEnvironment {
     });
   }
 
-  return { environment, authSettled };
+  return { environment, transport, authSettled };
 }
 
 function syncDocumentTitle(environment: ClientEnvironment): void {
@@ -117,39 +126,26 @@ function syncDocumentTitle(environment: ClientEnvironment): void {
 
 function registerPwaIfNeeded(environment: ClientEnvironment): void {
   if (environment.config.isDev) {
-    void unregisterAllServiceWorkers().catch(() => {});
-    return;
+    void unregisterAllServiceWorkers().catch((error: unknown) => {
+      reportError(error, 'unhandledrejection');
+    });
   }
-
-  if (!isWebCapabilityEnabled('workers')) return;
-
-  void registerServiceWorker({
-    swPath: '/sw.js',
-    scope: '/',
-    immediate: false,
-    callbacks: {
-      onSuccess: (_registration) => {},
-      onUpdate: (_info) => {},
-      onError: (_error) => {},
-    },
-  });
 }
 
 /** Event name for errors that escape React's ErrorBoundary. */
 export const UNCAUGHT_ERROR_EVENT = 'app:uncaught-error';
 
 /**
- * Re-broadcast errors that never reach an ErrorBoundary.
+ * Report and re-broadcast errors that never reach an ErrorBoundary.
  *
  * A boundary catches errors thrown while RENDERING. It cannot see a rejected
  * promise in an event handler, a failed dynamic import, or a throw inside
- * `setTimeout` — those reach `window` and stop there. With no error-tracking
- * DSN configured (the common dev and self-host case) they are then invisible.
+ * `setTimeout` — those reach `window` and stop there.
  *
- * This does NOT log: the browser already prints both of these, and logging
- * again just doubles every entry in the console. It re-dispatches instead, so a
- * debug overlay, a test, or a future reporting endpoint has one event to
- * listen for regardless of whether a vendor SDK is present.
+ * Each goes to the error reporter (which sends nothing without analytics
+ * consent) and is re-dispatched, so a debug overlay or a test has one event to
+ * listen for. This does NOT log: the browser already prints both of these, and
+ * logging again just doubles every entry in the console.
  *
  * @returns A cleanup function that removes both listeners
  */
@@ -161,6 +157,7 @@ export function reportUncaughtErrors(): () => void {
     // the DOM lib; narrowed to `unknown` so nothing downstream inherits it.
     const error: unknown = event.error;
     if (error === null || error === undefined) return;
+    reportError(error, 'error', event.filename);
     window.dispatchEvent(
       new CustomEvent(UNCAUGHT_ERROR_EVENT, { detail: { error, source: 'error' } }),
     );
@@ -168,6 +165,7 @@ export function reportUncaughtErrors(): () => void {
 
   const onRejection = (event: PromiseRejectionEvent): void => {
     const error: unknown = event.reason;
+    reportError(error, 'unhandledrejection');
     window.dispatchEvent(
       new CustomEvent(UNCAUGHT_ERROR_EVENT, {
         detail: { error, source: 'unhandledrejection' },
@@ -185,13 +183,8 @@ export function reportUncaughtErrors(): () => void {
 }
 
 export function bootstrapClientApp(): void {
-  // Error capture is unconditional; tracing and session replay wait behind the
-  // `analytics` consent gate, wired the moment the SDK is up (D3).
-  void initSentry().then(gateSentryOnAnalyticsConsent);
-
-  // Vendor-neutral, and deliberately not conditional on Sentry: with no DSN the
-  // ErrorBoundary is the ONLY thing catching anything, and it cannot see
-  // rejected promises or failed chunk loads.
+  // The ErrorBoundary cannot see rejected promises or failed chunk loads. Errors
+  // are re-broadcast from here on, and reported once the reporter starts below.
   reportUncaughtErrors();
 
   // Before anything reads consent: applies a Global Privacy Control opt-out
@@ -199,18 +192,29 @@ export function bootstrapClientApp(): void {
   // must hold in every tab.
   startConsentSync();
 
-  const { environment, authSettled } = createEnvironment();
+  const { environment, transport, authSettled } = createEnvironment();
   syncDocumentTitle(environment);
+
+  // Public route: the reports go without the access token, and the transport
+  // supplies the CSRF token. `keepalive` lets the pagehide flush outlive the page.
+  startErrorReporter((reports) =>
+    transport.request('/platform/errors', {
+      method: 'POST',
+      body: JSON.stringify({ reports }),
+      requiresAuth: false,
+      keepalive: true,
+    }),
+  );
 
   const rootElement = document.getElementById('root');
   if (rootElement === null) throw new Error('Failed to find the root element');
 
-  // A prerendered page is the DOCUMENT without the app shell (see
-  // src/ssr/ServerApp.tsx); the client renders the whole shell around it. The two
-  // trees do not match, so hydrating one against the other throws a mismatch and
-  // re-renders from scratch anyway — slower than mounting fresh, and with a
-  // console full of errors. Drop the markup and mount.
-  if (rootElement.dataset['prerendered'] === 'true') {
+  // If the full SPA entry ever mounts over legacy prerendered or public SSR
+  // markup instead of _spa.html, clear #root before createRoot mounts App.
+  if (
+    rootElement.dataset['prerendered'] === 'true' ||
+    rootElement.dataset['ssrPublic'] === 'true'
+  ) {
     rootElement.replaceChildren();
   }
 

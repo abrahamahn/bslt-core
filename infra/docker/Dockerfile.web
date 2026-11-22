@@ -1,0 +1,134 @@
+# syntax=docker/dockerfile:1
+# The Node.js version is pinned in /.node-version. This default must equal it
+# (the version-pins merge gate checks), so a build needs no build arg. The web Vite
+# config imports @bslt/build-config/vite, a TypeScript file Node loads through
+# type stripping, which needs Node 22.18 or later.
+ARG NODE_VERSION=24.22.3
+
+# =============================================================================
+# Base Stage - Common dependencies and configuration
+# =============================================================================
+FROM node:${NODE_VERSION}-alpine AS base
+
+# `git` is required because workspace `prepare` hooks run during `pnpm install`.
+RUN apk update && \
+    apk upgrade && \
+    apk add --no-cache git && \
+    rm -rf /var/cache/apk/*
+
+# Enable pnpm via corepack
+ENV PNPM_HOME=/pnpm
+ENV PNPM_STORE_PATH=/pnpm/store
+ENV PATH="$PNPM_HOME:$PATH"
+ENV NODE_OPTIONS=--network-family-autoselection-attempt-timeout=5000
+RUN corepack enable
+RUN mkdir -p /pnpm/store
+
+WORKDIR /app
+
+# =============================================================================
+# Dependencies Stage - Fetch and cache dependencies
+# =============================================================================
+FROM base AS deps
+
+# Copy only package files for better layer caching
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY main/apps/web/package.json main/apps/web/
+COPY main/kernel/client/package.json main/kernel/client/
+COPY main/kernel/contract/package.json main/kernel/contract/
+COPY main/kernel/schema/package.json main/kernel/schema/
+COPY main/kernel/ui/package.json main/kernel/ui/
+COPY main/kernel/react/package.json main/kernel/react/
+COPY main/kernel/web/package.json main/kernel/web/
+COPY main/modules/audit/package.json main/modules/audit/
+COPY main/modules/compliance/package.json main/modules/compliance/
+COPY main/modules/devtools/package.json main/modules/devtools/
+COPY main/modules/identity/package.json main/modules/identity/
+
+# Fetch all dependencies (including dev deps for build)
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm fetch
+
+# =============================================================================
+# Build Stage - Compile TypeScript and build web app
+# =============================================================================
+FROM base AS build
+
+WORKDIR /app
+
+ENV CI=true
+
+# Build-time configuration
+# Empty VITE_API_URL means relative URLs (for reverse proxy setup)
+ARG VITE_API_URL=""
+ARG VITE_APP_NAME="BSLT"
+# Docker-facing alias for the public Stripe client key whose VITE name looks
+# secret-like to BuildKit's Dockerfile linter. Compose maps the canonical env-file name.
+ARG PUBLIC_STRIPE_ID=""
+# The site's public origin. Optional: the build prerenders the public pages either
+# way, but sitemap.xml needs it, because <loc> must be an absolute URL.
+ARG SITE_URL=""
+
+# Copy cached pnpm store from deps stage
+COPY --from=deps /pnpm/store /pnpm/store
+
+# Copy all source files
+COPY . .
+
+# Install dependencies and build.
+#
+# `@bslt/web build` builds the client bundle, builds the self-contained SSR
+# server (`dist/server/serve.js`), and prerenders static PublicRoute pages via
+# `bslt web prerender` into `dist/client`. It fails if any public page renders
+# empty, so an image can never ship the public site as a bare SPA shell.
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile && \
+    # `@bslt/ui...` is pnpm's "package and its dependencies" selector, so this
+    # builds shared -> client-engine -> api -> react -> ui in topological order.
+    # It replaces a hand-listed chain that silently went stale: `@bslt/ui` used to
+    # run `tsc --build`, which followed project references and built react/engine
+    # transitively. Commit fe4d1d84 switched it to `tsc -p`, which does not — and
+    # the image build began failing with TS6305 on react/engine dist outputs.
+    # A dependency-derived selector cannot drift when the graph changes.
+    pnpm --filter "@bslt/web^..." build && \
+    SITE_URL="$SITE_URL" \
+    VITE_API_URL="$VITE_API_URL" \
+    VITE_APP_NAME="$VITE_APP_NAME" \
+    VITE_STRIPE_PUBLISHABLE_KEY="$PUBLIC_STRIPE_ID" \
+    pnpm --filter @bslt/web build
+
+# =============================================================================
+# Production Stage - Minimal Node.js runner serving static + public SSR (PROCESS_ROLE=web)
+# =============================================================================
+FROM node:${NODE_VERSION}-alpine AS runner
+
+# Install security updates
+RUN apk update && \
+    apk upgrade && \
+    rm -rf /var/cache/apk/*
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PROCESS_ROLE=web
+ENV HOST=0.0.0.0
+ENV PORT=80
+ENV WEB_CLIENT_DIR=/app/dist/client
+
+RUN printf '{"type":"module"}\n' > /app/package.json && \
+    chown -R node:node /app
+
+# Copy the client build (`dist/client`) and the self-contained SSR server (`dist/server/serve.js`).
+COPY --chown=node:node --from=build /app/main/apps/web/dist/client /app/dist/client
+COPY --chown=node:node --from=build /app/main/apps/web/dist/server/serve.js /app/dist/server/serve.js
+
+USER node
+
+# Expose port 80 (reverse_proxy web:80 in Caddy)
+EXPOSE 80
+
+# Health check against PROCESS_ROLE=web /health
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 80) + '/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+
+CMD ["node", "dist/server/serve.js"]

@@ -12,13 +12,7 @@
 // Types
 // ============================================================================
 
-export type {
-  FlatTranslationMap,
-  I18nContextValue,
-  Locale,
-  LocaleMetadata,
-  TranslationMap,
-} from './types';
+export type { FlatTranslationMap, I18nContextValue, Locale, TranslationMap } from './types';
 export { DEFAULT_LOCALE, LOCALE_METADATA, SUPPORTED_LOCALES } from './types';
 
 // ============================================================================
@@ -26,7 +20,6 @@ export { DEFAULT_LOCALE, LOCALE_METADATA, SUPPORTED_LOCALES } from './types';
 // ============================================================================
 
 export { I18nContext, I18nProvider } from './provider';
-export type { I18nProviderProps } from './provider';
 
 // ============================================================================
 // Hooks
@@ -50,12 +43,4 @@ export { formatCurrency, formatDate, formatNumber, formatRelativeTime } from './
 // Locale Data
 // ============================================================================
 
-export { ar } from './locales/ar';
-export { de } from './locales/de';
 export { enUS } from './locales/en-US';
-export { es } from './locales/es';
-export { fr } from './locales/fr';
-export { ja } from './locales/ja';
-export { ko } from './locales/ko';
-export { ptBR } from './locales/pt-BR';
-export { zhCN } from './locales/zh-CN';

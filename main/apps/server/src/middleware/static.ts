@@ -2,22 +2,34 @@
 /**
  * Static File Serving
  *
- * Simple static file server for local storage uploads.
+ * File server for local storage uploads. Every request must carry a valid,
+ * unexpired HMAC signature issued by the local storage provider (the local
+ * equivalent of an S3 presigned GET); there is no unauthenticated path.
  * Replaces @fastify/static with minimal implementation.
  */
 
 import { open } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
 
-import { HTTP_STATUS } from '@bslt/shared/constants';
-import { getMimeType } from '@bslt/shared/media';
-import { createRateLimiter, getRequesterId } from '@bslt/shared/system';
-
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { HTTP_STATUS } from '@bslt/contract';
+import {
+  getMimeType,
+  getRequesterId,
+  type HttpServer,
+  type HttpServerReply,
+  type HttpServerRequest,
+} from '@bslt/server-system/http';
+import { createSlidingWindowLimiter } from '@bslt/server-system/security';
+import {
+  deriveStorageUrlKey,
+  isServableStorageKey,
+  SIGNED_URL_QUERY,
+  verifyStorageUrl,
+} from '@bslt/storage';
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 240;
-const staticRateLimit = createRateLimiter(RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS);
+const staticRateLimit = createSlidingWindowLimiter(RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS);
 
 function isRateLimited(requester: string): boolean {
   return !staticRateLimit(requester).allowed;
@@ -27,6 +39,13 @@ function isRateLimited(requester: string): boolean {
 function asString(value: string | string[] | undefined): string | undefined {
   if (Array.isArray(value)) return value[0];
   return value;
+}
+
+/** Raw (still-encoded) query value; repeated params stay arrays so verification refuses them. */
+function queryValue(query: unknown, name: string): unknown {
+  return query !== null && typeof query === 'object'
+    ? (query as Record<string, unknown>)[name]
+    : undefined;
 }
 
 function resolveStaticPath(root: string, relativePath: string): string | null {
@@ -81,35 +100,45 @@ export function parseRangeHeader(rangeHeader: string | undefined, size: number):
   return { start, end };
 }
 
-export interface StaticServeOptions {
+interface StaticServeOptions {
   /** Root directory for static files */
   root: string;
   /** URL prefix (e.g., '/uploads/') */
   prefix: string;
-  /** Cache max-age in seconds (default: 1 hour) */
+  /**
+   * Secret (min 32 chars) the URL-signing key is derived from — the same one the
+   * local storage provider signs with (`config.storage.signingSecret`).
+   */
+  signingSecret: string;
+  /** Upper bound for Cache-Control max-age in seconds (default: 1 hour) */
   maxAge?: number;
 }
 
 /**
- * Register static file serving routes
+ * Register the signed file-serving route.
+ *
+ * GET/HEAD `<prefix><key>?expires=<epoch s>&signature=<hex>` serves `<root>/<key>`
+ * only when the signature covers exactly this key and expiry and the URL has
+ * not expired; anything else is 403 before the filesystem is touched.
  *
  * @param server - The Fastify instance to register on
  * @param options - Static serve configuration options
+ * @throws StorageError when the signing secret is shorter than 32 characters
  */
-export function registerStaticServe(server: FastifyInstance, options: StaticServeOptions): void {
-  const { root, prefix, maxAge = 3600 } = options;
+export function registerStaticServe(server: HttpServer, options: StaticServeOptions): void {
+  const { root, prefix, signingSecret, maxAge = 3600 } = options;
+  const signingKey = deriveStorageUrlKey(signingSecret);
 
   // Ensure prefix ends with /
   const normalizedPrefix = prefix.endsWith('/') ? prefix : `${prefix}/`;
 
   /**
-   * Rate-limiting preHandler. Must be async (or call `done`): a synchronous hook
-   * that returns `undefined` never advances the Fastify lifecycle, hanging every
-   * request. When the limit is exceeded the 429 reply ends the lifecycle here.
+   * Rate-limiting preHandler. When the limit is exceeded the 429 reply ends the
+   * lifecycle here.
    */
-  const rateLimitHandler = async (req: FastifyRequest, reply: FastifyReply): Promise<void> => {
+  const rateLimitHandler = (req: HttpServerRequest, reply: HttpServerReply): void => {
     if (isRateLimited(getRequesterId(req))) {
-      await reply.status(HTTP_STATUS.TOO_MANY_REQUESTS).send({ error: 'Too many requests' });
+      reply.status(HTTP_STATUS.TOO_MANY_REQUESTS).send({ error: 'Too many requests' });
     }
   };
 
@@ -117,26 +146,48 @@ export function registerStaticServe(server: FastifyInstance, options: StaticServ
   server.get(
     `${normalizedPrefix}*`,
     { preHandler: rateLimitHandler },
-    async (req: FastifyRequest, reply: FastifyReply): Promise<void> => {
-      const params = (req.params ?? {}) as Record<string, unknown>;
-      const wildcard = params['*'];
-      const fromParams = typeof wildcard === 'string' ? wildcard : undefined;
-      const fromUrl = req.url.startsWith(normalizedPrefix)
-        ? req.url.slice(normalizedPrefix.length)
-        : req.url;
-      const relativePath = fromParams ?? fromUrl;
-
-      // Decode URI components (handle %20, etc.)
-      let decodedPath: string;
-      try {
-        decodedPath = decodeURIComponent(relativePath);
-      } catch {
-        return reply.status(HTTP_STATUS.BAD_REQUEST).send({ error: 'Invalid path encoding' });
+    async (req: HttpServerRequest, reply: HttpServerReply): Promise<void> => {
+      // Take the key from the raw URL and decode it exactly once. The router has
+      // already decoded `params['*']`; decoding that again would turn `%252e%252e`
+      // into `..` and make the signed key differ from the served one.
+      const queryStart = req.url.indexOf('?');
+      const rawPath = queryStart === -1 ? req.url : req.url.slice(0, queryStart);
+      if (!rawPath.startsWith(normalizedPrefix)) {
+        reply.status(HTTP_STATUS.FORBIDDEN).send({ error: 'Forbidden' });
+        return;
       }
 
-      const fullPath = resolveStaticPath(root, decodedPath);
+      let key: string;
+      try {
+        key = decodeURIComponent(rawPath.slice(normalizedPrefix.length));
+      } catch {
+        reply.status(HTTP_STATUS.BAD_REQUEST).send({ error: 'Invalid path encoding' });
+        return;
+      }
+
+      // One uniform 403 for traversal and every signature failure: no oracle.
+      if (!isServableStorageKey(key)) {
+        reply.status(HTTP_STATUS.FORBIDDEN).send({ error: 'Forbidden' });
+        return;
+      }
+      const verdict = verifyStorageUrl(
+        {
+          method: 'GET', // HEAD is a GET without a body
+          key,
+          expires: queryValue(req.query, SIGNED_URL_QUERY.expires),
+          signature: queryValue(req.query, SIGNED_URL_QUERY.signature),
+        },
+        signingKey,
+      );
+      if (!verdict.valid) {
+        reply.status(HTTP_STATUS.FORBIDDEN).send({ error: 'Forbidden' });
+        return;
+      }
+
+      const fullPath = resolveStaticPath(root, key);
       if (fullPath === null) {
-        return reply.status(HTTP_STATUS.FORBIDDEN).send({ error: 'Forbidden' });
+        reply.status(HTTP_STATUS.FORBIDDEN).send({ error: 'Forbidden' });
+        return;
       }
 
       // Open once for a TOCTOU-safe stat, then stream from the same handle.
@@ -146,12 +197,12 @@ export function registerStaticServe(server: FastifyInstance, options: StaticServ
       } catch (err) {
         const error = err as NodeJS.ErrnoException;
         if (error.code === 'ENOENT') {
-          return reply.status(HTTP_STATUS.NOT_FOUND).send({ error: 'Not found' });
+          reply.status(HTTP_STATUS.NOT_FOUND).send({ error: 'Not found' });
+          return;
         }
         server.log.error({ err, path: fullPath }, 'Static file serve error');
-        return reply
-          .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-          .send({ error: 'Internal server error' });
+        reply.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send({ error: 'Internal server error' });
+        return;
       }
 
       let stats: Awaited<ReturnType<typeof fd.stat>>;
@@ -160,53 +211,56 @@ export function registerStaticServe(server: FastifyInstance, options: StaticServ
       } catch (err) {
         await fd.close();
         server.log.error({ err, path: fullPath }, 'Static file serve error');
-        return reply
-          .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-          .send({ error: 'Internal server error' });
+        reply.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send({ error: 'Internal server error' });
+        return;
       }
 
       if (!stats.isFile()) {
         await fd.close();
-        return reply.status(HTTP_STATUS.NOT_FOUND).send({ error: 'Not found' });
+        reply.status(HTTP_STATUS.NOT_FOUND).send({ error: 'Not found' });
+        return;
       }
 
       // Resolve the requested range before setting content headers: an unsatisfiable
       // range answers with a JSON error and must NOT carry the file's binary
-      // Content-Type (Fastify refuses to serialize an object under a non-JSON type).
+      // Content-Type.
       const range = parseRangeHeader(asString(req.headers['range']), stats.size);
 
       if (range === 'unsatisfiable') {
         await fd.close();
-        void reply.header('Content-Range', `bytes */${String(stats.size)}`);
-        return reply
-          .status(HTTP_STATUS.RANGE_NOT_SATISFIABLE)
-          .send({ error: 'Range not satisfiable' });
+        reply.header('Content-Range', `bytes */${String(stats.size)}`);
+        reply.status(HTTP_STATUS.RANGE_NOT_SATISFIABLE).send({ error: 'Range not satisfiable' });
+        return;
       }
 
-      void reply.header('Content-Type', getMimeType(fullPath));
-      void reply.header('Cache-Control', `public, max-age=${String(maxAge)}`);
-      void reply.header('Last-Modified', stats.mtime.toUTCString());
+      // Private, and never cacheable beyond the signed URL's own lifetime.
+      const secondsLeft = verdict.expiresAt - Math.floor(Date.now() / 1000);
+      reply.header('Content-Type', getMimeType(fullPath));
+      reply.header(
+        'Cache-Control',
+        `private, max-age=${String(Math.max(0, Math.min(maxAge, secondsLeft)))}`,
+      );
+      reply.header('Last-Modified', stats.mtime.toUTCString());
       // Advertise range support so media elements enable seeking.
-      void reply.header('Accept-Ranges', 'bytes');
+      reply.header('Accept-Ranges', 'bytes');
 
       if (range !== null) {
         // Partial content: stream only the requested byte window for media seeking.
-        void reply.header(
+        reply.header(
           'Content-Range',
           `bytes ${String(range.start)}-${String(range.end)}/${String(stats.size)}`,
         );
-        void reply.header('Content-Length', range.end - range.start + 1);
-        void reply.status(HTTP_STATUS.PARTIAL_CONTENT);
-        return reply.send(
-          fd.createReadStream({ autoClose: true, start: range.start, end: range.end }),
-        );
+        reply.header('Content-Length', range.end - range.start + 1);
+        reply.status(HTTP_STATUS.PARTIAL_CONTENT);
+        reply.send(fd.createReadStream({ autoClose: true, start: range.start, end: range.end }));
+        return;
       }
 
-      void reply.header('Content-Length', stats.size);
+      reply.header('Content-Length', stats.size);
 
       // Stream from the open handle. autoClose closes the handle on 'end'/'error',
       // so the handle is owned solely by the stream from here on (no double close).
-      return reply.send(fd.createReadStream({ autoClose: true }));
+      reply.send(fd.createReadStream({ autoClose: true }));
     },
   );
 

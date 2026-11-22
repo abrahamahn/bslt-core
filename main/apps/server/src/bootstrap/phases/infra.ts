@@ -1,14 +1,14 @@
 // main/apps/server/src/bootstrap/phases/infra.ts
 
+import { type ErrorTracker } from '@bslt/contract';
+import { SubscriptionManager } from '@bslt/realtime';
 import { createCache } from '@bslt/server-system/cache';
 import { createLogger, developmentFormatter } from '@bslt/server-system/logger';
-import { createErrorTracker } from '@bslt/server-system/observability';
-import { type ErrorTracker } from '@bslt/shared/contracts';
-import { SubscriptionManager } from '@bslt/shared/db';
+import { createLogErrorTracker } from '@bslt/server-system/observability';
 
-import { type PlatformContext } from '../context';
+import { type AppPorts, type PlatformContext } from '../context';
 
-import type { AppConfig } from '@bslt/shared/system/config';
+import type { AppConfig } from '@bslt/server-system/config';
 
 export interface InfraPhaseState {
   platform: PlatformContext;
@@ -36,38 +36,39 @@ async function callIfMethod(value: unknown, method: CloseableMethod): Promise<vo
   }
 }
 
-export function bootstrapInfraPhase(config: AppConfig): Promise<InfraPhaseState> {
-  const log = createLogger(
-    config.server.logLevel,
-    { service: 'server-infra', env: config.env },
-    config.env === 'development' ? developmentFormatter : undefined,
-  );
-
+function openCache(config: AppConfig): Pick<PlatformContext, 'cache'> & {
+  stopCache: () => Promise<void>;
+} {
   const cacheProvider = createCache(config.cache);
-  const cache = {
-    getStats: () => Promise.resolve(cacheProvider.getStats()),
+  return {
+    cache: { getStats: () => Promise.resolve(cacheProvider.getStats()) },
+    stopCache: () => callIfMethod(cacheProvider, 'close'),
   };
+}
+
+/**
+ * Compose the platform services. A port the caller supplies (`ports.log`,
+ * `ports.cache`, `ports.errorTracker`) is used as given and its default is
+ * never constructed.
+ */
+export function bootstrapInfraPhase(
+  config: AppConfig,
+  ports: AppPorts = {},
+): Promise<InfraPhaseState> {
+  const log =
+    ports.log ??
+    createLogger(
+      config.server.logLevel,
+      { service: 'server-infra', env: config.env },
+      config.env === 'development' ? developmentFormatter : undefined,
+    );
+
+  const { cache, stopCache } =
+    ports.cache !== undefined ? { cache: ports.cache } : openCache(config);
 
   const pubsub = new SubscriptionManager();
 
-  const errorTrackingConfig = {
-    dsn: process.env['SENTRY_DSN']?.trim() || null,
-    environment: config.env,
-  };
-  const errorTrackingProvider = createErrorTracker(errorTrackingConfig);
-  errorTrackingProvider.init(errorTrackingConfig);
-
-  const errorTracker: ErrorTracker = {
-    captureError: (error, context) => {
-      errorTrackingProvider.captureError(error, context);
-    },
-    addBreadcrumb: (message, data) => {
-      errorTrackingProvider.addBreadcrumb(message, 'app', data);
-    },
-    setUserContext: (userId, userEmail) => {
-      errorTrackingProvider.setUserContext(userId, userEmail);
-    },
-  };
+  const errorTracker: ErrorTracker = ports.errorTracker ?? createLogErrorTracker(log);
 
   const platform: PlatformContext = Object.freeze({
     config,
@@ -79,10 +80,7 @@ export function bootstrapInfraPhase(config: AppConfig): Promise<InfraPhaseState>
 
   platform.log.info('Infra phase bootstrapped');
 
-  return Promise.resolve({
-    platform,
-    stopCache: () => callIfMethod(cacheProvider, 'close'),
-  });
+  return Promise.resolve({ platform, stopCache });
 }
 
 export async function stopInfraPhase(state: Partial<InfraPhaseState> | undefined): Promise<void> {

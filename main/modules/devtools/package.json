@@ -1,0 +1,100 @@
+{
+  "name": "@bslt/devtools",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Developer route manifest introspection and component showcase surfaces",
+  "author": "Abraham Joongwhan Ahn",
+  "sideEffects": false,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bslt/bslt.git",
+    "directory": "main/modules/devtools"
+  },
+  "exports": {
+    "./module": {
+      "source": "./module.ts",
+      "types": "./dist/module.d.ts",
+      "default": "./dist/module.js"
+    },
+    "./contract": {
+      "source": "./contract/index.ts",
+      "types": "./dist/contract/index.d.ts",
+      "default": "./dist/contract/index.js"
+    },
+    "./server": {
+      "source": "./server/index.ts",
+      "types": "./dist/server/index.d.ts",
+      "default": "./dist/server/index.js"
+    },
+    "./web": {
+      "source": "./web/index.ts",
+      "types": "./dist/web/index.d.ts",
+      "default": "./dist/web/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo && tsc -p tsconfig.json && bslt-esm-fix dist",
+    "test": "vitest run --reporter=dot --silent=passed-only",
+    "lint": "eslint . --cache --cache-location ../../../node_modules/.cache/eslint/.eslintcache-bslt-devtools --report-unused-disable-directives --max-warnings 0",
+    "type-check": "tsc -p tsconfig.lint.json",
+    "clean": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo"
+  },
+  "dependencies": {
+    "@bslt/contract": "workspace:*",
+    "@bslt/schema": "workspace:*",
+    "@bslt/server-system": "workspace:*"
+  },
+  "devDependencies": {
+    "@bslt/build-config": "workspace:*",
+    "@bslt/client-engine": "workspace:*",
+    "@bslt/react": "workspace:*",
+    "@bslt/ui": "workspace:*",
+    "@bslt/web-platform": "workspace:*",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0"
+  },
+  "peerDependencies": {
+    "@bslt/client-engine": "workspace:*",
+    "@bslt/react": "workspace:*",
+    "@bslt/ui": "workspace:*",
+    "@bslt/web-platform": "workspace:*",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
+  },
+  "peerDependenciesMeta": {
+    "@bslt/client-engine": {
+      "optional": true
+    },
+    "@bslt/react": {
+      "optional": true
+    },
+    "@bslt/ui": {
+      "optional": true
+    },
+    "@bslt/web-platform": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

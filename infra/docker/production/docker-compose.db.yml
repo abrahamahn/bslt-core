@@ -1,0 +1,91 @@
+# infra/docker/production/docker-compose.db.yml
+# Production Docker Compose for the database server
+#
+# The database runs on its own server, apart from the app server
+# (docker-compose.prod.yml). Set this server up first: the app server's role
+# bootstrap, migrations, PgBouncer and listener all connect to it.
+#
+# Usage (on the database server, from a checkout or with this one file copied):
+#   docker compose --env-file .env.database -f docker-compose.db.yml up -d
+#
+# .env.database (mode 600) holds:
+#   POSTGRES_PASSWORD=   superuser password; the app server's POSTGRES_PASSWORD
+#   POSTGRES_DB=         database name; the app server's POSTGRES_DB (default abe_prod)
+#   DB_LISTEN_ADDRESS=   this server's PRIVATE address, the one the app server
+#                        dials as POSTGRES_HOST (e.g. 10.0.0.5). Never a public one.
+#   APP_SERVER_CIDR=     who may connect: the app server's private address as a
+#                        CIDR (e.g. 10.0.0.4/32)
+#   POSTGRES_PORT=       optional, default 5432
+#   POSTGRES_USER=       optional, default postgres
+#
+# Who can reach the database, in three layers:
+#   1. Postgres listens on loopback and DB_LISTEN_ADDRESS only (host networking,
+#      so that is the server's own address: no published port, no NAT).
+#   2. pg_hba admits password (SCRAM) logins to POSTGRES_DB from APP_SERVER_CIDR
+#      and from loopback, and nothing else.
+#   3. Your firewall or cloud network should repeat rule 2 for the port.
+#
+# Encryption: this file does not configure TLS. Put both servers on one private
+# network (a VPC or a WireGuard link) so the traffic never crosses a public
+# one. To add TLS as well, mount a certificate and key, add
+# `-c ssl=on -c ssl_cert_file=... -c ssl_key_file=...` to `command`, change
+# `host` to `hostssl` in the APP_SERVER_CIDR rule below, and follow
+# docs/deploy/production-postgres.md#ssl-configuration for the app server side.
+#
+# Requires Docker Compose 2.23.1 or later (inline `configs.content`).
+
+name: abe-db
+
+services:
+  postgres:
+    # The exact image is pinned in infra/versions.env (POSTGRES_IMAGE); the
+    # version-pins gate holds this line to it. A new major needs the upgrade
+    # procedure in docs/deploy/production-postgres.md#major-version-upgrades.
+    image: postgres:17.11-alpine
+    container_name: ${RESOURCE_PREFIX:-abe}-postgres
+    network_mode: host
+    command:
+      - postgres
+      - -c
+      - listen_addresses=localhost,${DB_LISTEN_ADDRESS:?DB_LISTEN_ADDRESS (this server's private address) is required}
+      - -c
+      - hba_file=/etc/postgresql/pg_hba.conf
+      - -c
+      - password_encryption=scram-sha-256
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-abe_prod}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      # The port the server listens on, and the one pg_isready below asks.
+      PGPORT: ${POSTGRES_PORT:-5432}
+    configs:
+      - source: pg_hba
+        target: /etc/postgresql/pg_hba.conf
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-abe_prod}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    # No memory or CPU limit: this server exists for the database. Size
+    # shared_buffers and friends per docs/deploy/production-postgres.md.
+
+configs:
+  pg_hba:
+    content: |
+      # Written by docker-compose.db.yml; edit there, not in the container.
+      # TYPE  DATABASE  USER  ADDRESS  METHOD
+      # The socket inside the container: the image's init scripts and `docker exec`.
+      local all all trust
+      # Loopback is the server's own (host networking), so it asks for a password too.
+      host all all 127.0.0.1/32 scram-sha-256
+      host all all ::1/128 scram-sha-256
+      # The app server: PgBouncer, the listener, bootstrap-roles and migrate.
+      host ${POSTGRES_DB:-abe_prod} all ${APP_SERVER_CIDR:?APP_SERVER_CIDR (the app server's private address as a CIDR) is required} scram-sha-256
+
+volumes:
+  postgres_data:
+    name: ${RESOURCE_PREFIX:-abe}-postgres-data

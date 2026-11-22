@@ -1,0 +1,158 @@
+// main/kernel/ui/src/index.ts
+// Shared UI components for the web app template.
+
+// Elements - Atomic UI building blocks
+export {
+  Alert,
+  Avatar,
+  Badge,
+  Box,
+  Button,
+  Checkbox,
+  CloseButton,
+  Divider,
+  EnvironmentBadge,
+  FileInput,
+  Heading,
+  Icon,
+  IconButton,
+  Input,
+  Kbd,
+  MenuItem,
+  OAuthButton,
+  PasswordInput,
+  Progress,
+  Skeleton,
+  SkipLink,
+  Spinner,
+  Switch,
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Text,
+  TextArea,
+  Toaster,
+  Tooltip,
+  VersionBadge,
+  VisuallyHidden,
+} from './elements';
+
+// Components - Composed multi-part components
+export {
+  Accordion,
+  AsyncBoundary,
+  AuthFormLayout,
+  Card,
+  DelayedFallback,
+  Dialog,
+  Dropdown,
+  EmptyState,
+  ErrorBoundary,
+  FeatureHint,
+  FocusTrap,
+  FormField,
+  Image,
+  LabeledValueRow,
+  Markdown,
+  MetricValue,
+  Pagination,
+  PeekLink,
+  Popover,
+  Radio,
+  RadioGroup,
+  Select,
+  Slider,
+  StatusBadge,
+  Tabs,
+  TitledCardSection,
+} from './components';
+export type {
+  DelayedFallbackProps,
+  EmptyStateProps,
+  ErrorBoundaryProps,
+  FeatureHintProps,
+  LabeledValueRowProps,
+  MetricValueProps,
+  PeekLinkProps,
+  StatusBadgeProps,
+  StatusBadgeTone,
+  TabItem,
+  TitledCardSectionProps,
+  TabsProps,
+} from './components';
+
+// Layouts - Page and section layouts
+export {
+  AppShell,
+  AspectRatio,
+  AuthLayout,
+  BottombarLayout,
+  Center,
+  Cluster,
+  Container,
+  Grid,
+  Inline,
+  LeftSidebarLayout,
+  Overlay,
+  PageContainer,
+  PageHeader,
+  PageShell,
+  ResizablePanel,
+  ResizablePanelGroup,
+  ResizableSeparator,
+  RightSidebarLayout,
+  ScrollArea,
+  SidePeek,
+  Stack,
+  StackedLayout,
+  TopbarLayout,
+} from './layouts';
+export type {
+  AppShellProps,
+  BottombarLayoutProps,
+  LeftSidebarLayoutProps,
+  RightSidebarLayoutProps,
+  SidePeekRootProps,
+  SidePeekSize,
+  TopbarLayoutProps,
+} from './layouts';
+
+// Theme
+export {
+  THEME_STORAGE_KEYS,
+  ThemeProvider,
+  buildBrandScale,
+  breakpoints,
+  colors,
+  contentMaxWidth,
+  darkColors,
+  lightColors,
+  motion,
+  radius,
+  spacing,
+  touchTargetSize,
+  typography,
+  useTheme,
+} from './theme';
+export type {
+  Breakpoints,
+  ContrastMode,
+  DarkColors,
+  Density,
+  LightColors,
+  Radius,
+  ThemeColors,
+  ThemeContextValue,
+  ThemeProviderProps,
+} from './theme';
+
+export { ICON_SPRITE, type IconName } from './icons.generated';
+
+// Utilities
+export { cn, parseMarkdown, safeHref } from './utils';
+export type { MarkdownBlock, MarkdownSpan } from './utils';

@@ -1,0 +1,16 @@
+[
+  {
+    "name": "react",
+    "replacement": "None: the one runtime dependency kept by owner decision",
+    "removeBy": "permanent",
+    "conformance": "n/a",
+    "usedBy": ["@bslt/client-engine", "@bslt/react", "@bslt/ui", "@bslt/web", "@bslt/web-platform"]
+  },
+  {
+    "name": "react-dom",
+    "replacement": "None: the one runtime dependency kept by owner decision",
+    "removeBy": "permanent",
+    "conformance": "n/a",
+    "usedBy": ["@bslt/react", "@bslt/ui", "@bslt/web", "@bslt/web-platform"]
+  }
+]

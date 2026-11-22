@@ -17,22 +17,21 @@ This directory keeps shared tooling and environment documentation out of the rep
 
 The workspace is declared in [`pnpm-workspace.yaml`](../pnpm-workspace.yaml):
 
-- `main/apps/*` for runtime applications.
-- `main/server/*` for server-side packages.
-- `main/client/*` for browser/client packages.
-- `main/shared` for shared contracts and utilities.
-- `main/tools` for repository automation.
-- `tests` for cross-package integration and E2E tests.
+- `main/apps/*` for runtime applications (`server`, `web`).
+- `main/kernel/*` for foundation kernel packages (`schema`, `contract`, `protocols`, `db`, `server`, `storage`, `comms`, `realtime`, `client`, `react`, `ui`, `web`).
+- `main/modules/*` for vertical domain modules (`identity`, `orgs`, `entitlements`, `billing`, `flags`, `tasks`, `support`, `status`, `search`, `analytics`, `audit`, `notifications`, `files`, `moderation`, `compliance`, `webhooks`, `admin`, `devtools`).
+- `main/tools` and `main/build-config` for repository automation and shared build config.
+- `main/testing` and `tests` for the testing kit and cross-package integration and E2E tests.
 
 ## Common Changes
 
-- Environment variables: edit templates under [`config/env`](./env/README.md), then validate with `pnpm audit:env-examples`.
+- Environment variables: edit templates under [`config/env`](./env/README.md), then validate with `pnpm bslt gate run env-examples`.
 - TypeScript defaults: edit the narrowest shared config that applies, usually `tsconfig.node.json` or `tsconfig.react.json`.
 - Playwright behavior: edit [`playwright.config.ts`](./playwright.config.ts) and run `pnpm test:e2e` for validation.
-- Server runtime config: update [`main/server/system/src/config`](../main/server/system/src/config/README.md).
+- Server runtime config: update [`main/kernel/server/src/config`](../main/kernel/server/src/config/README.md).
 
 ## Guardrails
 
 - Keep generated build output and package-specific config out of this directory.
 - Prefer adding config next to the owning app/package unless it is shared by multiple workspace members.
-- Run `pnpm audit:template`, `pnpm type-check`, and the relevant tests after changing shared tooling.
+- Run `pnpm bslt gate merge`, `pnpm type-check`, and the relevant tests after changing shared tooling.

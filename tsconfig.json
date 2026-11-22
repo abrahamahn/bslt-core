@@ -1,47 +1,67 @@
 {
   "extends": "./config/tsconfig.base.json",
-  "compilerOptions": {
-    "customConditions": [
-      "source"
-    ]
-  },
+  "exclude": ["node_modules", "dist", "build", "coverage"],
   "files": [],
   "references": [
     {
-      "path": "./main/shared"
-    },
-    {
-      "path": "./main/client/api"
-    },
-    {
-      "path": "./main/client/engine"
-    },
-    {
-      "path": "./main/client/react"
-    },
-    {
-      "path": "./main/client/ui"
-    },
-    {
-      "path": "./main/server/core"
-    },
-    {
-      "path": "./main/server/system"
-    },
-    {
-      "path": "./main/server/db"
-    },
-    {
-      "path": "./main/server/comms"
-    },
-    {
-      "path": "./main/server/storage"
+      "path": "./config/tsconfig.eslint.json"
     },
     {
       "path": "./main/apps/server"
     },
     {
       "path": "./main/apps/web"
+    },
+    {
+      "path": "./main/kernel/client"
+    },
+    {
+      "path": "./main/kernel/comms"
+    },
+    {
+      "path": "./main/kernel/contract"
+    },
+    {
+      "path": "./main/kernel/db"
+    },
+    {
+      "path": "./main/kernel/protocols"
+    },
+    {
+      "path": "./main/kernel/react"
+    },
+    {
+      "path": "./main/kernel/realtime"
+    },
+    {
+      "path": "./main/kernel/schema"
+    },
+    {
+      "path": "./main/kernel/server"
+    },
+    {
+      "path": "./main/kernel/storage"
+    },
+    {
+      "path": "./main/kernel/ui"
+    },
+    {
+      "path": "./main/kernel/web"
+    },
+    {
+      "path": "./main/modules/audit"
+    },
+    {
+      "path": "./main/modules/compliance"
+    },
+    {
+      "path": "./main/modules/devtools"
+    },
+    {
+      "path": "./main/modules/identity"
+    },
+    {
+      "path": "./tests"
     }
   ]
 }

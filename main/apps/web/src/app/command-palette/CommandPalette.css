@@ -1,0 +1,63 @@
+/* main/apps/web/src/app/command-palette/CommandPalette.css */
+
+/*
+ * Both classes were applied by the component and defined nowhere; every rule
+ * below was repeated inline instead. The selected state moves here too — the
+ * element already carries `aria-selected`, so the DOM says which item is
+ * selected and the stylesheet decides what that looks like.
+ */
+
+.command-palette-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 32rem;
+  max-height: 70vh;
+  overflow: hidden;
+}
+
+.command-palette-item {
+  padding: var(--ui-gap-sm) var(--ui-gap-md);
+  border-radius: var(--ui-radius-sm);
+  background-color: transparent;
+  cursor: pointer;
+  transition: background-color var(--ui-motion-duration-fast);
+}
+
+.command-palette-item[aria-selected='true'] {
+  background-color: var(--ui-color-surface-strong);
+}
+
+.command-palette-item__label {
+  font-weight: var(--ui-font-weight-medium);
+}
+
+.command-palette-category {
+  padding: var(--ui-gap-xs) var(--ui-gap-md);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+.command-palette-search {
+  padding: var(--ui-gap-md);
+}
+
+.command-palette-listbox {
+  overflow-y: auto;
+  padding: var(--ui-gap-xs) var(--ui-gap-sm);
+  flex: 1;
+}
+
+.command-palette-empty {
+  padding: var(--ui-gap-lg);
+  text-align: center;
+}
+
+.command-palette-footer {
+  padding: var(--ui-gap-sm) var(--ui-gap-md);
+  border-top: 1px solid var(--ui-color-border);
+  display: flex;
+  gap: var(--ui-gap-md);
+  justify-content: center;
+}

@@ -1,44 +1,37 @@
 // main/apps/server/src/bootstrap/context.ts
 
 import {
-  type BillingNotifier,
+  BadRequestError,
+  ForbiddenError,
   type EmailService,
   type ErrorTracker,
   type NotificationService,
-  type ReplyContext,
   type RequestInfo,
   type StorageClient,
-} from '@bslt/shared/contracts';
-import {
-  BadRequestError,
-  ForbiddenError,
-  type HealthCheckCache,
-  type HealthCheckQueue,
-  type Logger,
-} from '@bslt/shared/system';
+  type SystemPort,
+} from '@bslt/contract';
 
-import type { AuthEmailTemplates } from '@bslt/core/auth';
-import type {
-  DbClient,
-  QueueStore,
-  Repositories,
-  ServerSearchProvider,
-  SessionContext,
-  WriteService,
-} from '@bslt/db';
-import type { SmsProvider } from '@bslt/shared/comms';
-import type { BillingService } from '@bslt/shared/core';
-import type { SubscriptionManager } from '@bslt/shared/db';
-import type { AppConfig } from '@bslt/shared/system/config';
-import type { FastifyBaseLogger, FastifyReply, FastifyRequest } from 'fastify';
+import { resolveActingOrg } from '../generated/modules';
+
+import type { SmsProvider } from '@bslt/comms';
+import type { DbClient, QueueStore, ServerSearchProvider, SessionContext } from '@bslt/db';
+import type { AuthEmailTemplates, authGuardReposFromDb } from '@bslt/identity/server';
+import type { SubscriptionManager } from '@bslt/realtime';
+import type { AppConfig } from '@bslt/server-system/config';
+import type { HttpServerReply, HttpServerRequest } from '@bslt/server-system/http';
+import type { Logger } from '@bslt/server-system/logger';
+import type { KernelServices } from '@bslt/server-system/module';
+import type { HealthCheckCache, HealthCheckQueue } from '@bslt/server-system/runtime';
 
 // ============================================================================
 // Bootstrap Phase Contexts
 // ============================================================================
 
-export interface ContextualizedResources {
+type AppRepositories = ReturnType<typeof authGuardReposFromDb>;
+
+interface ContextualizedResources {
   db: DbClient;
-  repos: Repositories;
+  repos: AppRepositories;
 }
 
 export interface PlatformContext {
@@ -51,11 +44,10 @@ export interface PlatformContext {
 
 export interface DataContext extends PlatformContext {
   readonly db: DbClient;
-  readonly repos: Repositories;
+  readonly repos: AppRepositories;
   readonly search: ServerSearchProvider;
   readonly queue: HealthCheckQueue;
   readonly queueStore: QueueStore;
-  readonly write: WriteService;
   contextualize(session: SessionContext): ContextualizedResources;
 }
 
@@ -63,9 +55,25 @@ export interface InfraContext extends DataContext {
   readonly email?: EmailService | undefined;
   readonly storage?: StorageClient | undefined;
   readonly notifications?: NotificationService | undefined;
-  readonly billing?: BillingService | undefined;
-  readonly billingNotifier?: BillingNotifier | undefined;
   readonly emailTemplates: AuthEmailTemplates;
+  readonly sms?: SmsProvider | undefined;
+}
+
+/**
+ * The external ports a caller of `buildApp` may replace: what the infra phase
+ * (logger, cache stats, error tracker) and the comms phase (email, templates,
+ * storage, push, SMS) would otherwise compose. Production passes none.
+ * A key that is present wins, `undefined` included, so a test can also run
+ * without a port (`{ storage: undefined }`).
+ */
+export interface AppPorts {
+  readonly log?: Logger;
+  readonly cache?: HealthCheckCache;
+  readonly errorTracker?: ErrorTracker;
+  readonly email?: EmailService | undefined;
+  readonly emailTemplates?: AuthEmailTemplates;
+  readonly storage?: StorageClient | undefined;
+  readonly notifications?: NotificationService | undefined;
   readonly sms?: SmsProvider | undefined;
 }
 
@@ -74,17 +82,9 @@ export interface InfraContext extends DataContext {
 // ============================================================================
 
 /**
- * Fastify-specific reply augmentation.
- *
- * Structurally identical to `ReplyContext` from `@bslt/shared`,
- * but kept as a distinct type alias for Fastify's `declare module` augmentation.
- */
-export type ReplyWithCookies = ReplyContext;
-
-/**
  * Fastify-specific request augmentation.
  *
- * Uses `RequestInfo` from `@bslt/shared` for client metadata.
+ * Uses `RequestInfo` from `@bslt/contract` for client metadata.
  * Extends the framework-agnostic `RequestContext` with Fastify-specific
  * properties (ip, requestStart, context).
  */
@@ -102,6 +102,8 @@ export interface RequestWithCookies {
   requestInfo: RequestInfo;
   /** Start time for request timing in development (bigint from process.hrtime.bigint()) */
   requestStart?: bigint | undefined;
+  /** Verified active organization scope (populated by contextualizeRequest after membership check) */
+  actingOrg?: { readonly orgId: string; readonly permissions: bigint } | undefined;
   /** Application Context (Hybrid Pattern) - Available on request via hook */
   context?: AppContext | undefined;
 }
@@ -125,7 +127,15 @@ export interface IServiceContainer {
   readonly db: DbClient;
 
   /** Database repositories */
-  readonly repos: Repositories;
+  readonly repos: AppRepositories;
+
+  /**
+   * The system port: the boot handles on the system pool (`bslt_worker`).
+   * `db` and `repos` become a user-session scope on protected requests; these
+   * never do. Only for the named flows that must reach beyond the caller's own
+   * rows — each use bypasses the user's row-level security scope on purpose.
+   */
+  readonly system: SystemPort<DbClient, AppRepositories>;
 
   /** Email service for sending notifications (optional — injected at app layer) */
   readonly email?: EmailService | undefined;
@@ -139,12 +149,6 @@ export interface IServiceContainer {
   /** Cache health check adapter */
   readonly cache: HealthCheckCache;
 
-  /** Billing provider for payments/subscriptions (optional — injected at app layer) */
-  readonly billing?: BillingService | undefined;
-
-  /** Dispatches dunning emails/in-app alerts from webhooks (optional — injected at app layer) */
-  readonly billingNotifier?: BillingNotifier | undefined;
-
   /** Notification service for push/email (optional — injected at app layer) */
   readonly notifications?: NotificationService | undefined;
 
@@ -153,9 +157,6 @@ export interface IServiceContainer {
 
   /** Queue store (for task cleanup) */
   readonly queueStore: QueueStore;
-
-  /** Unified write service (Chet-stack pattern) */
-  readonly write: WriteService;
 
   /** Server-side search provider */
   readonly search: ServerSearchProvider;
@@ -168,6 +169,9 @@ export interface IServiceContainer {
 
   /** Error tracking and observability */
   readonly errorTracker: ErrorTracker;
+
+  /** Kernel outbox event publisher (optional on stubbed test containers) */
+  readonly events?: KernelServices['events'] | undefined;
 
   /**
    * Create a contextualized version of the service container for Row-Level Security.
@@ -192,7 +196,7 @@ const TENANT_ID_HEADER = 'x-tenant-id';
  * Application context passed to all handlers.
  *
  * Extends `IServiceContainer` with runtime-specific dependencies (logger).
- * Structurally satisfies `BaseContext` from `@bslt/shared` --
+ * Structurally satisfies `BaseContext` from `@bslt/contract` --
  * verified at compile time via `AppContextSatisfiesBaseContext` below.
  *
  * Package handlers accept `BaseContext` (or module-specific extensions);
@@ -204,11 +208,11 @@ const TENANT_ID_HEADER = 'x-tenant-id';
  * `IServiceContainer.db` is `DbClient` while `BaseContext.db` is `unknown`.
  * These are compatible (DbClient assignable to unknown) but not identical.
  *
- * @see {@link BaseContext} from `@bslt/shared`
+ * @see {@link BaseContext} from `@bslt/contract`
  */
 export interface AppContext extends IServiceContainer {
-  /** Logger instance (from Fastify's Pino logger) */
-  log: FastifyBaseLogger;
+  /** Logger instance */
+  log: Logger;
 }
 
 /**
@@ -266,10 +270,10 @@ function resolveRequestedTenantId(request: RequestWithCookies): string | undefin
  * trusted directly.
  */
 export async function contextualizeRequest(
-  req: FastifyRequest,
-  _reply: FastifyReply,
+  req: HttpServerRequest,
+  _reply: HttpServerReply,
 ): Promise<void> {
-  const request = req as FastifyRequest & Partial<RequestWithCookies>;
+  const request = req as HttpServerRequest & Partial<RequestWithCookies>;
 
   if (!request.context || !request.user) {
     return;
@@ -285,13 +289,14 @@ export async function contextualizeRequest(
     return;
   }
 
-  const membership = await request.context.repos.memberships.findByTenantAndUser(tenantId, userId);
-  if (membership === null) {
+  const actingOrg = await resolveActingOrg(request.context.db, tenantId, userId);
+  if (actingOrg === null) {
     throw new ForbiddenError(
       'You are not a member of the requested tenant',
       'TENANT_MEMBERSHIP_REQUIRED',
     );
   }
 
-  request.context = request.context.contextualize({ userId, role, tenantId });
+  request.context = request.context.contextualize({ userId, role, orgId: tenantId });
+  request.actingOrg = actingOrg;
 }

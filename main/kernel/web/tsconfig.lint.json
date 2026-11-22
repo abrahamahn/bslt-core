@@ -1,0 +1,22 @@
+{
+  "extends": "../../../config/tsconfig.react.json",
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "types": ["@testing-library/jest-dom", "node"],
+    "tsBuildInfoFile": "./node_modules/.cache/typescript/tsconfig.web-platform.lint.tsbuildinfo"
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.ts",
+    "src/**/*.spec.tsx",
+    "src/**/__tests__/**/*"
+  ],
+  "exclude": ["node_modules", "dist"],
+  "references": []
+}

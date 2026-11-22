@@ -1,0 +1,46 @@
+{
+  "name": "@bslt/schema",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Zero-dependency isomorphic runtime schema validation, combinators, AST introspection, and Standard Schema v1 support",
+  "author": "Abraham Joongwhan Ahn",
+  "sideEffects": false,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bslt/bslt.git",
+    "directory": "main/kernel/schema"
+  },
+  "bugs": {
+    "url": "https://github.com/bslt/bslt/issues"
+  },
+  "homepage": "https://github.com/bslt/bslt#readme",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo && tsc -p tsconfig.json && bslt-esm-fix dist",
+    "test": "vitest run --reporter=dot --silent=passed-only",
+    "lint": "eslint . --cache --cache-location ../../../node_modules/.cache/eslint/.eslintcache-bslt-schema --report-unused-disable-directives --max-warnings 0",
+    "type-check": "tsc -p tsconfig.lint.json",
+    "clean": "rm -rf dist node_modules/.cache/typescript/*.tsbuildinfo"
+  },
+  "devDependencies": {
+    "@bslt/build-config": "workspace:*",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

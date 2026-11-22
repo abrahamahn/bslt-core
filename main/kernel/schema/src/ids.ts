@@ -1,0 +1,104 @@
+// main/kernel/schema/src/ids.ts
+
+import { createBrandedStringSchema, createBrandedUuidSchema } from './composite';
+
+// ============================================================================
+// Identity & Access Management
+// ============================================================================
+
+/** User ID (UUID) */
+export type UserId = string & { readonly __brand: 'UserId' };
+export const userIdSchema = createBrandedUuidSchema<UserId>('UserId');
+export const parseUserId = (id: string): UserId => userIdSchema.parse(id);
+
+/** Tenant ID (UUID) */
+type TenantId = string & { readonly __brand: 'TenantId' };
+export const tenantIdSchema = createBrandedUuidSchema<TenantId>('TenantId');
+export const parseTenantId = (id: string): TenantId => tenantIdSchema.parse(id);
+
+/** Organization ID (UUID) */
+type OrganizationId = string & { readonly __brand: 'OrganizationId' };
+export const organizationIdSchema = createBrandedUuidSchema<OrganizationId>('OrganizationId');
+
+/** Membership/Seat ID (UUID) */
+type MembershipId = string & { readonly __brand: 'MembershipId' };
+export const membershipIdSchema = createBrandedUuidSchema<MembershipId>('MembershipId');
+
+/** Invitation ID (UUID) */
+type InviteId = string & { readonly __brand: 'InviteId' };
+export const inviteIdSchema = createBrandedUuidSchema<InviteId>('InviteId');
+
+// ============================================================================
+// Billing & Subscription
+// ============================================================================
+
+/** Plan ID (String identifier, e.g. "pro_monthly") */
+export type PlanId = string & { readonly __brand: 'PlanId' };
+export const planIdSchema = createBrandedStringSchema<PlanId>('PlanId');
+export const parsePlanId = (id: string): PlanId => planIdSchema.parse(id);
+
+/** Subscription ID (Provider-specific or internal ID) */
+export type SubscriptionId = string & { readonly __brand: 'SubscriptionId' };
+export const subscriptionIdSchema = createBrandedStringSchema<SubscriptionId>('SubscriptionId');
+
+// ============================================================================
+// System & Audit
+// ============================================================================
+
+/** Audit Event ID (UUID) */
+type AuditEventId = string & { readonly __brand: 'AuditEventId' };
+export const auditEventIdSchema = createBrandedUuidSchema<AuditEventId>('AuditEventId');
+
+/** Activity ID (UUID) */
+type ActivityId = string & { readonly __brand: 'ActivityId' };
+export const activityIdSchema = createBrandedUuidSchema<ActivityId>('ActivityId');
+
+/** Notification ID (UUID) */
+type NotificationId = string & { readonly __brand: 'NotificationId' };
+export const notificationIdSchema = createBrandedUuidSchema<NotificationId>('NotificationId');
+
+/** Session ID (UUID) */
+type SessionId = string & { readonly __brand: 'SessionId' };
+export const sessionIdSchema = createBrandedUuidSchema<SessionId>('SessionId');
+
+/** Job ID (UUID) */
+type JobId = string & { readonly __brand: 'JobId' };
+export const jobIdSchema = createBrandedUuidSchema<JobId>('JobId');
+
+/** Webhook ID (UUID) */
+type WebhookId = string & { readonly __brand: 'WebhookId' };
+export const webhookIdSchema = createBrandedUuidSchema<WebhookId>('WebhookId');
+
+/** Webhook Delivery ID (UUID) */
+type WebhookDeliveryId = string & { readonly __brand: 'WebhookDeliveryId' };
+export const webhookDeliveryIdSchema =
+  createBrandedUuidSchema<WebhookDeliveryId>('WebhookDeliveryId');
+
+/** File ID (UUID) */
+type FileId = string & { readonly __brand: 'FileId' };
+export const fileIdSchema = createBrandedUuidSchema<FileId>('FileId');
+
+// ============================================================================
+// Email & Communications
+// ============================================================================
+
+/** Email Template Key (dot-notation string, e.g. "auth.welcome") */
+type EmailTemplateKey = string & { readonly __brand: 'EmailTemplateKey' };
+export const emailTemplateKeySchema =
+  createBrandedStringSchema<EmailTemplateKey>('EmailTemplateKey');
+
+/** Email Log ID (UUID) */
+type EmailLogId = string & { readonly __brand: 'EmailLogId' };
+export const emailLogIdSchema = createBrandedUuidSchema<EmailLogId>('EmailLogId');
+
+// ============================================================================
+// Compliance
+// ============================================================================
+
+/** Legal Document ID (UUID) */
+type LegalDocumentId = string & { readonly __brand: 'LegalDocumentId' };
+export const legalDocumentIdSchema = createBrandedUuidSchema<LegalDocumentId>('LegalDocumentId');
+
+/** Consent Record ID (UUID) — unified replacement for UserAgreementId + ConsentLogId */
+type ConsentRecordId = string & { readonly __brand: 'ConsentRecordId' };
+export const consentRecordIdSchema = createBrandedUuidSchema<ConsentRecordId>('ConsentRecordId');

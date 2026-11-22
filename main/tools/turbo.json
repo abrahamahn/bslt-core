@@ -1,0 +1,15 @@
+{
+  "$schema": "https://v2-9-16.turborepo.dev/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "lint": {
+      "inputs": ["$TURBO_DEFAULT$"]
+    },
+    "type-check": {
+      "cache": false
+    },
+    "test": {
+      "cache": false
+    }
+  }
+}

@@ -1,6 +1,6 @@
 // main/apps/web/src/app/authToken.ts
-import { ACCESS_TOKEN_COOKIE_NAME } from '@bslt/shared/constants/system/platform';
-import { tokenStore } from '@bslt/shared/system/security';
+import { tokenStore } from '@bslt/client-engine';
+import { ACCESS_TOKEN_COOKIE_NAME } from '@bslt/contract';
 
 const hasLocalStorage = (): boolean =>
   typeof globalThis !== 'undefined' && 'localStorage' in globalThis;

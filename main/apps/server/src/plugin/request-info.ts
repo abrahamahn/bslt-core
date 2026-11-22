@@ -3,20 +3,9 @@
  * Reusable Fastify request-info hook for server transports.
  */
 
-import { type RequestInfo as SharedRequestInfo } from '@bslt/shared/contracts';
-import { extractIpAddress, extractUserAgent } from '@bslt/shared/system';
+import { extractIpAddress, extractUserAgent, type HttpServer } from '@bslt/server-system/http';
 
-import type { FastifyInstance } from 'fastify';
-
-export type RequestInfo = SharedRequestInfo;
-
-declare module 'fastify' {
-  interface FastifyRequest {
-    requestInfo: RequestInfo;
-  }
-}
-
-export function registerRequestInfoHook(app: FastifyInstance): void {
+export function registerRequestInfoHook(app: HttpServer): void {
   app.addHook('onRequest', (req, _reply, done) => {
     const userAgent = extractUserAgent(req.headers);
     const ipAddress = extractIpAddress(req);

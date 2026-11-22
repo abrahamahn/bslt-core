@@ -1,0 +1,173 @@
+# infra/docker/demo/docker-compose.demo.yml
+#
+# Trimmed single-host demo stack for the live demo droplet: 2 GB of RAM, shared
+# with other projects' stacks, hence a memory limit on every long-running
+# service. Unlike the full production compose, images are PRE-BUILT elsewhere
+# and only pulled or loaded here — the droplet never builds. pgbouncer and redis
+# are dropped; the app runs with CACHE_PROVIDER=local / QUEUE_PROVIDER=local.
+#
+# Image refs are parameterized so the same file serves every deploy path.
+# remote-deploy.sh pins the deployed ones in .env, which compose reads for them:
+#   - workstation runner (`docker load`) → API_IMAGE=local-deploy/bslt-api:<sha> etc.
+#   - deploy.yml (ghcr pull)              → API_IMAGE=ghcr.io/<owner>/bslt-api:<sha> etc.
+#   - pnpm deploy:demo (`docker load`)    → API_IMAGE=bslt-api:local etc. (the defaults)
+#
+# Database roles (docs/deploy/env.md#database-roles): the API connects as
+# bslt_app / bslt_worker, never as the postgres superuser. Order on every
+# deploy, as remote-deploy.sh runs it:
+#   docker compose -f docker-compose.demo.yml run --rm bootstrap-roles
+#   docker compose -f docker-compose.demo.yml run --rm migrate
+#   docker compose -f docker-compose.demo.yml up -d --no-deps --force-recreate api web
+#
+# caddy is the edge of the whole host: its Caddyfile, edited on the droplet,
+# also serves other projects' domains. Its service definition here is the
+# droplet's exactly, so that no `up` recreates it; deploys never name it.
+
+name: bslt-demo
+
+services:
+  postgres:
+    image: postgres:17.11-alpine
+    command:
+      - postgres
+      - -c
+      - shared_buffers=32MB
+      - -c
+      - work_mem=2MB
+      - -c
+      - maintenance_work_mem=16MB
+      - -c
+      - max_connections=30
+    mem_limit: 160m
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bslt_demo}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -h 127.0.0.1 -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-bslt_demo}',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+    networks: [internal]
+
+  api:
+    image: ${API_IMAGE:-bslt-api:local}
+    mem_limit: 256m
+    env_file: [.env]
+    environment:
+      # A V8 heap below the container limit, so Node collects before the
+      # kernel kills it.
+      NODE_OPTIONS: --max-old-space-size=192
+      # The running API never holds the superuser or owner credentials that .env
+      # also carries for the postgres service and the two one-shot jobs below.
+      POSTGRES_USER: ''
+      POSTGRES_PASSWORD: ''
+      MIGRATION_DATABASE_URL: ''
+      DATABASE_ADMIN_URL: ''
+    # No command override: the demo runs the image's own CMD, exactly as
+    # production does. It used to override it and bind-mount an ESM resolve hook
+    # to patch the unresolved `@/*` alias at runtime — which meant the one place
+    # the image got exercised was the one place the bug was hidden. The alias is
+    # gone from the source now, so there is nothing left to patch.
+    # Uploaded files (STORAGE_ROOT_PATH) outlive the container; the directory
+    # belongs to the image's user, uid 1001 (remote-deploy.sh creates it so).
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:8080/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+    networks: [internal]
+
+  # One-shot database jobs (profile "ops": `up` never starts them). They are the
+  # only containers that receive the superuser / owner credentials.
+  bootstrap-roles:
+    image: ${API_IMAGE:-bslt-api:local}
+    profiles: ['ops']
+    env_file: [.env]
+    command: ['node', 'dist/src/bootstrap-roles.js']
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+    restart: 'no'
+    networks: [internal]
+
+  migrate:
+    image: ${API_IMAGE:-bslt-api:local}
+    profiles: ['ops']
+    env_file: [.env]
+    # Migrations run as bslt_owner (MIGRATION_DATABASE_URL), not the superuser.
+    environment:
+      POSTGRES_USER: ''
+      POSTGRES_PASSWORD: ''
+      DATABASE_ADMIN_URL: ''
+    # The migration runner of @bslt/db, on the baselines it ships in the image.
+    # It exits 3 when the database was built from other baselines; remote-deploy.sh
+    # recreates the demo database on that.
+    command: ['node', 'node_modules/@bslt/db/dist/migrate/entry.js']
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+    restart: 'no'
+    networks: [internal]
+
+  web:
+    image: ${WEB_IMAGE:-bslt-web:local}
+    mem_limit: 128m
+    environment:
+      NODE_ENV: production
+      PROCESS_ROLE: web
+      PORT: '80'
+      API_INTERNAL_URL: http://api:8080
+      SITE_URL: ${SITE_URL:-${APP_URL:-https://app.bslt.dev}}
+      NODE_OPTIONS: --max-old-space-size=96
+    restart: unless-stopped
+    networks: [internal]
+
+  caddy:
+    image: caddy:2-alpine
+    mem_limit: 256m
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./origin-cert.pem:/etc/caddy/origin-cert.pem:ro
+      - ./origin-key.pem:/etc/caddy/origin-key.pem:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [api, web]
+    restart: unless-stopped
+    networks: [internal]
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

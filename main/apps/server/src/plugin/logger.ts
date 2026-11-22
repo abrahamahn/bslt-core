@@ -1,29 +1,17 @@
 // main/apps/server/src/plugin/logger.ts
 
-import { createLogRequestContext, getOrCreateCorrelationId } from '@bslt/server-system/http';
+import {
+  createLogRequestContext,
+  getOrCreateCorrelationId,
+  type HookDoneFunction,
+  type HttpServer,
+  type HttpServerReply,
+  type HttpServerRequest,
+} from '@bslt/server-system/http';
 import { createRequestLogger } from '@bslt/server-system/logger';
 import { getMetricsCollector } from '@bslt/server-system/observability';
 
-import type { Logger, LogRequestContext } from '@bslt/shared/system';
-import type {
-  FastifyBaseLogger,
-  FastifyInstance,
-  FastifyReply,
-  FastifyRequest,
-  HookHandlerDoneFunction,
-} from 'fastify';
-
-declare module 'fastify' {
-  interface FastifyInstance {
-    appLog?: Logger;
-  }
-
-  interface FastifyRequest {
-    requestContext: LogRequestContext;
-  }
-}
-
-export interface LoggerPluginOptions {
+interface LoggerPluginOptions {
   /** Paths for which onResponse logging is skipped entirely (e.g. ['/health']). */
   excludePaths?: string[];
   /**
@@ -33,7 +21,7 @@ export interface LoggerPluginOptions {
   sampleRate?: number;
 }
 
-export function loggerPlugin(server: FastifyInstance, opts: LoggerPluginOptions = {}): void {
+export function loggerPlugin(server: HttpServer, opts: LoggerPluginOptions = {}): void {
   const appLog = server.appLog;
   if (!appLog) {
     throw new Error('loggerPlugin requires server.appLog to be set (Logger).');
@@ -43,11 +31,11 @@ export function loggerPlugin(server: FastifyInstance, opts: LoggerPluginOptions 
 
   server.addHook(
     'onRequest',
-    (request: FastifyRequest, reply: FastifyReply, done: HookHandlerDoneFunction) => {
-      const requestWithCorrelation = request as FastifyRequest & Record<string, unknown>;
+    (request: HttpServerRequest, reply: HttpServerReply, done: HookDoneFunction) => {
+      const requestWithCorrelation = request as HttpServerRequest & Record<string, unknown>;
       const existingCorrelationId = requestWithCorrelation.correlationId;
       const correlationId =
-        typeof existingCorrelationId === 'string'
+        typeof existingCorrelationId === 'string' && existingCorrelationId !== ''
           ? existingCorrelationId
           : getOrCreateCorrelationId(request.headers);
 
@@ -63,17 +51,14 @@ export function loggerPlugin(server: FastifyInstance, opts: LoggerPluginOptions 
       });
 
       request.requestContext = requestContext;
-
-      const requestLogger = createRequestLogger(appLog, requestContext);
-      (request as FastifyRequest & { log: FastifyBaseLogger & Logger }).log =
-        requestLogger as FastifyBaseLogger & Logger;
+      request.log = createRequestLogger(appLog, requestContext);
       done();
     },
   );
 
   server.addHook(
     'onResponse',
-    (request: FastifyRequest, reply: FastifyReply, done: HookHandlerDoneFunction) => {
+    (request: HttpServerRequest, reply: HttpServerReply, done: HookDoneFunction) => {
       const excluded = excludePaths !== undefined && excludePaths.includes(request.url);
 
       // Record request metrics for every non-excluded request, independent of the
@@ -95,15 +80,12 @@ export function loggerPlugin(server: FastifyInstance, opts: LoggerPluginOptions 
         return;
       }
 
-      (request as FastifyRequest & { log: FastifyBaseLogger & Logger }).log.info(
-        'Request completed',
-        {
-          statusCode: reply.statusCode,
-          durationMs: Math.round(reply.elapsedTime),
-          ip: request.ip,
-          userAgent: request.headers['user-agent'],
-        },
-      );
+      request.log.info('Request completed', {
+        statusCode: reply.statusCode,
+        durationMs: Math.round(reply.elapsedTime),
+        ip: request.ip,
+        userAgent: request.headers['user-agent'],
+      });
       done();
     },
   );
