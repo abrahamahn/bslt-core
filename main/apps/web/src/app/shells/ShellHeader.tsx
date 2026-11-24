@@ -1,5 +1,5 @@
 // main/apps/web/src/app/shells/ShellHeader.tsx
-import { getUserDisplayName, isAdmin } from '@bslt/identity/contract';
+import { getUserDisplayName } from '@bslt/identity/contract';
 import { openAuthModal, useAuth } from '@bslt/identity/web';
 import { toastStore } from '@bslt/react';
 import { Link, useLocation, useNavigate } from '@bslt/react/router';
@@ -19,6 +19,7 @@ import { useCapabilities, type ShellName } from '@bslt/web-platform';
 import { useCallback, useState, type ReactElement, type SyntheticEvent } from 'react';
 
 import {
+  hasSearchModule,
   OptionalHeaderNotifications,
   OptionalOrgSwitcher,
   useOptionalMyAvatar,
@@ -84,7 +85,7 @@ export const ShellHeader = ({
 
   const teamsEnabled = isFlagEnabled('orgs.teams');
   const isAuthResolved = !isAuthLoading;
-  const showSearch = user?.role !== undefined && isAdmin(user.role);
+  const showSearch = hasSearchModule;
 
   const [searchTerm, setSearchTerm] = useState('');
 

@@ -244,22 +244,21 @@ describe('appRoutes', () => {
     expect(appShell?.children?.some((c) => c.path === 'tasks')).toBe(hasMod('tasks'));
   });
 
-  it.runIf(hasMod('search'))('gates /search behind the admin layout guard', () => {
-    // /api/search requires the admin role, so the results page uses the same
-    // route-level guard as /admin instead of the plain protected flag.
-    const routes = createAppRoutes({
-      advancedAdminEnabled: false,
-      advancedAuthEnabled: false,
-      billingEnabled: false,
-      developerToolsEnabled: false,
-    });
-    const searchRoute = flattenRoutes(routes).find((route) => route.path === 'search');
+  it.runIf(hasMod('search'))(
+    'registers /search as a user-protected app route for workspace search',
+    () => {
+      const routes = createAppRoutes({
+        advancedAdminEnabled: false,
+        advancedAuthEnabled: false,
+        billingEnabled: false,
+        developerToolsEnabled: false,
+      });
+      const searchRoute = flattenRoutes(routes).find((route) => route.path === 'search');
 
-    expect(searchRoute?.element).toBe(AdminLayout);
-    expect(searchRoute?.protected).toBeUndefined();
-    expect(searchRoute?.children).toHaveLength(1);
-    expect(searchRoute?.children?.[0]?.index).toBe(true);
-  });
+      expect(searchRoute?.protected).toBe(true);
+      expect(searchRoute?.element).not.toBe(AdminLayout);
+    },
+  );
 
   it('registers installed audit module activity feed route as protected', () => {
     const routes = createAppRoutes({

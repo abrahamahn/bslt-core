@@ -1,5 +1,6 @@
 {
   "audit.activitiesTitle": "Activity Feed",
+  "audit.workspaceAuditTitle": "Workspace Activity & Audit",
   "audit.activitiesSubtitle": "A timeline of your recent actions and events.",
   "audit.activitiesNav": "Activities",
   "audit.activitiesNavHint": "Track all actions across your account",

@@ -16,6 +16,14 @@ export const auditWeb = implementWeb(auditModule, {
       page: lazyModulePage(() => import('./ActivityFeedPage'), 'ActivityFeedPage'),
     },
     {
+      path: '/workspace/audit',
+      shell: 'app',
+      auth: 'user',
+      title: 'audit.workspaceAuditTitle',
+      unlisted: true,
+      page: lazyModulePage(() => import('./ActivityFeedPage'), 'ActivityFeedPage'),
+    },
+    {
       path: '/admin/security',
       shell: 'console',
       auth: 'admin',

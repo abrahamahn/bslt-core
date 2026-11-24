@@ -266,11 +266,19 @@ describe('DashboardPage', () => {
     );
 
     if (installedModules.some((m) => m.id === 'orgs')) {
-      expect(screen.getByText('Acme Studio')).toBeInTheDocument();
+      expect(screen.getAllByText('Acme Studio').length).toBeGreaterThanOrEqual(2);
+      expect(screen.getByRole('link', { name: 'Manage workspace' })).toHaveAttribute(
+        'href',
+        '/workspace',
+      );
     }
     if (installedModules.some((m) => m.id === 'billing')) {
-      expect(screen.getByText('Free')).toBeInTheDocument();
+      expect(screen.getAllByText('Free').length).toBeGreaterThanOrEqual(2);
       expect(screen.getByRole('link', { name: 'Upgrade plan' })).toHaveAttribute(
+        'href',
+        '/pricing',
+      );
+      expect(screen.getByRole('link', { name: 'Compare plans' })).toHaveAttribute(
         'href',
         '/pricing',
       );

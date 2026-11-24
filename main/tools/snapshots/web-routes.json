@@ -218,6 +218,17 @@
           "takesPrecedenceOver": []
         },
         {
+          "path": "/changelog",
+          "page": "ChangelogPage",
+          "guard": "none",
+          "publicOnlyRedirectTo": null,
+          "layouts": [
+            "PublicShell"
+          ],
+          "adminSurface": null,
+          "takesPrecedenceOver": []
+        },
+        {
           "path": "/cookie-policy",
           "page": "CookiePolicyPage",
           "guard": "none",
@@ -403,6 +414,18 @@
           ],
           "adminSurface": null,
           "takesPrecedenceOver": []
+        },
+        {
+          "path": "/workspace/audit",
+          "page": "ActivityFeedPage",
+          "guard": "protected",
+          "publicOnlyRedirectTo": null,
+          "layouts": [
+            "AppShell",
+            "WorkspaceLayout"
+          ],
+          "adminSurface": null,
+          "takesPrecedenceOver": []
         }
       ],
       "navigation": {
@@ -411,6 +434,10 @@
             {
               "label": "Home",
               "to": "/"
+            },
+            {
+              "label": "Changelog",
+              "to": "/changelog"
             }
           ],
           "signedIn": [
@@ -453,6 +480,10 @@
               {
                 "title": "Home",
                 "path": "/"
+              },
+              {
+                "title": "Changelog",
+                "path": "/changelog"
               }
             ]
           },
@@ -846,6 +877,17 @@
           "takesPrecedenceOver": []
         },
         {
+          "path": "/changelog",
+          "page": "ChangelogPage",
+          "guard": "none",
+          "publicOnlyRedirectTo": null,
+          "layouts": [
+            "PublicShell"
+          ],
+          "adminSurface": null,
+          "takesPrecedenceOver": []
+        },
+        {
           "path": "/clean",
           "page": "HomePage",
           "guard": "publicOnly",
@@ -1109,6 +1151,18 @@
           ],
           "adminSurface": null,
           "takesPrecedenceOver": []
+        },
+        {
+          "path": "/workspace/audit",
+          "page": "ActivityFeedPage",
+          "guard": "protected",
+          "publicOnlyRedirectTo": null,
+          "layouts": [
+            "AppShell",
+            "WorkspaceLayout"
+          ],
+          "adminSurface": null,
+          "takesPrecedenceOver": []
         }
       ],
       "navigation": {
@@ -1117,6 +1171,10 @@
             {
               "label": "Home",
               "to": "/"
+            },
+            {
+              "label": "Changelog",
+              "to": "/changelog"
             },
             {
               "label": "Docs",
@@ -1175,6 +1233,10 @@
               {
                 "title": "Home",
                 "path": "/"
+              },
+              {
+                "title": "Changelog",
+                "path": "/changelog"
               }
             ]
           },

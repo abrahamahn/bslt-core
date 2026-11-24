@@ -345,6 +345,38 @@ export const DashboardPage = (): JSX.Element => {
       </section>
 
       <div className="dashboard-metrics">
+        {teamsEnabled ? (
+          <DashboardMetricCard
+            label="Workspace"
+            value={activeOrg !== null ? activeOrg.name : 'Personal'}
+            description={
+              organizations.length > 0
+                ? `${String(organizations.length)} active workspace${organizations.length === 1 ? '' : 's'} available.`
+                : 'Create a shared workspace to collaborate with teammates.'
+            }
+            tone={activeOrg !== null ? 'success' : 'info'}
+            href="/workspace"
+            actionLabel="Manage workspace"
+          />
+        ) : null}
+
+        {billingEnabled ? (
+          <DashboardMetricCard
+            label="Plan & Billing"
+            value={activePlanLabel}
+            description={
+              subscription?.status === 'active'
+                ? 'Subscription is active and synced to your workspace.'
+                : subscription?.status === 'trialing'
+                  ? 'Free trial active — review billing before renewal.'
+                  : 'Starter tier active. Upgrade anytime for higher quotas.'
+            }
+            tone={showUpgradeCta ? 'info' : 'success'}
+            href={showUpgradeCta ? '/pricing' : '/workspace/billing'}
+            actionLabel={showUpgradeCta ? 'Compare plans' : 'Manage billing'}
+          />
+        ) : null}
+
         <DashboardMetricCard
           label="Profile"
           value={formatPercentage(profilePercent)}

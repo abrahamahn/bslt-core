@@ -35,8 +35,8 @@ describe('appFrame', () => {
     const navPaths = (appFrame.primaryNav ?? []).map((entry) => entry.to);
     expect(navPaths).toEqual(
       hasAdminModule
-        ? ['/', '/dashboard', '/settings']
-        : ['/', '/dashboard', '/settings', '/admin'],
+        ? ['/', '/changelog', '/dashboard', '/settings']
+        : ['/', '/changelog', '/dashboard', '/settings', '/admin'],
     );
     expect(navPaths).not.toContain('/clean?doc=readme');
 

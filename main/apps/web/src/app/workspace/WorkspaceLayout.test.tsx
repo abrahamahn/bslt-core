@@ -73,6 +73,8 @@ describe('WorkspaceLayout', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Billing & Invoices' }));
       expect(mockNavigate).toHaveBeenCalledWith('/workspace/billing');
     }
+    fireEvent.click(screen.getByRole('button', { name: 'Audit & Activity' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/workspace/audit');
     fireEvent.click(screen.getByRole('button', { name: 'Team & Settings' }));
     expect(mockNavigate).toHaveBeenCalledWith('/organization');
   });

@@ -818,6 +818,7 @@ function emitWebGeneratedModules(workspace: ParsedModulesWorkspace): string {
   const hasNotifications =
     installedSet.has('notifications') && workspace.modules.get('notifications')?.web === true;
   const hasOrgs = installedSet.has('orgs') && workspace.modules.get('orgs')?.web === true;
+  const hasSearch = installedSet.has('search') && workspace.modules.get('search')?.web === true;
 
   const allEntries = [
     ...workspace.installedIds.map((id, index) => ({
@@ -928,6 +929,7 @@ function emitWebGeneratedModules(workspace: ParsedModulesWorkspace): string {
     `export const hasFilesModule: boolean = ${String(hasFiles)};`,
     `export const hasNotificationsModule: boolean = ${String(hasNotifications)};`,
     `export const hasOrgsModule: boolean = ${String(hasOrgs)};`,
+    `export const hasSearchModule: boolean = ${String(hasSearch)};`,
     '',
   ];
 
@@ -1672,6 +1674,24 @@ function emitWebGeneratedBrand(workspace: ParsedModulesWorkspace): string {
   ].join('\n');
 }
 
+function escapeHtmlText(text: string): string {
+  return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+}
+
+function updateWebManifestJson(existingContent: string, brand: ParsedBrandConfig): string {
+  const parsed = JSON.parse(existingContent) as Record<string, unknown>;
+  parsed['short_name'] = brand.name;
+  parsed['name'] = `${brand.name} — ${brand.tagline}`;
+  parsed['description'] = brand.tagline;
+  parsed['theme_color'] = brand.emailAccent;
+  return `${JSON.stringify(parsed, null, 2)}\n`;
+}
+
+function updateWebIndexHtml(existingContent: string, brand: ParsedBrandConfig): string {
+  const titleTag = `<title data-default-title>${escapeHtmlText(brand.name)}</title>`;
+  return existingContent.replace(/<title data-default-title>[^<]*<\/title>/u, titleTag);
+}
+
 export function emitModulesFiles(root: string = REPO_ROOT): Map<string, string> {
   const workspace = loadModulesWorkspace(root);
   validateInstalledOrder(workspace);
@@ -1734,6 +1754,24 @@ export function emitModulesFiles(root: string = REPO_ROOT): Map<string, string> 
     if (existsSync(abs)) {
       files.set(appTsRel, updateAppTsconfigJson(readFileSync(abs, 'utf8'), referencedIds));
     }
+  }
+
+  const webManifestRel = 'main/apps/web/public/manifest.json';
+  const webManifestAbs = path.join(root, webManifestRel);
+  if (existsSync(webManifestAbs)) {
+    files.set(
+      webManifestRel,
+      updateWebManifestJson(readFileSync(webManifestAbs, 'utf8'), workspace.brand),
+    );
+  }
+
+  const webIndexHtmlRel = 'main/apps/web/index.html';
+  const webIndexHtmlAbs = path.join(root, webIndexHtmlRel);
+  if (existsSync(webIndexHtmlAbs)) {
+    files.set(
+      webIndexHtmlRel,
+      updateWebIndexHtml(readFileSync(webIndexHtmlAbs, 'utf8'), workspace.brand),
+    );
   }
 
   for (const mod of workspace.modules.values()) {

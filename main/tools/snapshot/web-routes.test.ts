@@ -263,7 +263,10 @@ describe('bslt snapshot web-routes', () => {
       expect(route(everything, '/admin/tenants')).toMatchObject({ adminSurface: 'tenants' });
     }
 
-    expect(starter.navigation.primary.signedOut).toEqual([{ label: 'Home', to: '/' }]);
+    expect(starter.navigation.primary.signedOut).toEqual([
+      { label: 'Home', to: '/' },
+      { label: 'Changelog', to: '/changelog' },
+    ]);
     const signedInLinks = starter.navigation.primary.signedIn.map((link) => link.to);
     expect(signedInLinks[0]).toBe('/dashboard');
     expect(signedInLinks).not.toContain('/profile');

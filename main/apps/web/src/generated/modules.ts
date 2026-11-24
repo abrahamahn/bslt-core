@@ -42,6 +42,7 @@ export const hasBillingModule: boolean = false;
 export const hasFilesModule: boolean = false;
 export const hasNotificationsModule: boolean = false;
 export const hasOrgsModule: boolean = false;
+export const hasSearchModule: boolean = false;
 
 export type SignalTone = 'success' | 'warning' | 'danger' | 'info';
 

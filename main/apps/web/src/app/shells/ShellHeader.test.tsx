@@ -12,6 +12,7 @@ import {
   mockUser,
   renderWithProviders,
 } from '../../__tests__/utils';
+import { hasSearchModule } from '../../generated/modules';
 
 import { ShellHeader } from './ShellHeader';
 
@@ -51,10 +52,14 @@ describe('ShellHeader', () => {
     expect(openAuthModal).toHaveBeenCalledWith('register');
   });
 
-  it('omits admin search for non-admin users, exposes the command palette button, and never renders a duplicate h1', () => {
+  it('exposes workspace search when installed, exposes the command palette button, and never renders a duplicate h1', () => {
     const memberEnv = createMockEnvironment({ user: mockUser, isAuthenticated: true });
     const first = renderWithProviders(<ShellHeader variant="app" />, { environment: memberEnv });
-    expect(screen.queryByRole('search')).toBeNull();
+    if (hasSearchModule) {
+      expect(screen.getByRole('search', { name: 'Site search' })).toBeInTheDocument();
+    } else {
+      expect(screen.queryByRole('search')).toBeNull();
+    }
     expect(screen.queryByRole('heading', { level: 1 })).toBeNull();
     expect(screen.getByRole('button', { name: /jump to/i })).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: 'Primary' })).toBeNull();
@@ -69,9 +74,11 @@ describe('ShellHeader', () => {
       environment: adminEnv,
       route: '/admin',
     });
-    const searchForm = screen.getByRole('search', { name: 'Site search' });
-    fireEvent.submit(searchForm);
-    expect(screen.getByRole('searchbox', { name: 'Search' })).toHaveValue('');
+    if (hasSearchModule) {
+      const searchForm = screen.getByRole('search', { name: 'Site search' });
+      fireEvent.submit(searchForm);
+      expect(screen.getByRole('searchbox', { name: 'Search' })).toHaveValue('');
+    }
   });
 
   it('navigates directly to /profile and /settings/security from the account menu without modals', () => {

@@ -1,13 +1,13 @@
 {
   "id": "/",
   "short_name": "BSLT",
-  "name": "BSLT Enterprise SaaS Boilerplate",
-  "description": "Modular TypeScript web platform foundation",
+  "name": "BSLT — Clone-and-own SaaS starter",
+  "description": "Clone-and-own SaaS starter",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "theme_color": "#0f172a",
+  "theme_color": "#2856c6",
   "background_color": "#ffffff",
   "categories": ["productivity", "utilities"],
   "icons": [

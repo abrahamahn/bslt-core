@@ -24,12 +24,14 @@ interface PublicFooterLink {
 
 const PUBLIC_PRIMARY_LINKS: readonly { readonly label: string; readonly to: `/${string}` }[] = [
   { label: 'Home', to: '/' },
+  { label: 'Changelog', to: '/changelog' },
   { label: 'Support', to: '/support' },
   { label: 'Status', to: '/status' },
 ];
 
 const PUBLIC_FOOTER_LINKS: readonly PublicFooterLink[] = [
   { path: '/', title: 'Home', section: 'product' },
+  { path: '/changelog', title: 'Changelog', section: 'product' },
   { path: '/terms', title: 'Terms of Service', section: 'legal' },
   { path: '/privacy', title: 'Privacy Policy', section: 'legal' },
   { path: '/cookies', title: 'Cookie Policy', section: 'legal' },

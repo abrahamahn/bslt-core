@@ -45,13 +45,17 @@ const SIGNED_OUT: PrimaryNavState = {
 const SIGNED_IN: PrimaryNavState = { ...SIGNED_OUT, authenticated: true };
 
 describe('getPrimaryNavLinks', () => {
-  it('gives a signed-out visitor the home link only and omits authenticated/admin links', () => {
-    expect(getPrimaryNavLinks(SIGNED_OUT)).toEqual([{ label: 'Home', to: '/' }]);
+  it('gives a signed-out visitor public links only and omits authenticated/admin links', () => {
+    expect(getPrimaryNavLinks(SIGNED_OUT)).toEqual([
+      { label: 'Home', to: '/' },
+      { label: 'Changelog', to: '/changelog' },
+    ]);
   });
 
   it('adds developer links for a signed-out visitor only when developer tools are enabled', () => {
     expect(getPrimaryNavLinks({ ...SIGNED_OUT, developerToolsEnabled: true })).toEqual([
       { label: 'Home', to: '/' },
+      { label: 'Changelog', to: '/changelog' },
       { label: 'Docs', to: '/clean?doc=readme' },
       { label: 'API Routes', to: '/developer/api-routes' },
       { label: 'Email Inbox', to: '/developer/emails' },
@@ -86,6 +90,7 @@ describe('getPrimaryNavLinks', () => {
     });
     expect(getPrimaryNavLinks({ ...SIGNED_OUT, admin: true })).toEqual([
       { label: 'Home', to: '/' },
+      { label: 'Changelog', to: '/changelog' },
     ]);
   });
 

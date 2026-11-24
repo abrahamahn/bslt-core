@@ -19,6 +19,7 @@ import type {
 } from '@bslt/web-platform';
 import type { ElementType } from 'react';
 
+import { ChangelogPage } from '#app/pages/ChangelogPage';
 import { ForbiddenPage } from '#app/pages/ForbiddenPage';
 import { LandingPage } from '#app/pages/LandingPage';
 import { NotFoundPage } from '#app/pages/NotFoundPage';
@@ -47,6 +48,12 @@ export const appFrameRoutes: readonly FrameRouteContribution<AppRouteFlags>[] = 
     index: true,
     element: LandingPage,
     publicOnly: true,
+  },
+  {
+    slot: 'before-modules',
+    shell: 'public',
+    path: 'changelog',
+    element: ChangelogPage,
   },
   {
     slot: 'before-modules',

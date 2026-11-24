@@ -16,6 +16,7 @@ interface WorkspaceNavItem {
 }
 
 const installedIds = new Set<string>(installedModules.map((mod) => mod.id));
+const hasAuditModule = installedIds.has('audit');
 const hasEntitlementsModule = installedIds.has('entitlements');
 const hasWebhooksModule = installedIds.has('webhooks');
 
@@ -31,6 +32,7 @@ function resolveActiveWorkspaceId(pathname: string): string {
   if (pathname.startsWith('/workspace/billing')) return 'billing';
   if (pathname.startsWith('/workspace/entitlements')) return 'entitlements';
   if (pathname.startsWith('/workspace/webhooks')) return 'webhooks';
+  if (pathname.startsWith('/workspace/audit')) return 'audit';
   return 'general';
 }
 
@@ -65,6 +67,14 @@ export const WorkspaceLayout = (): ReactElement => {
         id: 'webhooks',
         label: 'Webhooks',
         to: '/workspace/webhooks',
+        group: 'developers',
+      });
+    }
+    if (hasAuditModule) {
+      items.push({
+        id: 'audit',
+        label: 'Audit & Activity',
+        to: '/workspace/audit',
         group: 'developers',
       });
     }

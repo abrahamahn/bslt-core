@@ -10,11 +10,14 @@ describe('auditWeb', () => {
     expect(auditWeb.module.id).toBe('audit');
     expect(auditWeb.routes.map((r) => r.path)).toEqual([
       '/activities',
+      '/workspace/audit',
       '/admin/security',
       '/admin/security/:id',
       '/admin/audit',
     ]);
     expect(auditWeb.routes.find((r) => r.path === '/activities')?.auth).toBe('user');
+    expect(auditWeb.routes.find((r) => r.path === '/workspace/audit')?.auth).toBe('user');
+    expect(auditWeb.routes.find((r) => r.path === '/workspace/audit')?.unlisted).toBe(true);
     expect(auditWeb.routes.find((r) => r.path === '/admin/audit')?.auth).toBe('admin');
     expect(auditWeb.routes.find((r) => r.path === '/admin/security/:id')?.unlisted).toBe(true);
     expect(auditWeb.admin?.map((a) => a.id)).toEqual(['security', 'audit']);

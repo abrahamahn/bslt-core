@@ -2,7 +2,7 @@
 
 # Web Routes & Navigation Reference
 
-Every client/SSR route (44), navigation link, and admin console surface attributed to its owning module or `kernel`.
+Every client/SSR route (46), navigation link, and admin console surface attributed to its owning module or `kernel`.
 
 ## Web Routes
 
@@ -28,6 +28,7 @@ Every client/SSR route (44), navigation link, and admin console surface attribut
 | `/auth/magic-link/verify`    | `identity`   | `MagicLinkVerifyPage`     | `none`       | `AuthShell`                   |
 | `/auth/register`             | `identity`   | `RegisterModalRoute`      | `none`       | `AuthShell`                   |
 | `/auth/reset-password`       | `identity`   | `ResetPasswordPage`       | `none`       | `AuthShell`                   |
+| `/changelog`                 | `kernel`     | `ChangelogPage`           | `none`       | `PublicShell`                 |
 | `/clean`                     | `devtools`   | `HomePage`                | `publicOnly` | `ConsoleShell`                |
 | `/cookie-policy`             | `compliance` | `CookiePolicyPage`        | `none`       | `PublicShell`                 |
 | `/cookies`                   | `compliance` | `CookiePolicyPage`        | `none`       | `PublicShell`                 |
@@ -52,6 +53,7 @@ Every client/SSR route (44), navigation link, and admin console surface attribut
 | `/terms-of-service`          | `compliance` | `TermsPage`               | `none`       | `PublicShell`                 |
 | `/ui-library`                | `devtools`   | `UILibraryPage`           | `publicOnly` | `ConsoleShell`                |
 | `/unavailable`               | `kernel`     | `UnavailablePage`         | `none`       | `AppShell`                    |
+| `/workspace/audit`           | `audit`      | `ActivityFeedPage`        | `protected`  | `AppShell`, `WorkspaceLayout` |
 
 ## Primary Navigation
 
@@ -67,6 +69,7 @@ Every client/SSR route (44), navigation link, and admin console surface attribut
 | Section | Title                 | Path              | Owner        |
 | ------- | --------------------- | ----------------- | ------------ |
 | Product | Home                  | `/`               | `kernel`     |
+| Product | Changelog             | `/changelog`      | `kernel`     |
 | Legal   | Terms of Service      | `/terms`          | `compliance` |
 | Legal   | Privacy Policy        | `/privacy`        | `compliance` |
 | Legal   | Cookie Policy         | `/cookies`        | `compliance` |

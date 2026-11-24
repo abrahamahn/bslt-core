@@ -25,6 +25,12 @@ export const appFrame: AppFrameConfig<AppRouteFlags, DocumentType> = Object.free
       order: 10,
     },
     {
+      to: '/changelog',
+      label: 'Changelog',
+      audience: 'public',
+      order: 15,
+    },
+    {
       to: '/dashboard',
       label: 'Dashboard',
       audience: 'authenticated',
@@ -139,6 +145,13 @@ export const appFrame: AppFrameConfig<AppRouteFlags, DocumentType> = Object.free
       section: 'product',
       live: true,
       order: 10,
+    },
+    {
+      path: '/changelog',
+      title: 'Changelog',
+      section: 'product',
+      live: true,
+      order: 20,
     },
   ],
   dashboardQuickActions: [
