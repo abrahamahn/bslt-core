@@ -7,7 +7,6 @@
       "webauthn",
       "google",
       "github",
-      "kakao",
       "facebook",
       "microsoft",
       "apple"
@@ -1345,107 +1344,6 @@
       "request": "emptyBodySchema",
       "contract": {
         "endpoint": "identity.unlinkGoogle",
-        "body": "emptyBodySchema",
-        "query": null,
-        "pathParams": null,
-        "responses": {
-          "200": "oauthUnlinkResponseSchema",
-          "401": "errorResponseSchema",
-          "403": "errorResponseSchema",
-          "404": "errorResponseSchema",
-          "409": "errorResponseSchema"
-        }
-      }
-    },
-    {
-      "method": "GET",
-      "path": "/api/auth/oauth/kakao",
-      "head": true,
-      "registeredBy": "route-map",
-      "module": "identity",
-      "auth": "public",
-      "roles": [],
-      "deprecated": false,
-      "bodyLimit": null,
-      "preHandlers": [],
-      "request": null,
-      "contract": {
-        "endpoint": "identity.initiateKakao",
-        "body": null,
-        "query": "oauthInitiateQuerySchema",
-        "pathParams": null,
-        "responses": {
-          "200": "oauthInitiateResponseSchema",
-          "400": "errorResponseSchema"
-        }
-      }
-    },
-    {
-      "method": "GET",
-      "path": "/api/auth/oauth/kakao/callback",
-      "head": true,
-      "registeredBy": "route-map",
-      "module": "identity",
-      "auth": "public",
-      "roles": [],
-      "deprecated": false,
-      "bodyLimit": null,
-      "preHandlers": [],
-      "request": null,
-      "contract": {
-        "endpoint": "identity.callbackKakao",
-        "body": null,
-        "query": "oauthCallbackQuerySchema",
-        "pathParams": null,
-        "responses": {
-          "200": "oauthCallbackResponseSchema",
-          "400": "errorResponseSchema",
-          "403": "errorResponseSchema",
-          "409": "errorResponseSchema"
-        }
-      }
-    },
-    {
-      "method": "POST",
-      "path": "/api/auth/oauth/kakao/link",
-      "registeredBy": "route-map",
-      "module": "identity",
-      "auth": "role",
-      "roles": [
-        "user"
-      ],
-      "deprecated": false,
-      "bodyLimit": null,
-      "preHandlers": [],
-      "request": "emptyBodySchema",
-      "contract": {
-        "endpoint": "identity.linkKakao",
-        "body": "emptyBodySchema",
-        "query": null,
-        "pathParams": null,
-        "responses": {
-          "200": "oauthLinkResponseSchema",
-          "400": "errorResponseSchema",
-          "401": "errorResponseSchema",
-          "403": "errorResponseSchema"
-        }
-      }
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/auth/oauth/kakao/unlink",
-      "registeredBy": "route-map",
-      "module": "identity",
-      "auth": "role",
-      "roles": [
-        "user"
-      ],
-      "deprecated": false,
-      "bodyLimit": null,
-      "preHandlers": [],
-      "request": "emptyBodySchema",
-      "contract": {
-        "endpoint": "identity.unlinkKakao",
         "body": "emptyBodySchema",
         "query": null,
         "pathParams": null,

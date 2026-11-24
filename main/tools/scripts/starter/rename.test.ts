@@ -79,7 +79,6 @@ function renderEnvExample(kind: 'development' | 'local' | 'test' | 'production')
     'TOTP_ISSUER=Your App',
     `GOOGLE_CALLBACK_URL=${isProduction ? 'https://your-app.com' : `http://localhost:${localApiPort}`}/api/auth/oauth/google/callback`,
     `GITHUB_CALLBACK_URL=${isProduction ? 'https://your-app.com' : `http://localhost:${localApiPort}`}/api/auth/oauth/github/callback`,
-    `KAKAO_CALLBACK_URL=${isProduction ? 'https://your-app.com' : `http://localhost:${localApiPort}`}/api/auth/oauth/kakao/callback`,
     `POSTGRES_DB=${dbName}`,
     'EMAIL_FROM_NAME=Your App',
     `EMAIL_FROM_ADDRESS=${emailAddress}`,

@@ -28,7 +28,6 @@ export type AuthStrategy =
   | 'webauthn' // Passkeys/biometric
   | 'google'
   | 'github'
-  | 'kakao'
   | 'facebook'
   | 'microsoft'
   | 'apple';
@@ -164,7 +163,6 @@ export interface AuthConfig {
   oauth: {
     google?: OAuthProviderConfig;
     github?: OAuthProviderConfig;
-    kakao?: OAuthProviderConfig;
     facebook?: OAuthProviderConfig;
     microsoft?: OAuthProviderConfig & {
       /** Azure AD tenant ID ('common' for multi-tenant) */
@@ -281,9 +279,6 @@ export interface AuthEnv {
   GITHUB_CLIENT_ID?: string | undefined;
   GITHUB_CLIENT_SECRET?: string | undefined;
   GITHUB_CALLBACK_URL?: string | undefined;
-  KAKAO_CLIENT_ID?: string | undefined;
-  KAKAO_CLIENT_SECRET?: string | undefined;
-  KAKAO_CALLBACK_URL?: string | undefined;
   FACEBOOK_CLIENT_ID?: string | undefined;
   FACEBOOK_CLIENT_SECRET?: string | undefined;
   FACEBOOK_CALLBACK_URL?: string | undefined;
@@ -357,9 +352,6 @@ export const AuthEnvSchema: Schema<AuthEnv> = object(
     GITHUB_CLIENT_ID: optional(string({ label: 'GITHUB_CLIENT_ID' })),
     GITHUB_CLIENT_SECRET: optional(string({ label: 'GITHUB_CLIENT_SECRET' })),
     GITHUB_CALLBACK_URL: optional(string({ label: 'GITHUB_CALLBACK_URL' })),
-    KAKAO_CLIENT_ID: optional(string({ label: 'KAKAO_CLIENT_ID' })),
-    KAKAO_CLIENT_SECRET: optional(string({ label: 'KAKAO_CLIENT_SECRET' })),
-    KAKAO_CALLBACK_URL: optional(string({ label: 'KAKAO_CALLBACK_URL' })),
     FACEBOOK_CLIENT_ID: optional(string({ label: 'FACEBOOK_CLIENT_ID' })),
     FACEBOOK_CLIENT_SECRET: optional(string({ label: 'FACEBOOK_CLIENT_SECRET' })),
     FACEBOOK_CALLBACK_URL: optional(string({ label: 'FACEBOOK_CALLBACK_URL' })),

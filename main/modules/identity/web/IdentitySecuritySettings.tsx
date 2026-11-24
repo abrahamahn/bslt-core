@@ -1694,25 +1694,12 @@ const providerInfo = {
   google: { name: 'Google', icon: 'G' },
   github: { name: 'GitHub', icon: 'GH' },
   apple: { name: 'Apple', icon: '' },
-} as const satisfies Record<'google' | 'github' | 'apple', { name: string; icon: string }>;
-
-type DisplayOAuthProvider = keyof typeof providerInfo;
-type DisplayOAuthConnection = OAuthConnectionItem & { provider: DisplayOAuthProvider };
-
-function isDisplayOAuthProvider(provider: OAuthProvider): provider is DisplayOAuthProvider {
-  return provider in providerInfo;
-}
-
-function isDisplayOAuthConnection(
-  connection: OAuthConnectionItem,
-): connection is DisplayOAuthConnection {
-  return isDisplayOAuthProvider(connection.provider);
-}
+} as const satisfies Record<OAuthProvider, { name: string; icon: string }>;
 
 interface ProviderCardProps {
-  provider: DisplayOAuthProvider;
+  provider: OAuthProvider;
   connected: boolean;
-  connection: DisplayOAuthConnection | null;
+  connection: OAuthConnectionItem | null;
   onConnect: () => void;
   onDisconnect: () => void;
   isDisconnecting: boolean;
@@ -1774,7 +1761,7 @@ export const OAuthConnectionsList = ({ onSuccess }: OAuthConnectionsListProps): 
   const t = useModuleMessages(enUsMessages);
   const [unlinkError, setUnlinkError] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
-  const [pendingDisconnect, setPendingDisconnect] = useState<DisplayOAuthProvider | null>(null);
+  const [pendingDisconnect, setPendingDisconnect] = useState<OAuthProvider | null>(null);
 
   const {
     providers: enabledProviders,
@@ -1791,7 +1778,7 @@ export const OAuthConnectionsList = ({ onSuccess }: OAuthConnectionsListProps): 
     link,
   } = useOAuthConnections();
 
-  const handleConnect = async (provider: DisplayOAuthProvider): Promise<void> => {
+  const handleConnect = async (provider: OAuthProvider): Promise<void> => {
     try {
       setLinkError(null);
       const url = await link(provider);
@@ -1865,10 +1852,8 @@ export const OAuthConnectionsList = ({ onSuccess }: OAuthConnectionsListProps): 
     );
   }
 
-  const providerList = enabledProviders.filter(isDisplayOAuthProvider).map((provider) => {
-    const connection = connections
-      .filter(isDisplayOAuthConnection)
-      .find((candidate) => candidate.provider === provider);
+  const providerList = enabledProviders.map((provider) => {
+    const connection = connections.find((candidate) => candidate.provider === provider);
     return {
       provider,
       connected: connection !== undefined,

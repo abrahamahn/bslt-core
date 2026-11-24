@@ -434,6 +434,7 @@ function checkModuleDirectory(root: string, moduleId: string, problems: string[]
   const migrationsDir = path.join(modDir, 'server/migrations');
   if (existsSync(migrationsDir)) {
     const expectedSql = `0001_${moduleId}.sql`;
+    const numberedSqlFiles: { readonly name: string; readonly num: number }[] = [];
     for (const entry of readdirSync(migrationsDir, { withFileTypes: true }).sort((a, b) =>
       compareText(a.name, b.name),
     )) {
@@ -450,10 +451,31 @@ function checkModuleDirectory(root: string, moduleId: string, problems: string[]
         }
         continue;
       }
-      if (!entry.isFile() || entry.name !== expectedSql) {
+      const match = /^(\d{4})_[a-z0-9_]+\.sql$/u.exec(entry.name);
+      if (!entry.isFile() || match === null) {
         problems.push(
-          `${modRel}/server/migrations/${entry.name}: only baseline "${expectedSql}" (and optional seeds/*.sql) is permitted before foundation-v1`,
+          `${modRel}/server/migrations/${entry.name}: only numbered SQL migration files (starting at "${expectedSql}", plus optional seeds/*.sql) are permitted`,
         );
+        continue;
+      }
+      numberedSqlFiles.push({ name: entry.name, num: Number(match[1]) });
+    }
+
+    if (numberedSqlFiles.length > 0) {
+      if (!numberedSqlFiles.some((f) => f.name === expectedSql)) {
+        problems.push(
+          `${modRel}/server/migrations: baseline migration "${expectedSql}" is required`,
+        );
+      }
+      let expectedNum = 1;
+      for (const file of numberedSqlFiles) {
+        if (file.num !== expectedNum) {
+          problems.push(
+            `${modRel}/server/migrations/${file.name}: migration numbering must be contiguous starting at 0001 (expected ${String(expectedNum).padStart(4, '0')})`,
+          );
+          break;
+        }
+        expectedNum += 1;
       }
     }
   }

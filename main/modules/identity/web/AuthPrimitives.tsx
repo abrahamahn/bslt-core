@@ -38,10 +38,6 @@ export const GitHubIcon = ({ className }: ProviderIconProps): ReactElement => (
   <Icon name="oauth-github" className={className} />
 );
 
-export const KakaoIcon = ({ className }: ProviderIconProps): ReactElement => (
-  <Icon name="oauth-kakao" className={className} />
-);
-
 export const AppleIcon = ({ className }: ProviderIconProps): ReactElement => (
   <Icon name="oauth-apple" className={className} />
 );
@@ -60,7 +56,6 @@ interface OAuthButtonsProps {
 const PROVIDER_ICONS: Record<OAuthProvider, ComponentType<{ className?: string | undefined }>> = {
   google: GoogleIcon,
   github: GitHubIcon,
-  kakao: KakaoIcon,
   apple: AppleIcon,
 };
 
@@ -88,8 +83,6 @@ export const OAuthButtons = ({
         return t('identity.oauth.google');
       case 'github':
         return t('identity.oauth.github');
-      case 'kakao':
-        return t('identity.oauth.kakao');
       case 'apple':
         return t('identity.oauth.apple');
     }

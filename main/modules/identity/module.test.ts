@@ -6,12 +6,12 @@ import { defineModule, validateModule, validateModules } from '@bslt/contract';
 import { identityModule } from './module';
 
 describe('identityModule', () => {
-  it('validates cleanly as a foundational root module with 86 endpoints, 10 events, 5 cron jobs, and optional env', () => {
+  it('validates cleanly as a foundational root module with 82 endpoints, 10 events, 5 cron jobs, and optional env', () => {
     expect(() => validateModule(identityModule)).not.toThrow();
     expect(identityModule.id).toBe('identity');
     expect(identityModule.dependsOn).toEqual([]);
     expect('web' in identityModule).toBe(false);
-    expect(Object.keys(identityModule.endpoints)).toHaveLength(86);
+    expect(Object.keys(identityModule.endpoints)).toHaveLength(82);
     expect(Object.keys(identityModule.endpoints)).toEqual(
       expect.arrayContaining([
         'register',

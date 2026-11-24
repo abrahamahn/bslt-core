@@ -1511,8 +1511,6 @@ export function useOAuthConnections(): OAuthConnectionsState {
           return client.linkGithub({ body: {} });
         case 'apple':
           return client.linkApple({ body: {} });
-        case 'kakao':
-          return client.linkKakao({ body: {} });
       }
     },
   });
@@ -1526,8 +1524,6 @@ export function useOAuthConnections(): OAuthConnectionsState {
           return client.unlinkGithub({ body: {} });
         case 'apple':
           return client.unlinkApple({ body: {} });
-        case 'kakao':
-          return client.unlinkKakao({ body: {} });
       }
     },
     invalidateOnSuccess: [listKey],

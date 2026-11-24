@@ -19,7 +19,7 @@ flowchart TD
 
 | Package            | Scope       | Status   | `dependsOn` | Endpoints | Tables | Events | Jobs |
 | ------------------ | ----------- | -------- | ----------- | --------- | ------ | ------ | ---- |
-| `@bslt/identity`   | `installed` | `stable` | —           | 86        | 14     | 10     | 0    |
+| `@bslt/identity`   | `installed` | `stable` | —           | 82        | 14     | 10     | 0    |
 | `@bslt/compliance` | `installed` | `stable` | `identity`  | 17        | 7      | 7      | 1    |
 | `@bslt/audit`      | `installed` | `stable` | —           | 6         | 2      | 0      | 1    |
 | `@bslt/devtools`   | `devOnly`   | `stable` | —           | 1         | 0      | 0      | 0    |

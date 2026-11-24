@@ -10,7 +10,6 @@ import {
   AppleIcon,
   GitHubIcon,
   GoogleIcon,
-  KakaoIcon,
   NewDeviceBanner,
   OAuthButtons,
   PasskeyLoginButton,
@@ -67,11 +66,10 @@ describe('OAuthProviderIcons & OAuthButtons', () => {
       <div>
         <GoogleIcon className="g" />
         <GitHubIcon className="gh" />
-        <KakaoIcon className="k" />
         <AppleIcon className="a" />
       </div>,
     );
-    expect(container.querySelectorAll('svg[aria-hidden="true"]')).toHaveLength(4);
+    expect(container.querySelectorAll('svg[aria-hidden="true"]')).toHaveLength(3);
   });
 
   it('suppresses OAuthButtons when provider list is empty or errored', () => {

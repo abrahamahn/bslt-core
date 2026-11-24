@@ -10,7 +10,7 @@
  */
 import { createPrivateKey, createPublicKey, createVerify, sign } from 'node:crypto';
 
-type OAuthProviderName = 'google' | 'github' | 'kakao' | 'apple';
+type OAuthProviderName = 'google' | 'github' | 'apple';
 
 export interface OAuthUserInfo {
   readonly id: string;
@@ -78,11 +78,6 @@ const GITHUB_USERINFO_URL = 'https://api.github.com/user';
 const GITHUB_EMAILS_URL = 'https://api.github.com/user/emails';
 const GITHUB_SCOPES = ['user:email', 'read:user'];
 
-const KAKAO_AUTH_URL = 'https://kauth.kakao.com/oauth/authorize';
-const KAKAO_TOKEN_URL = 'https://kauth.kakao.com/oauth/token';
-const KAKAO_USERINFO_URL = 'https://kapi.kakao.com/v2/user/me';
-const KAKAO_SCOPES = ['account_email', 'profile_nickname', 'profile_image'];
-
 const APPLE_AUTH_URL = 'https://appleid.apple.com/auth/authorize';
 const APPLE_TOKEN_URL = 'https://appleid.apple.com/auth/token';
 const APPLE_KEYS_URL = 'https://appleid.apple.com/auth/keys';
@@ -92,7 +87,6 @@ const APPLE_SCOPES = ['email', 'name'];
 const REFRESH_TOKEN_ENDPOINTS: Readonly<Record<string, string>> = {
   google: GOOGLE_TOKEN_URL,
   github: GITHUB_TOKEN_URL,
-  kakao: KAKAO_TOKEN_URL,
 };
 
 // ============================================================================
@@ -334,121 +328,6 @@ export function createGitHubProvider(
         name: userData.name,
         emailVerified,
         ...(userData.avatar_url !== '' ? { picture: userData.avatar_url } : {}),
-      };
-    },
-  };
-}
-
-// ============================================================================
-// Kakao
-// ============================================================================
-
-interface KakaoTokenWire {
-  readonly token_type: string;
-  readonly access_token: string;
-  readonly expires_in: number;
-  readonly refresh_token?: string;
-  readonly scope?: string;
-}
-
-interface KakaoUserWire {
-  readonly id: number;
-  readonly kakao_account?: {
-    readonly email?: string;
-    readonly is_email_verified?: boolean;
-    readonly profile?: {
-      readonly nickname?: string;
-      readonly profile_image_url?: string;
-    };
-  };
-}
-
-export function createKakaoProvider(
-  clientId: string,
-  clientSecret?: string,
-  fetchFn: typeof fetch = fetch,
-): OAuthProviderClient {
-  return {
-    provider: 'kakao',
-
-    getAuthorizationUrl(state: string, redirectUri: string): string {
-      const params = new URLSearchParams({
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        response_type: 'code',
-        scope: KAKAO_SCOPES.join(','),
-        state,
-      });
-      return `${KAKAO_AUTH_URL}?${params.toString()}`;
-    },
-
-    async exchangeCode(code: string, redirectUri: string): Promise<OAuthTokenResponse> {
-      const params = new URLSearchParams({
-        grant_type: 'authorization_code',
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        code,
-      });
-      if (clientSecret !== undefined && clientSecret !== '') {
-        params.set('client_secret', clientSecret);
-      }
-
-      const response = await fetchFn(KAKAO_TOKEN_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: params.toString(),
-      });
-
-      if (!response.ok) {
-        const error = await response.text();
-        throw new OAuthProtocolError(
-          `Failed to exchange code: ${error}`,
-          'kakao',
-          'TOKEN_EXCHANGE_FAILED',
-        );
-      }
-
-      const data = (await response.json()) as KakaoTokenWire;
-      return {
-        accessToken: data.access_token,
-        ...(data.refresh_token !== undefined ? { refreshToken: data.refresh_token } : {}),
-        expiresAt: new Date(Date.now() + data.expires_in * 1000),
-        tokenType: data.token_type,
-        ...(data.scope !== undefined ? { scope: data.scope } : {}),
-      };
-    },
-
-    async getUserInfo(accessToken: string): Promise<OAuthUserInfo> {
-      const response = await fetchFn(KAKAO_USERINFO_URL, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-
-      if (!response.ok) {
-        const error = await response.text();
-        throw new OAuthProtocolError(
-          `Failed to get user info: ${error}`,
-          'kakao',
-          'USERINFO_FAILED',
-        );
-      }
-
-      const data = (await response.json()) as KakaoUserWire;
-      const email = data.kakao_account?.email;
-      if (email === undefined || email === '') {
-        throw new OAuthProtocolError(
-          'No email found on Kakao account. Please consent to email sharing.',
-          'kakao',
-          'NO_EMAIL',
-        );
-      }
-
-      const picture = data.kakao_account?.profile?.profile_image_url;
-      return {
-        id: String(data.id),
-        email,
-        name: data.kakao_account?.profile?.nickname ?? null,
-        emailVerified: data.kakao_account?.is_email_verified === true,
-        ...(picture !== undefined && picture !== '' ? { picture } : {}),
       };
     },
   };

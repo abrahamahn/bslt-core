@@ -45,7 +45,6 @@
 
   "identity.oauth.google": "Google",
   "identity.oauth.github": "GitHub",
-  "identity.oauth.kakao": "Kakao",
   "identity.oauth.apple": "Apple",
   "identity.oauth.signUpWith": "Sign up with",
   "identity.oauth.continueWith": "Continue with",

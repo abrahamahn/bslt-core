@@ -13,7 +13,6 @@ import {
   createAppleProvider,
   createGitHubProvider,
   createGoogleProvider,
-  createKakaoProvider,
   extractAppleUserFromIdToken,
   refreshOAuthProviderToken,
   type OAuthProviderClient,
@@ -63,7 +62,6 @@ interface OAuthAppleProviderConfig {
 export interface OAuthProvidersMap {
   readonly google?: OAuthStandardProviderConfig | undefined;
   readonly github?: OAuthStandardProviderConfig | undefined;
-  readonly kakao?: OAuthStandardProviderConfig | undefined;
   readonly apple?: OAuthAppleProviderConfig | undefined;
 }
 
@@ -221,21 +219,6 @@ function createProviderClientFromConfig(
       return {
         ok: true,
         client: createGitHubProvider(p.clientId, p.clientSecret),
-        redirectUri: resolveCallbackUrl(config.appBaseUrl, p.callbackUrl),
-      };
-    }
-    case 'kakao': {
-      const p = config.providers.kakao;
-      if (p === undefined || p.clientId === '') {
-        return {
-          ok: false,
-          code: 'OAUTH_NOT_CONFIGURED',
-          message: 'OAuth provider kakao is not configured',
-        };
-      }
-      return {
-        ok: true,
-        client: createKakaoProvider(p.clientId, p.clientSecret),
         redirectUri: resolveCallbackUrl(config.appBaseUrl, p.callbackUrl),
       };
     }
@@ -754,9 +737,7 @@ export async function refreshExpiringOAuthTokensInRepo(options: {
           ? options.config.providers.google
           : providerName === 'github'
             ? options.config.providers.github
-            : providerName === 'kakao'
-              ? options.config.providers.kakao
-              : undefined;
+            : undefined;
 
       const tokens = await refreshFn(conn.provider, plainRefreshToken, {
         clientId: providerCreds?.clientId,

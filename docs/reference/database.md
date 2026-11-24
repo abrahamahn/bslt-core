@@ -38,10 +38,10 @@ Single `public` schema with 27 attributed tables under forced Row-Level Security
 
 ## Enum & Domain Types
 
-| Type                      | Owner      | Kind   | Values                               |
-| ------------------------- | ---------- | ------ | ------------------------------------ |
-| `identity_oauth_provider` | `identity` | `enum` | `google`, `github`, `apple`, `kakao` |
-| `identity_user_role`      | `identity` | `enum` | `user`, `admin`, `moderator`         |
+| Type                      | Owner      | Kind   | Values                       |
+| ------------------------- | ---------- | ------ | ---------------------------- |
+| `identity_oauth_provider` | `identity` | `enum` | `google`, `github`, `apple`  |
+| `identity_user_role`      | `identity` | `enum` | `user`, `admin`, `moderator` |
 
 ## SQL Functions
 

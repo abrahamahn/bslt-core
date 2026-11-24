@@ -161,10 +161,6 @@ export const apiRouteInventory = [
   { method: 'GET', path: '/api/auth/oauth/google/callback', module: 'identity', public: true },
   { method: 'POST', path: '/api/auth/oauth/google/link', module: 'identity', public: false },
   { method: 'DELETE', path: '/api/auth/oauth/google/unlink', module: 'identity', public: false },
-  { method: 'GET', path: '/api/auth/oauth/kakao', module: 'identity', public: true },
-  { method: 'GET', path: '/api/auth/oauth/kakao/callback', module: 'identity', public: true },
-  { method: 'POST', path: '/api/auth/oauth/kakao/link', module: 'identity', public: false },
-  { method: 'DELETE', path: '/api/auth/oauth/kakao/unlink', module: 'identity', public: false },
   { method: 'GET', path: '/api/auth/oauth/providers', module: 'identity', public: true },
   { method: 'POST', path: '/api/auth/onboarding/complete', module: 'identity', public: false },
   { method: 'POST', path: '/api/auth/otp/request', module: 'identity', public: true },
@@ -412,7 +408,7 @@ export type ApiRouteCoverage = {
   smoke: CoverageStatus;
 };
 
-const OAUTH_INITIATE_PATH_PATTERN = /^\/api\/auth\/oauth\/(?:apple|github|google|kakao)$/u;
+const OAUTH_INITIATE_PATH_PATTERN = /^\/api\/auth\/oauth\/(?:apple|github|google)$/u;
 const QUERY_FIXTURE_REQUIRED_PATHS = new Set<string>([
   '/api/admin/users/search',
   '/api/feature-flags/evaluate',
@@ -461,7 +457,6 @@ const MUTATION_SMOKE_ROUTE_KEYS = new Set<string>([
   'DELETE /api/auth/oauth/apple/unlink',
   'DELETE /api/auth/oauth/github/unlink',
   'DELETE /api/auth/oauth/google/unlink',
-  'DELETE /api/auth/oauth/kakao/unlink',
   'POST /api/auth/sudo',
   'POST /api/auth/backup-codes/regenerate',
   'POST /api/auth/totp/disable',
@@ -587,9 +582,6 @@ const FRONTEND_CALLER_ROUTE_KEYS = new Set<string>([
   'GET /api/auth/oauth/google',
   'POST /api/auth/oauth/google/link',
   'DELETE /api/auth/oauth/google/unlink',
-  'GET /api/auth/oauth/kakao',
-  'POST /api/auth/oauth/kakao/link',
-  'DELETE /api/auth/oauth/kakao/unlink',
   'GET /api/auth/oauth/providers',
   'POST /api/auth/onboarding/complete',
   'POST /api/auth/otp/request',
@@ -748,7 +740,6 @@ const EXTERNAL_CALLBACK_ROUTE_KEYS = new Set<string>([
   'GET /api/auth/oauth/apple/callback',
   'GET /api/auth/oauth/github/callback',
   'GET /api/auth/oauth/google/callback',
-  'GET /api/auth/oauth/kakao/callback',
   'POST /api/webhooks/paypal',
   'POST /api/webhooks/stripe',
 ]);
@@ -757,7 +748,6 @@ const COVERAGE_NOTES = new Map<string, string>([
   ['GET /api/auth/oauth/apple/callback', 'External OAuth provider redirect target.'],
   ['GET /api/auth/oauth/github/callback', 'External OAuth provider redirect target.'],
   ['GET /api/auth/oauth/google/callback', 'External OAuth provider redirect target.'],
-  ['GET /api/auth/oauth/kakao/callback', 'External OAuth provider redirect target.'],
   ['POST /api/webhooks/paypal', 'Inbound PayPal webhook receiver.'],
   ['POST /api/webhooks/stripe', 'Inbound Stripe webhook receiver.'],
   ['GET /api/email/unsubscribe/:token', 'Public unsubscribe page invokes this email-link API.'],

@@ -166,16 +166,31 @@ export const identityModule = defineModule({
     expect(result.problems?.some((p) => p.includes('random-helper.ts'))).toBe(true);
   });
 
-  it('fails when server/migrations contains a second migration file before foundation-v1', () => {
-    const root = createValidModuleWorkspace();
+  it('fails when server/migrations contains non-contiguous or malformed migration files, and allows contiguous forward migrations', () => {
+    const validRoot = createValidModuleWorkspace();
     writeFileSync(
-      path.join(root, 'main/modules/tasks/server/migrations/0002_alter.sql'),
+      path.join(validRoot, 'main/modules/tasks/server/migrations/0002_alter.sql'),
       'ALTER TABLE tasks ADD COLUMN notes text;\n',
     );
+    expect(run(validRoot).ok).toBe(true);
 
-    const result = run(root);
-    expect(result.ok).toBe(false);
-    expect(result.problems?.some((p) => p.includes('0002_alter.sql'))).toBe(true);
+    const gapRoot = createValidModuleWorkspace();
+    writeFileSync(
+      path.join(gapRoot, 'main/modules/tasks/server/migrations/0003_skip.sql'),
+      'ALTER TABLE tasks ADD COLUMN notes text;\n',
+    );
+    const gapResult = run(gapRoot);
+    expect(gapResult.ok).toBe(false);
+    expect(gapResult.problems?.some((p) => p.includes('0003_skip.sql'))).toBe(true);
+
+    const badNameRoot = createValidModuleWorkspace();
+    writeFileSync(
+      path.join(badNameRoot, 'main/modules/tasks/server/migrations/notes.sql'),
+      'ALTER TABLE tasks ADD COLUMN notes text;\n',
+    );
+    const badNameResult = run(badNameRoot);
+    expect(badNameResult.ok).toBe(false);
+    expect(badNameResult.problems?.some((p) => p.includes('notes.sql'))).toBe(true);
   });
 
   it('fails when i18n/en-US.json contains unprefixed or unused keys', () => {

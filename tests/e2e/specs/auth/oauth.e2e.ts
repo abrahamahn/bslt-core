@@ -3,7 +3,7 @@
  * OAuth Login E2E Tests
  *
  * Comprehensive tests for all OAuth provider login flows:
- * - Google, GitHub, Apple, Kakao redirect initiation
+ * - Google, GitHub, Apple redirect initiation
  * - OAuth callback simulation (success + error states)
  * - Provider button visibility based on strategies endpoint
  * - Edge cases: network errors, provider unavailable, cancelled auth
@@ -16,11 +16,10 @@ import { ensureLoggedOut, suppressCookieConsent } from '#tests/e2e/page-objects/
 
 import type { Page, Route } from '@playwright/test';
 
-const allProviders = ['google', 'github', 'kakao', 'apple'] as const;
+const allProviders = ['google', 'github', 'apple'] as const;
 const providerLabels: Record<(typeof allProviders)[number], string> = {
   google: 'Google',
   github: 'GitHub',
-  kakao: 'Kakao',
   apple: 'Apple',
 };
 
@@ -150,7 +149,6 @@ test.describe('OAuth Provider Visibility', () => {
 
     // Disabled providers hidden
     await expect(page.getByRole('button', { name: /Apple/i })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: /Kakao/i })).toHaveCount(0);
   });
 
   test('no OAuth providers enabled hides all OAuth buttons', async ({ page }: { page: Page }) => {

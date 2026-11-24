@@ -1030,16 +1030,6 @@ export const identityEndpoints = {
     errors: [identityErrors.OAUTH_NOT_CONFIGURED],
   }),
 
-  initiateKakao: endpoint({
-    method: 'GET',
-    path: '/api/auth/oauth/kakao',
-    auth: 'public',
-    summary: 'Initiate Kakao OAuth flow',
-    query: oauthInitiateQuerySchema,
-    response: oauthInitiateResponseSchema,
-    errors: [identityErrors.OAUTH_NOT_CONFIGURED],
-  }),
-
   callbackGoogle: endpoint({
     method: 'GET',
     path: '/api/auth/oauth/google/callback',
@@ -1097,25 +1087,6 @@ export const identityEndpoints = {
     ],
   }),
 
-  callbackKakao: endpoint({
-    method: 'GET',
-    path: '/api/auth/oauth/kakao/callback',
-    auth: 'public',
-    summary: 'Handle Kakao OAuth callback',
-    query: oauthCallbackQuerySchema,
-    response: oauthCallbackResponseSchema,
-    errors: [
-      identityErrors.OAUTH_NOT_CONFIGURED,
-      identityErrors.OAUTH_FAILED,
-      identityErrors.OAUTH_STATE_MISMATCH,
-      identityErrors.OAUTH_EMAIL_EXISTS,
-      identityErrors.OAUTH_ALREADY_LINKED,
-      identityErrors.OAUTH_LINKED_TO_OTHER,
-      identityErrors.SIGNUP_CONSENT_REQUIRED,
-      identityErrors.ELIGIBILITY_ATTESTATION_REQUIRED,
-    ],
-  }),
-
   linkGoogle: endpoint({
     method: 'POST',
     path: '/api/auth/oauth/google/link',
@@ -1144,17 +1115,6 @@ export const identityEndpoints = {
     auth: 'user',
     requires: ['tos.accepted'],
     summary: 'Link Apple account to authenticated user',
-    body: emptyBodySchema,
-    response: oauthLinkResponseSchema,
-    errors: [identityErrors.OAUTH_NOT_CONFIGURED],
-  }),
-
-  linkKakao: endpoint({
-    method: 'POST',
-    path: '/api/auth/oauth/kakao/link',
-    auth: 'user',
-    requires: ['tos.accepted'],
-    summary: 'Link Kakao account to authenticated user',
     body: emptyBodySchema,
     response: oauthLinkResponseSchema,
     errors: [identityErrors.OAUTH_NOT_CONFIGURED],
@@ -1190,18 +1150,6 @@ export const identityEndpoints = {
     auth: 'user',
     requires: ['tos.accepted'],
     summary: 'Unlink Apple account from authenticated user',
-    body: emptyBodySchema,
-    response: oauthUnlinkResponseSchema,
-    errors: [identityErrors.OAUTH_CONNECTION_NOT_FOUND, identityErrors.CANNOT_UNLINK_ONLY_AUTH],
-    invalidates: ['getConnections'],
-  }),
-
-  unlinkKakao: endpoint({
-    method: 'DELETE',
-    path: '/api/auth/oauth/kakao/unlink',
-    auth: 'user',
-    requires: ['tos.accepted'],
-    summary: 'Unlink Kakao account from authenticated user',
     body: emptyBodySchema,
     response: oauthUnlinkResponseSchema,
     errors: [identityErrors.OAUTH_CONNECTION_NOT_FOUND, identityErrors.CANNOT_UNLINK_ONLY_AUTH],

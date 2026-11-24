@@ -546,7 +546,7 @@ describe('identity API key hooks', () => {
       const requestFn = vi.fn().mockImplementation(async (path: string, options?: RequestInit) => {
         const method = options?.method ?? 'GET';
         if (path === '/api/auth/strategies') {
-          return { enabled: ['local', 'google', 'webauthn'], disabled: ['kakao'] };
+          return { enabled: ['local', 'google', 'webauthn'], disabled: ['apple'] };
         }
         if (path === '/api/auth/oauth/providers') {
           return { providers: ['google', 'github'] };

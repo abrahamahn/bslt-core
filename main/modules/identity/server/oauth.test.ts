@@ -122,7 +122,7 @@ function makeOAuthConn(overrides: Partial<OAuthConnection> = {}): OAuthConnectio
 }
 
 function makeMockClient(
-  provider: 'google' | 'github' | 'kakao' | 'apple' = 'google',
+  provider: 'google' | 'github' | 'apple' = 'google',
   overrides: Partial<OAuthProviderClient> = {},
 ): OAuthProviderClient {
   return {
@@ -224,11 +224,15 @@ describe('identity OAuth service & state security', () => {
   });
 
   it('refuses getOAuthAuthorizationUrl when strategy is disabled, provider is unconfigured, or Apple lacks keys', () => {
-    const cfg = makeConfig();
+    const unconfiguredGithub = makeConfig({
+      providers: {
+        google: makeConfig().providers.google,
+      },
+    });
     expect(
       getOAuthAuthorizationUrl({
-        provider: 'kakao',
-        config: cfg,
+        provider: 'github',
+        config: unconfiguredGithub,
         isLinking: false,
       }),
     ).toMatchObject({ ok: false, code: 'OAUTH_NOT_CONFIGURED' });
@@ -471,14 +475,18 @@ describe('identity OAuth service & state security', () => {
   });
 
   it('counts decryption, config, and provider failures in refreshExpiringOAuthTokensInRepo without throwing', async () => {
-    const cfg = makeConfig();
+    const cfg = makeConfig({
+      providers: {
+        google: makeConfig().providers.google,
+      },
+    });
     const repo = makeRepo({
       findExpiringOAuthConnections: vi.fn().mockResolvedValue([
         makeOAuthConn({ id: 'bad-cipher', refreshToken: 'not-valid-ciphertext' }),
         makeOAuthConn({
-          id: 'unconfigured-kakao',
-          provider: 'kakao',
-          refreshToken: encryptToken('rt-k', STATE_SECRET),
+          id: 'unconfigured-github',
+          provider: 'github',
+          refreshToken: encryptToken('rt-gh', STATE_SECRET),
         }),
         makeOAuthConn({
           id: 'null-refresh',

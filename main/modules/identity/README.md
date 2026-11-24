@@ -93,19 +93,15 @@ User identity, authentication, sessions, and API keys.
 | `initiateGoogle`          | `GET`    | `/api/auth/oauth/google`              | `public` | Initiate Google OAuth flow                                                          |
 | `initiateGithub`          | `GET`    | `/api/auth/oauth/github`              | `public` | Initiate GitHub OAuth flow                                                          |
 | `initiateApple`           | `GET`    | `/api/auth/oauth/apple`               | `public` | Initiate Apple OAuth flow                                                           |
-| `initiateKakao`           | `GET`    | `/api/auth/oauth/kakao`               | `public` | Initiate Kakao OAuth flow                                                           |
 | `callbackGoogle`          | `GET`    | `/api/auth/oauth/google/callback`     | `public` | Handle Google OAuth callback                                                        |
 | `callbackGithub`          | `GET`    | `/api/auth/oauth/github/callback`     | `public` | Handle GitHub OAuth callback                                                        |
 | `callbackApple`           | `GET`    | `/api/auth/oauth/apple/callback`      | `public` | Handle Apple OAuth callback                                                         |
-| `callbackKakao`           | `GET`    | `/api/auth/oauth/kakao/callback`      | `public` | Handle Kakao OAuth callback                                                         |
 | `linkGoogle`              | `POST`   | `/api/auth/oauth/google/link`         | `user`   | Link Google account to authenticated user                                           |
 | `linkGithub`              | `POST`   | `/api/auth/oauth/github/link`         | `user`   | Link GitHub account to authenticated user                                           |
 | `linkApple`               | `POST`   | `/api/auth/oauth/apple/link`          | `user`   | Link Apple account to authenticated user                                            |
-| `linkKakao`               | `POST`   | `/api/auth/oauth/kakao/link`          | `user`   | Link Kakao account to authenticated user                                            |
 | `unlinkGoogle`            | `DELETE` | `/api/auth/oauth/google/unlink`       | `user`   | Unlink Google account from authenticated user                                       |
 | `unlinkGithub`            | `DELETE` | `/api/auth/oauth/github/unlink`       | `user`   | Unlink GitHub account from authenticated user                                       |
 | `unlinkApple`             | `DELETE` | `/api/auth/oauth/apple/unlink`        | `user`   | Unlink Apple account from authenticated user                                        |
-| `unlinkKakao`             | `DELETE` | `/api/auth/oauth/kakao/unlink`        | `user`   | Unlink Kakao account from authenticated user                                        |
 | `getConnections`          | `GET`    | `/api/auth/oauth/connections`         | `user`   | Get OAuth connections for authenticated user                                        |
 | `getEnabledProviders`     | `GET`    | `/api/auth/oauth/providers`           | `public` | Get list of enabled OAuth providers                                                 |
 

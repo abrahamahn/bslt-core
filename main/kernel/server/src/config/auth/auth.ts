@@ -121,15 +121,6 @@ export function loadAuthConfig(env: FullEnv, apiBaseUrl: string, appName = 'Your
       providers.github = githubConfig;
     }
 
-    const kakaoConfig = createOAuth(
-      env.KAKAO_CLIENT_ID,
-      env.KAKAO_CLIENT_SECRET,
-      env.KAKAO_CALLBACK_URL ?? buildUrl('/api/auth/oauth/kakao/callback'),
-    );
-    if (kakaoConfig !== undefined) {
-      providers.kakao = kakaoConfig;
-    }
-
     const facebookConfig = createOAuth(
       env.FACEBOOK_CLIENT_ID,
       env.FACEBOOK_CLIENT_SECRET,

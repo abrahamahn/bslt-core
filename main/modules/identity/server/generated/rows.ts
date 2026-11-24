@@ -4,7 +4,7 @@
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
-export type IdentityOauthProviderEnum = 'google' | 'github' | 'apple' | 'kakao'; // <- types.identity_oauth_provider
+export type IdentityOauthProviderEnum = 'google' | 'github' | 'apple'; // <- types.identity_oauth_provider
 
 export type IdentityUserRoleEnum = 'user' | 'admin' | 'moderator'; // <- types.identity_user_role
 

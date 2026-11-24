@@ -19,19 +19,6 @@ const DISPLAY_OAUTH_PROVIDERS = [
   'apple',
 ] as const satisfies readonly OAuthProvider[];
 
-type DisplayOAuthProvider = (typeof DISPLAY_OAUTH_PROVIDERS)[number];
-type DisplayOAuthConnection = OAuthConnectionItem & { provider: DisplayOAuthProvider };
-
-function isDisplayOAuthProvider(provider: OAuthProvider): provider is DisplayOAuthProvider {
-  return provider === 'google' || provider === 'github' || provider === 'apple';
-}
-
-function isDisplayOAuthConnection(
-  connection: OAuthConnectionItem,
-): connection is DisplayOAuthConnection {
-  return isDisplayOAuthProvider(connection.provider);
-}
-
 function formatConnectedDate(iso: string): string {
   let timeZone: string | undefined;
   if (typeof window !== 'undefined') {
@@ -56,7 +43,7 @@ function formatConnectedDate(iso: string): string {
 export const ConnectedAccountsPage = (): ReactElement => {
   const t = useModuleMessages(enUsMessages);
   void t('identity.routes.connectedAccountsTitle');
-  const [disconnectTarget, setDisconnectTarget] = useState<DisplayOAuthConnection | null>(null);
+  const [disconnectTarget, setDisconnectTarget] = useState<OAuthConnectionItem | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
 
   const { providers: enabledProviders, isLoading: providersLoading } = useEnabledOAuthProviders();
@@ -72,16 +59,14 @@ export const ConnectedAccountsPage = (): ReactElement => {
   const isLoading = providersLoading || connectionsLoading;
 
   const connectedProviderMap = useMemo(() => {
-    const map = new Map<DisplayOAuthProvider, DisplayOAuthConnection>();
-    for (const conn of connections.filter(isDisplayOAuthConnection)) {
+    const map = new Map<OAuthProvider, OAuthConnectionItem>();
+    for (const conn of connections) {
       map.set(conn.provider, conn);
     }
     return map;
   }, [connections]);
 
-  const getProviderDisplay = (
-    provider: DisplayOAuthProvider,
-  ): { label: string; icon: ReactElement } => {
+  const getProviderDisplay = (provider: OAuthProvider): { label: string; icon: ReactElement } => {
     switch (provider) {
       case 'google':
         return {
@@ -102,7 +87,7 @@ export const ConnectedAccountsPage = (): ReactElement => {
   };
 
   const handleConnect = useCallback(
-    async (provider: DisplayOAuthProvider): Promise<void> => {
+    async (provider: OAuthProvider): Promise<void> => {
       try {
         setLinkError(null);
         const url = await link(provider);
@@ -116,7 +101,7 @@ export const ConnectedAccountsPage = (): ReactElement => {
     [link, t],
   );
 
-  const handleDisconnect = useCallback((connection: DisplayOAuthConnection): void => {
+  const handleDisconnect = useCallback((connection: OAuthConnectionItem): void => {
     setDisconnectTarget(connection);
   }, []);
 

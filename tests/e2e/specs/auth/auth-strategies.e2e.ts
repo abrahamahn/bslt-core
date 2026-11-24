@@ -18,7 +18,7 @@ import { expect, test } from '@playwright/test';
 import { oauthProvidersResponse, strategiesResponse } from '#tests/e2e/fixtures/auth-contracts';
 import { ensureLoggedOut, suppressCookieConsent } from '#tests/e2e/page-objects/ui';
 
-const providers = ['Google', 'GitHub', 'Apple', 'Kakao'] as const;
+const providers = ['Google', 'GitHub', 'Apple'] as const;
 
 function mockCsrf(page: import('@playwright/test').Page) {
   return page.route('**/api/csrf-token', async (route) => {
@@ -94,7 +94,6 @@ test.describe('Auth Strategies — Provider Visibility', () => {
 
     await expect(page.getByRole('button', { name: /GitHub/i })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /Apple/i })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: /Kakao/i })).toHaveCount(0);
   });
 
   test('all providers enabled → all buttons visible', async ({ page }) => {
@@ -102,14 +101,14 @@ test.describe('Auth Strategies — Provider Visibility', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(strategiesResponse(['local', 'google', 'github', 'apple', 'kakao'])),
+        body: JSON.stringify(strategiesResponse(['local', 'google', 'github', 'apple'])),
       });
     });
     await page.route('**/api/auth/oauth/providers*', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(oauthProvidersResponse(['google', 'github', 'apple', 'kakao'])),
+        body: JSON.stringify(oauthProvidersResponse(['google', 'github', 'apple'])),
       });
     });
 
@@ -172,7 +171,6 @@ test.describe('Auth Strategies — Provider Visibility', () => {
     await expect(page.getByRole('button', { name: /Google/i })).toBeVisible({ timeout: 5000 });
     await expect(page.getByRole('button', { name: /GitHub/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /Apple/i })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: /Kakao/i })).toHaveCount(0);
   });
 
   test('strategies endpoint failure → login form still renders gracefully', async ({ page }) => {

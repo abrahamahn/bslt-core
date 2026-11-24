@@ -5,8 +5,8 @@ import { identityEndpoints } from './endpoints';
 import { identityErrors } from './errors';
 
 describe('identityEndpoints', () => {
-  it('declares all 86 endpoints with expected methods, paths, auth levels, and ToS gating', () => {
-    expect(Object.keys(identityEndpoints)).toHaveLength(86);
+  it('declares all 82 endpoints with expected methods, paths, auth levels, and ToS gating', () => {
+    expect(Object.keys(identityEndpoints)).toHaveLength(82);
 
     // /api/users/me and /api/auth/logout-all are intentionally ToS-exempt
     expect(identityEndpoints.me.method).toBe('GET');
@@ -48,11 +48,9 @@ describe('identityEndpoints', () => {
       'initiateGoogle',
       'initiateGithub',
       'initiateApple',
-      'initiateKakao',
       'callbackGoogle',
       'callbackGithub',
       'callbackApple',
-      'callbackKakao',
       'getEnabledProviders',
     ]);
 

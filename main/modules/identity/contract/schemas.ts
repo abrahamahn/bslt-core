@@ -1083,7 +1083,6 @@ export const AUTH_STRATEGIES = [
   'webauthn',
   'google',
   'github',
-  'kakao',
   'facebook',
   'microsoft',
   'apple',
@@ -1330,7 +1329,7 @@ export type RevertEmailChangeResponse = Infer<typeof revertEmailChangeResponseSc
 // 11. OAuth Schemas (Pure @bslt/schema Combinators)
 // ============================================================================
 
-export const OAUTH_PROVIDERS = ['google', 'github', 'kakao', 'apple'] as const;
+export const OAUTH_PROVIDERS = ['google', 'github', 'apple'] as const;
 
 const oauthProviderSchema = enumOf(OAUTH_PROVIDERS, 'provider');
 

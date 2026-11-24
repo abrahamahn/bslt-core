@@ -78,7 +78,7 @@ const EXEMPTION_RULES: readonly ExemptionRule[] = [
   { pattern: /\/health$/i, reason: 'health endpoint' },
   { pattern: /\/readiness$/i, reason: 'readiness endpoint' },
   {
-    pattern: /\/api\/auth\/oauth\/(google|github|apple|kakao)(?:\/callback|\/link|\/unlink)?$/i,
+    pattern: /\/api\/auth\/oauth\/(google|github|apple)(?:\/callback|\/link|\/unlink)?$/i,
     reason: 'OAuth browser redirect endpoint',
   },
 ] as const;

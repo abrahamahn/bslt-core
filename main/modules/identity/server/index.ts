@@ -882,16 +882,6 @@ export const identityServer: AnyServerModule<typeof identityModule> = implementS
               },
             }
           : {}),
-        ...(k.env.KAKAO_CLIENT_ID !== undefined && k.env.KAKAO_CLIENT_ID !== ''
-          ? {
-              kakao: {
-                clientId: k.env.KAKAO_CLIENT_ID,
-                clientSecret: k.env.KAKAO_CLIENT_SECRET ?? '',
-                callbackUrl:
-                  k.env.KAKAO_CALLBACK_URL ?? `${apiBaseUrl}/api/auth/oauth/kakao/callback`,
-              },
-            }
-          : {}),
         ...(k.env.APPLE_CLIENT_ID !== undefined && k.env.APPLE_CLIENT_ID !== ''
           ? {
               apple: {
@@ -3241,30 +3231,9 @@ export const identityServer: AnyServerModule<typeof identityModule> = implementS
         return Promise.resolve({ url: res.url });
       },
 
-      initiateKakao: (input, req, s) => {
-        const viewerUserId = resolveOptionalViewerUserId(req, s.jwtSecret);
-        const flags = parseOAuthInitiateFlags(input.query);
-        const res = getOAuthAuthorizationUrl({
-          provider: 'kakao',
-          config: s.oauthConfig,
-          isLinking: viewerUserId !== undefined,
-          userId: viewerUserId,
-          eligibilityAttested: flags.eligibilityAttested,
-          tosAccepted: flags.tosAccepted,
-          nowMs: s.clock.now().getTime(),
-        });
-        if (!res.ok) {
-          return req.fail(res.code, res.message);
-        }
-        req.setStatus?.(302);
-        req.setHeader?.('Location', res.url);
-        return Promise.resolve({ url: res.url });
-      },
-
       callbackGoogle: (input, req, s) => runOAuthCallback('google', input.query, req, s),
       callbackGithub: (input, req, s) => runOAuthCallback('github', input.query, req, s),
       callbackApple: (input, req, s) => runOAuthCallback('apple', input.query, req, s),
-      callbackKakao: (input, req, s) => runOAuthCallback('kakao', input.query, req, s),
 
       linkGoogle: (_input, req, s) => {
         const res = getOAuthAuthorizationUrl({
@@ -3308,24 +3277,9 @@ export const identityServer: AnyServerModule<typeof identityModule> = implementS
         return Promise.resolve({ url: res.url });
       },
 
-      linkKakao: (_input, req, s) => {
-        const res = getOAuthAuthorizationUrl({
-          provider: 'kakao',
-          config: s.oauthConfig,
-          isLinking: true,
-          userId: req.viewer.userId,
-          nowMs: s.clock.now().getTime(),
-        });
-        if (!res.ok) {
-          return req.fail(res.code, res.message);
-        }
-        return Promise.resolve({ url: res.url });
-      },
-
       unlinkGoogle: (_input, req, s) => runOAuthUnlink('google', req, s),
       unlinkGithub: (_input, req, s) => runOAuthUnlink('github', req, s),
       unlinkApple: (_input, req, s) => runOAuthUnlink('apple', req, s),
-      unlinkKakao: (_input, req, s) => runOAuthUnlink('kakao', req, s),
 
       getConnections: async (_input, req) => ({
         connections: await req.tx((tx) =>

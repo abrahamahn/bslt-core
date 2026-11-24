@@ -418,12 +418,6 @@ function patchEnvExample(
       `${apiUrl}/api/auth/oauth/github/callback`,
       filePath,
     );
-    next = setEnvValue(
-      next,
-      'KAKAO_CALLBACK_URL',
-      `${apiUrl}/api/auth/oauth/kakao/callback`,
-      filePath,
-    );
     next = setEnvValue(next, 'EMAIL_FROM_ADDRESS', `no-reply@${options.domain}`, filePath);
     next = setEnvValue(next, 'EMAIL_REPLY_TO', `support@${options.domain}`, filePath);
     next = setEnvValue(next, 'SMTP_HOST', `smtp.mail.${options.domain}`, filePath);

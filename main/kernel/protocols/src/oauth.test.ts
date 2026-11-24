@@ -9,7 +9,6 @@ import {
   createAppleProvider,
   createGitHubProvider,
   createGoogleProvider,
-  createKakaoProvider,
   extractAppleUserFromIdToken,
   refreshOAuthProviderToken,
 } from './oauth';
@@ -138,31 +137,6 @@ describe('@bslt/protocols/oauth', () => {
 
     await expect(github.getUserInfo('gh-token')).rejects.toMatchObject({
       provider: 'github',
-      reason: 'NO_EMAIL',
-    });
-  });
-
-  it('rejects Kakao code exchange on HTTP 400 and getUserInfo when email consent was withheld', async () => {
-    const failExchangeFetch = vi.fn<typeof fetch>(() =>
-      Promise.resolve(textResponse('KOE320', 400)),
-    );
-    const kakaoFail = createKakaoProvider('k-id', 'k-secret', failExchangeFetch);
-    await expect(kakaoFail.exchangeCode('used-code', 'https://app.test/cb')).rejects.toMatchObject({
-      provider: 'kakao',
-      reason: 'TOKEN_EXCHANGE_FAILED',
-    });
-
-    const noEmailFetch = vi.fn<typeof fetch>(() =>
-      Promise.resolve(
-        jsonResponse({
-          id: 9001,
-          kakao_account: { profile: { nickname: 'Neo' } },
-        }),
-      ),
-    );
-    const kakaoNoEmail = createKakaoProvider('k-id', undefined, noEmailFetch);
-    await expect(kakaoNoEmail.getUserInfo('k-token')).rejects.toMatchObject({
-      provider: 'kakao',
       reason: 'NO_EMAIL',
     });
   });
@@ -381,7 +355,7 @@ describe('@bslt/protocols/oauth', () => {
     });
   });
 
-  it('selects primary verified GitHub email and builds Kakao comma-delimited scope URL', async () => {
+  it('selects primary verified GitHub email', async () => {
     const ghFetch = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(
@@ -407,28 +381,6 @@ describe('@bslt/protocols/oauth', () => {
       name: 'Ada',
       emailVerified: true,
       picture: 'https://avatars.example/ada.png',
-    });
-
-    const kakaoFetch = vi.fn<typeof fetch>().mockResolvedValueOnce(
-      jsonResponse({
-        id: 555,
-        kakao_account: {
-          email: 'kakao@example.com',
-          is_email_verified: true,
-          profile: { nickname: 'KakaoAda', profile_image_url: 'https://k.example/p.png' },
-        },
-      }),
-    );
-    const kakao = createKakaoProvider('k-client', 'k-secret', kakaoFetch);
-    const kakaoUrl = new URL(kakao.getAuthorizationUrl('st', 'https://app.test/cb'));
-    expect(kakaoUrl.searchParams.get('scope')).toBe('account_email,profile_nickname,profile_image');
-    const kakaoUser = await kakao.getUserInfo('k-access');
-    expect(kakaoUser).toEqual({
-      id: '555',
-      email: 'kakao@example.com',
-      name: 'KakaoAda',
-      emailVerified: true,
-      picture: 'https://k.example/p.png',
     });
   });
 
