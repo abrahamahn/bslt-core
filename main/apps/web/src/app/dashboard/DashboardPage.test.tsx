@@ -1,5 +1,6 @@
 // main/apps/web/src/app/dashboard/DashboardPage.test.tsx
-import { screen } from '@testing-library/react';
+import { CapabilityProvider, EMPTY_CAPABILITY_CONTEXT } from '@bslt/web-platform';
+import { fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createMockEnvironment, mockUser, renderWithProviders } from '../../__tests__/utils';
@@ -34,6 +35,21 @@ vi.mock('../../generated/modules', async (importOriginal) => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
+    }),
+    useOptionalActiveOrg: () => ({ activeOrgId: 'org-1', setActiveOrg: vi.fn() }),
+    useOptionalOrganizations: (options?: { enabled?: boolean }) => ({
+      organizations:
+        options?.enabled === true
+          ? [{ id: 'org-1', name: 'Acme Studio', slug: 'acme-studio', role: 'owner' }]
+          : [],
+      isLoading: false,
+      error: null,
+      refresh: vi.fn().mockResolvedValue(undefined),
+    }),
+    useOptionalSubscription: () => ({
+      subscription: null,
+      isLoading: false,
+      error: null,
     }),
   };
 });
@@ -98,6 +114,7 @@ describe('DashboardPage', () => {
 
   afterEach(() => {
     window.localStorage.removeItem(TIMEZONE_STORAGE_KEY);
+    window.localStorage.clear();
   });
 
   it('formats the current session date via the locale-aware formatter', () => {
@@ -230,5 +247,37 @@ describe('DashboardPage', () => {
     }
 
     expect(screen.getByRole('heading', { name: /dashboard/i, level: 1 })).toBeInTheDocument();
+  });
+
+  it('shows active workspace badge, Free plan badge, Upgrade CTA, and dismissible setup checklist when flags are enabled', () => {
+    const environment = createMockEnvironment({ user: mockUser, isAuthenticated: true });
+    renderWithProviders(
+      <CapabilityProvider
+        initialContext={{
+          ...EMPTY_CAPABILITY_CONTEXT,
+          flags: { 'orgs.teams': true, 'flags.billing': true },
+        }}
+      >
+        <I18nProvider initialLocale="en-US">
+          <DashboardPage />
+        </I18nProvider>
+      </CapabilityProvider>,
+      { environment },
+    );
+
+    if (installedModules.some((m) => m.id === 'orgs')) {
+      expect(screen.getByText('Acme Studio')).toBeInTheDocument();
+    }
+    if (installedModules.some((m) => m.id === 'billing')) {
+      expect(screen.getByText('Free')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Upgrade plan' })).toHaveAttribute(
+        'href',
+        '/pricing',
+      );
+    }
+    expect(screen.getByRole('heading', { name: 'Workspace Setup Checklist' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    expect(screen.queryByRole('heading', { name: 'Workspace Setup Checklist' })).toBeNull();
   });
 });

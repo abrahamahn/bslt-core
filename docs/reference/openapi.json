@@ -8153,6 +8153,23 @@
                             "maxLength": 100,
                             "x-bslt-trim": true
                           },
+                          "orgId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "scopes": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
                           "updatedAt": {
                             "type": "string",
                             "x-bslt-format": "iso-datetime"
@@ -8166,6 +8183,8 @@
                           "last4",
                           "lastUsedAt",
                           "name",
+                          "orgId",
+                          "scopes",
                           "updatedAt"
                         ],
                         "additionalProperties": false
@@ -8562,6 +8581,20 @@
                     "minLength": 1,
                     "maxLength": 100,
                     "x-bslt-trim": true
+                  },
+                  "scopeToWorkspace": {
+                    "type": "boolean"
+                  },
+                  "scopes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 2,
+                      "maxLength": 64,
+                      "x-bslt-trim": true,
+                      "x-bslt-refine": "Scope must start with a letter and contain only lowercase letters, digits, \":\", \"_\", or \"-\""
+                    },
+                    "maxItems": 20
                   }
                 },
                 "required": [
@@ -8628,6 +8661,23 @@
                           "maxLength": 100,
                           "x-bslt-trim": true
                         },
+                        "orgId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "scopes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
                         "token": {
                           "type": "string",
                           "minLength": 1
@@ -8645,6 +8695,8 @@
                         "last4",
                         "lastUsedAt",
                         "name",
+                        "orgId",
+                        "scopes",
                         "token",
                         "updatedAt"
                       ],
@@ -22553,6 +22605,145 @@
     "/api/csrf-token": {
       "get": {
         "x-bslt-auth": "undeclared"
+      }
+    },
+    "/api/devtools/emails": {
+      "get": {
+        "operationId": "devtools.listDevEmails",
+        "tags": [
+          "devtools"
+        ],
+        "summary": "List outbound emails captured in the local development inbox",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "emails": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "html": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "links": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "sentAt": {
+                            "type": "string"
+                          },
+                          "subject": {
+                            "type": "string"
+                          },
+                          "text": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "to": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "html",
+                          "id",
+                          "links",
+                          "sentAt",
+                          "subject",
+                          "text",
+                          "to"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "count",
+                    "emails"
+                  ],
+                  "additionalProperties": false,
+                  "x-bslt-schema": "devEmailInboxResponseSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devtools/emails/clear": {
+      "post": {
+        "operationId": "devtools.clearDevEmails",
+        "tags": [
+          "devtools"
+        ],
+        "summary": "Clear captured emails from the local development inbox",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false,
+                "x-bslt-schema": "emptyBodySchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "cleared": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "cleared"
+                  ],
+                  "additionalProperties": false,
+                  "x-bslt-schema": "clearDevEmailsResponseSchema"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/legal/current": {

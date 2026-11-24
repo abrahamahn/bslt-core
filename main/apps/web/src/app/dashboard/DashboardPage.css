@@ -28,6 +28,18 @@
   gap: var(--ui-gap-lg);
 }
 
+.dashboard-command__identity {
+  display: grid;
+  gap: var(--ui-gap-xs);
+}
+
+.dashboard-command__workspace-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-gap-xs);
+}
+
 .dashboard-command__actions {
   display: flex;
   flex-wrap: wrap;
@@ -152,6 +164,51 @@
 .dashboard-shortcuts {
   display: grid;
   gap: var(--ui-gap-xs);
+}
+
+.dashboard-checklist {
+  display: grid;
+  gap: var(--ui-gap-md);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-color-bg);
+  box-shadow: var(--ui-elevation-xs);
+}
+
+.dashboard-checklist__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ui-gap-md);
+}
+
+.dashboard-checklist__progress {
+  display: grid;
+  gap: var(--ui-gap-xs);
+}
+
+.dashboard-checklist__list {
+  display: grid;
+  gap: var(--ui-gap-xs);
+}
+
+.dashboard-checklist__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--ui-gap-md);
+  align-items: center;
+  padding: var(--ui-gap-sm) var(--ui-gap-md);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color var(--ui-motion-duration-fast) var(--ui-motion-ease-standard),
+    background-color var(--ui-motion-duration-fast) var(--ui-motion-ease-standard);
+}
+
+.dashboard-checklist__item:hover {
+  border-color: var(--ui-color-border-control);
+  background: var(--ui-color-hover);
 }
 
 .dashboard-shortcut-row {

@@ -807,6 +807,18 @@ export default defineConfig({
     );
     expect(withStatusPublic).toContain("import { statusModule } from '@bslt/status/module';");
     expect(withStatusPublic).toContain("import { statusPublicRoutes } from '@bslt/status/web';");
+
+    const webBrand = readFileSync(path.join(root, 'main/apps/web/src/generated/brand.ts'), 'utf8');
+    expect(webBrand).toContain("name: 'BSLT'");
+    expect(webBrand).toContain("accent: 'oklch(0.62 0.19 264)'");
+    expect(webBrand).toContain('applyBrandTheme');
+
+    const serverBrand = readFileSync(
+      path.join(root, 'main/apps/server/src/generated/brand.ts'),
+      'utf8',
+    );
+    expect(serverBrand).toContain("name: 'BSLT'");
+    expect(serverBrand).toContain("emailAccent: '#2856c6'");
   });
 });
 

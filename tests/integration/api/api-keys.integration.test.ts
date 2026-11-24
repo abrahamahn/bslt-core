@@ -28,6 +28,8 @@ const USER_B = { userId: 'user-b', email: 'b@example.com', role: 'user' as const
 interface StoredApiKeyRow {
   readonly id: string;
   readonly user_id: string;
+  readonly org_id: string | null;
+  readonly scopes: readonly string[];
   readonly name: string;
   readonly token_hash: string;
   readonly key_prefix: string;
@@ -51,11 +53,13 @@ function createInMemoryApiKeysDb() {
 
   const queryOne = vi.fn(async (sql: QueryResult): Promise<Record<string, unknown> | null> => {
     if (sql.text.startsWith('INSERT INTO identity_api_keys')) {
-      const [userId, name, tokenHash, keyPrefix, last4, expiresAt] = sql.values;
+      const [userId, orgId, scopes, name, tokenHash, keyPrefix, last4, expiresAt] = sql.values;
       const now = new Date();
       const row: StoredApiKeyRow = {
         id: randomUUID(),
         user_id: String(userId),
+        org_id: typeof orgId === 'string' ? orgId : null,
+        scopes: Array.isArray(scopes) ? scopes.map(String) : [],
         name: String(name),
         token_hash: String(tokenHash),
         key_prefix: String(keyPrefix),

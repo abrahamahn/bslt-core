@@ -1,7 +1,7 @@
 // main/modules/devtools/module.ts
 import { defineModule } from '@bslt/contract';
 
-import { devtoolsEndpoints } from './contract';
+import { devtoolsEndpoints, devtoolsEnvSchema } from './contract';
 
 export const devtoolsModule = defineModule({
   id: 'devtools',
@@ -12,4 +12,5 @@ export const devtoolsModule = defineModule({
   events: {},
   jobs: {},
   tables: [],
+  env: devtoolsEnvSchema,
 });

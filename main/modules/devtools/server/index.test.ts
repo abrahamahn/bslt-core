@@ -1,6 +1,7 @@
 // main/modules/devtools/server/index.test.ts
 import { describe, expect, it, vi } from 'vitest';
 
+import { clearCapturedDevEmails, recordCapturedDevEmail } from '@bslt/contract';
 import { createKernelEventsService, createKernelJobsService } from '@bslt/server-system/module';
 
 import { devtoolsServer } from './index';
@@ -75,5 +76,40 @@ describe('devtoolsServer', () => {
   it('rejects unknown job invocation on devtoolsServer', async () => {
     const inst = devtoolsServer.instantiate(makeKernel(), {});
     await expect(inst.invokeJob('nonExistentJob', {})).rejects.toThrow(/Unknown job/);
+  });
+
+  it('lists and clears captured dev emails while returning empty in production', async () => {
+    clearCapturedDevEmails();
+    recordCapturedDevEmail({
+      id: 'dev-1',
+      to: 'dev@acme.test',
+      subject: 'Magic Link',
+      text: 'Open https://localhost:5173/magic?token=xyz',
+    });
+
+    const inst = devtoolsServer.instantiate(makeKernel(), {}, { NODE_ENV: 'development' });
+    const listed = (await inst.invokeHandler('listDevEmails', {}, makeAdminReq())) as {
+      emails: { id: string }[];
+      count: number;
+    };
+    expect(listed.count).toBe(1);
+    expect(listed.emails[0]?.id).toBe('dev-1');
+
+    const prodInst = devtoolsServer.instantiate(makeKernel(), {}, { NODE_ENV: 'production' });
+    expect(await prodInst.invokeHandler('listDevEmails', {}, makeAdminReq())).toEqual({
+      emails: [],
+      count: 0,
+    });
+    expect(await prodInst.invokeHandler('clearDevEmails', { body: {} }, makeAdminReq())).toEqual({
+      cleared: 0,
+    });
+
+    expect(await inst.invokeHandler('clearDevEmails', { body: {} }, makeAdminReq())).toEqual({
+      cleared: 1,
+    });
+    expect(await inst.invokeHandler('listDevEmails', {}, makeAdminReq())).toEqual({
+      emails: [],
+      count: 0,
+    });
   });
 });

@@ -2031,6 +2031,7 @@ export const identityServer: AnyServerModule<typeof identityModule> = implementS
             input.body,
             identityRepository(tx),
             s.clock.now(),
+            req.viewer.actingOrg?.orgId ?? null,
           );
           await s.events.publish(
             tx,

@@ -283,6 +283,8 @@ export interface DbQueryClient {
 export interface ApiKeyRecord {
   readonly id: string;
   readonly userId: string;
+  readonly orgId: string | null;
+  readonly scopes: readonly string[];
   readonly name: string;
   readonly keyPrefix: string;
   readonly last4: string;
@@ -294,6 +296,8 @@ export interface ApiKeyRecord {
 
 export interface NewApiKeyRecord {
   readonly userId: string;
+  readonly orgId?: string | null | undefined;
+  readonly scopes?: readonly string[] | undefined;
   readonly name: string;
   readonly tokenHash: string;
   readonly keyPrefix: string;
@@ -530,9 +534,14 @@ function escapeLike(value: string): string {
 }
 
 function transformApiKey(row: Record<string, unknown>): ApiKeyRecord {
+  const rawScopes = row['scopes'];
+  const scopes = Array.isArray(rawScopes) ? rawScopes.map(String) : [];
+  const rawOrgId = row['org_id'];
   return {
     id: String(row['id']),
     userId: String(row['user_id']),
+    orgId: typeof rawOrgId === 'string' ? rawOrgId : null,
+    scopes,
     name: String(row['name']),
     keyPrefix: String(row['key_prefix']),
     last4: String(row['last4']),
@@ -761,6 +770,8 @@ export function identityRepository(db: DbQueryClient): IdentityRepository {
         insert(IDENTITY_API_KEYS_TABLE)
           .values({
             user_id: data.userId,
+            org_id: data.orgId ?? null,
+            scopes: [...(data.scopes ?? [])],
             name: data.name,
             token_hash: data.tokenHash,
             key_prefix: data.keyPrefix,

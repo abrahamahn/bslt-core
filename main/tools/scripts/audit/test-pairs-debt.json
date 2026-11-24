@@ -9,7 +9,6 @@
   "main/apps/web/src/pages/ForbiddenPage.tsx",
   "main/apps/web/src/pages/NotFoundPage.tsx",
   "main/kernel/client/src/ui/keyboard.ts",
-  "main/kernel/comms/src/email/console.ts",
   "main/kernel/comms/src/email/smtp.client.ts",
   "main/kernel/comms/src/email/smtp.ts",
   "main/kernel/comms/src/sms/console.ts",

@@ -21,6 +21,7 @@ import { App } from '#app/app/App';
 import { getAccessToken } from '#app/app/authToken';
 import { onTosRequired } from '#app/app/tosHandler';
 import { clientConfig } from '#app/config';
+import { applyBrandTheme } from '#app/generated/brand';
 import { reportError, startErrorReporter } from '#app/lib/errorReporter';
 import { unregisterAllServiceWorkers } from '#app/utils/registerServiceWorker';
 
@@ -183,6 +184,8 @@ export function reportUncaughtErrors(): () => void {
 }
 
 export function bootstrapClientApp(): void {
+  applyBrandTheme();
+
   // The ErrorBoundary cannot see rejected promises or failed chunk loads. Errors
   // are re-broadcast from here on, and reported once the reporter starts below.
   reportUncaughtErrors();

@@ -30,12 +30,55 @@ import { addModules, listModules } from './manage';
 const DOMAIN_PATTERN =
   /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/u;
 
+type QuickstartPreset = 'core' | 'solo-saas' | 'b2b-saas';
+
+const QUICKSTART_PRESETS: Readonly<Record<QuickstartPreset, readonly string[]>> = Object.freeze({
+  core: [],
+  'solo-saas': [
+    'orgs',
+    'entitlements',
+    'billing',
+    'flags',
+    'notifications',
+    'files',
+    'support',
+    'analytics',
+  ],
+  'b2b-saas': [
+    'orgs',
+    'entitlements',
+    'billing',
+    'flags',
+    'tasks',
+    'support',
+    'status',
+    'search',
+    'analytics',
+    'notifications',
+    'files',
+    'moderation',
+    'webhooks',
+    'admin',
+  ],
+});
+
+function parsePreset(value: string): QuickstartPreset {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'core' || normalized === 'solo-saas' || normalized === 'b2b-saas') {
+    return normalized;
+  }
+  throw new Error(
+    `bslt init: unknown preset "${value}". Expected one of: core, solo-saas, b2b-saas.`,
+  );
+}
+
 export const QUICKSTART_USAGE = [
   'Usage:',
   '  pnpm quickstart',
   '  pnpm bslt init [--name <name>] [--slug <slug>] [--domain <domain>] [--scope <@scope>]',
-  '                 [--modules <id1,id2|none|all>] [--catalog <dir|file|url>]',
-  '                 [--with-postgres] [--force-env] [--skip-env] [--no-install] [--dry-run] [--yes]',
+  '                 [--preset <core|solo-saas|b2b-saas>] [--modules <id1,id2|none|all>]',
+  '                 [--catalog <dir|file|url>] [--with-postgres] [--force-env] [--skip-env]',
+  '                 [--no-install] [--dry-run] [--yes]',
 ].join('\n');
 
 export interface QuickstartOptions {
@@ -44,6 +87,7 @@ export interface QuickstartOptions {
   readonly slug?: string | undefined;
   readonly domain?: string | undefined;
   readonly scope?: string | undefined;
+  readonly preset?: QuickstartPreset | undefined;
   readonly modules?: readonly string[] | undefined;
   readonly catalog?: string | undefined;
   readonly withPostgres?: boolean | undefined;
@@ -108,6 +152,7 @@ export function parseQuickstartArgs(argv: readonly string[]): QuickstartOptions 
   let slug: string | undefined;
   let domain: string | undefined;
   let scope: string | undefined;
+  let preset: QuickstartPreset | undefined;
   let modules: string[] | undefined;
   let catalog: string | undefined;
   let withPostgres = false;
@@ -157,6 +202,10 @@ export function parseQuickstartArgs(argv: readonly string[]): QuickstartOptions 
       const parsed = takeValue(i, '--scope');
       scope = parsed.value;
       i = parsed.next;
+    } else if (arg === '--preset' || arg.startsWith('--preset=')) {
+      const parsed = takeValue(i, '--preset');
+      preset = parsePreset(parsed.value);
+      i = parsed.next;
     } else if (arg === '--modules' || arg.startsWith('--modules=')) {
       const parsed = takeValue(i, '--modules');
       modules =
@@ -176,6 +225,7 @@ export function parseQuickstartArgs(argv: readonly string[]): QuickstartOptions 
     slug,
     domain,
     scope,
+    preset,
     modules,
     catalog,
     withPostgres,
@@ -246,6 +296,7 @@ function writeLocalEnvIfAbsent(
   appName: string,
   slug: string,
   forceEnv: boolean,
+  options: { readonly includeBillingMock?: boolean } = {},
 ): boolean {
   const envDir = path.join(root, 'config/env');
   const envLocalPath = path.join(envDir, '.env.local');
@@ -277,6 +328,10 @@ function writeLocalEnvIfAbsent(
   const dbName = `${slug.replaceAll('-', '_')}_dev`;
   upsertEnvKey(lines, 'VITE_APP_NAME', appName);
   upsertEnvKey(lines, 'POSTGRES_DB', dbName);
+  upsertEnvKey(lines, 'AUTH_STRATEGIES', 'local,magic,webauthn');
+  if (options.includeBillingMock === true) {
+    upsertEnvKey(lines, 'BILLING_PROVIDER', 'mock');
+  }
   upsertEnvKey(lines, 'JWT_SECRET', randomBytes(32).toString('hex'));
   upsertEnvKey(lines, 'COOKIE_SECRET', randomBytes(32).toString('hex'));
   upsertEnvKey(lines, 'OAUTH_TOKEN_ENCRYPTION_KEY', randomBytes(32).toString('hex'));
@@ -296,12 +351,18 @@ export async function runQuickstart(options: QuickstartOptions = {}): Promise<Qu
       (options.interactive === undefined &&
         process.stdin.isTTY &&
         options.appName === undefined &&
+        options.preset === undefined &&
         options.modules === undefined));
 
   let appName = options.appName;
   let domain = options.domain;
   let scope = options.scope;
-  let requestedModules = options.modules ? [...options.modules] : undefined;
+  let requestedModules =
+    options.modules !== undefined
+      ? [...options.modules]
+      : options.preset !== undefined
+        ? [...QUICKSTART_PRESETS[options.preset]]
+        : undefined;
 
   if (shouldPrompt) {
     const defaultName = readCurrentConfigAppName(root);
@@ -371,10 +432,19 @@ export async function runQuickstart(options: QuickstartOptions = {}): Promise<Qu
   const validatedDomain = validateOptionalDomain(domain);
   const validatedScope = validateOptionalScope(scope);
 
-  // Resolve "all" if passed via --modules all
+  // Resolve "all" if passed via --modules all, or narrow --preset targets to available catalog entries
   if (requestedModules?.length === 1 && requestedModules[0] === 'all') {
     const listing = await listModules({ root, catalog: options.catalog });
     requestedModules = listing.available.map((m) => m.id);
+  } else if (
+    options.preset !== undefined &&
+    options.modules === undefined &&
+    requestedModules !== undefined &&
+    requestedModules.length > 0
+  ) {
+    const listing = await listModules({ root, catalog: options.catalog });
+    const availableIds = new Set(listing.available.map((m) => m.id));
+    requestedModules = requestedModules.filter((id) => availableIds.has(id));
   }
 
   let addedModules: readonly string[] = [];
@@ -416,10 +486,18 @@ export async function runQuickstart(options: QuickstartOptions = {}): Promise<Qu
     scopeMigratedTo = validatedScope;
   }
 
+  const includeBillingMock =
+    addedModules.includes('billing') ||
+    options.preset === 'solo-saas' ||
+    options.preset === 'b2b-saas' ||
+    existsSync(path.join(root, 'main/modules/billing/module.ts'));
+
   const envFileWritten =
     options.skipEnv === true
       ? false
-      : writeLocalEnvIfAbsent(root, finalAppName, finalSlug, options.forceEnv === true);
+      : writeLocalEnvIfAbsent(root, finalAppName, finalSlug, options.forceEnv === true, {
+          includeBillingMock,
+        });
 
   if (runInstall && (addedModules.length > 0 || scopeMigratedTo !== null)) {
     execFileSync('pnpm', ['install'], { cwd: root, stdio: 'inherit' });

@@ -223,6 +223,8 @@ export const apiRouteInventory = [
     public: false,
   },
   { method: 'GET', path: '/api/csrf-token', module: 'system', public: false },
+  { method: 'GET', path: '/api/devtools/emails', module: 'devtools', public: true },
+  { method: 'POST', path: '/api/devtools/emails/clear', module: 'devtools', public: true },
   { method: 'GET', path: '/api/email/unsubscribe/:token', module: 'notifications', public: true },
   { method: 'GET', path: '/api/entitlements', module: 'entitlements', public: false },
   { method: 'GET', path: '/api/entitlements/check/:key', module: 'entitlements', public: false },

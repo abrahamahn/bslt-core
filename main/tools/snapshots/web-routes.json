@@ -284,6 +284,17 @@
           "takesPrecedenceOver": []
         },
         {
+          "path": "/onboarding",
+          "page": "OnboardingPage",
+          "guard": "protected",
+          "publicOnlyRedirectTo": null,
+          "layouts": [
+            "AppShell"
+          ],
+          "adminSurface": null,
+          "takesPrecedenceOver": []
+        },
+        {
           "path": "/privacy",
           "page": "PrivacyPolicyPage",
           "guard": "none",
@@ -489,6 +500,12 @@
             "label": "Go to Settings",
             "category": "navigation",
             "navigatesTo": "/settings"
+          },
+          {
+            "id": "nav-onboarding",
+            "label": "Run Workspace Setup",
+            "category": "navigation",
+            "navigatesTo": "/onboarding"
           },
           {
             "id": "nav-admin",
@@ -884,6 +901,28 @@
           "takesPrecedenceOver": []
         },
         {
+          "path": "/developer/billing-sandbox",
+          "page": "BillingSandboxPage",
+          "guard": "protected",
+          "publicOnlyRedirectTo": null,
+          "layouts": [
+            "ConsoleShell"
+          ],
+          "adminSurface": null,
+          "takesPrecedenceOver": []
+        },
+        {
+          "path": "/developer/emails",
+          "page": "DevEmailInboxPage",
+          "guard": "none",
+          "publicOnlyRedirectTo": null,
+          "layouts": [
+            "ConsoleShell"
+          ],
+          "adminSurface": null,
+          "takesPrecedenceOver": []
+        },
+        {
           "path": "/disclaimer",
           "page": "DisclaimerPage",
           "guard": "none",
@@ -912,6 +951,17 @@
           "publicOnlyRedirectTo": null,
           "layouts": [
             "AuthShell"
+          ],
+          "adminSurface": null,
+          "takesPrecedenceOver": []
+        },
+        {
+          "path": "/onboarding",
+          "page": "OnboardingPage",
+          "guard": "protected",
+          "publicOnlyRedirectTo": null,
+          "layouts": [
+            "AppShell"
           ],
           "adminSurface": null,
           "takesPrecedenceOver": []
@@ -1077,6 +1127,10 @@
               "to": "/developer/api-routes"
             },
             {
+              "label": "Email Inbox",
+              "to": "/developer/emails"
+            },
+            {
               "label": "UI Library",
               "to": "/ui-library"
             }
@@ -1168,6 +1222,12 @@
             "label": "Go to Settings",
             "category": "navigation",
             "navigatesTo": "/settings"
+          },
+          {
+            "id": "nav-onboarding",
+            "label": "Run Workspace Setup",
+            "category": "navigation",
+            "navigatesTo": "/onboarding"
           },
           {
             "id": "nav-admin",

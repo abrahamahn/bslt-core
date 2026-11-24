@@ -1,5 +1,15 @@
 // main/modules/devtools/contract/schemas.ts
-import { array, boolean, enumOf, number, object, optional, string, type Infer } from '@bslt/schema';
+import {
+  array,
+  boolean,
+  enumOf,
+  nullable,
+  number,
+  object,
+  optional,
+  string,
+  type Infer,
+} from '@bslt/schema';
 
 export const ADMIN_ROUTE_METHODS = [
   'GET',
@@ -32,3 +42,29 @@ export const routeManifestResponseSchema = object({
   count: number({ label: 'count', int: true, min: 0 }),
 });
 export type RouteManifestResponse = Infer<typeof routeManifestResponseSchema>;
+
+const devEmailItemSchema = object({
+  id: string({ label: 'id' }),
+  to: array(string({ label: 'recipient' })),
+  subject: string({ label: 'subject' }),
+  text: nullable(string({ label: 'text' })),
+  html: nullable(string({ label: 'html' })),
+  links: array(string({ label: 'link' })),
+  sentAt: string({ label: 'sentAt' }),
+});
+export type DevEmailItem = Infer<typeof devEmailItemSchema>;
+
+export const devEmailInboxResponseSchema = object({
+  emails: array(devEmailItemSchema),
+  count: number({ label: 'count', int: true, min: 0 }),
+});
+export type DevEmailInboxResponse = Infer<typeof devEmailInboxResponseSchema>;
+
+export const clearDevEmailsResponseSchema = object({
+  cleared: number({ label: 'cleared', int: true, min: 0 }),
+});
+export type ClearDevEmailsResponse = Infer<typeof clearDevEmailsResponseSchema>;
+
+export const devtoolsEnvSchema = object({
+  NODE_ENV: optional(string({ label: 'NODE_ENV' })),
+});

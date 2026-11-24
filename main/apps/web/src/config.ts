@@ -7,7 +7,9 @@
 
 import { MS_PER_DAY, MS_PER_MINUTE, MS_PER_SECOND, trimTrailingSlashes } from '@bslt/contract';
 
-export const DEFAULT_APP_NAME = 'Your App';
+import { BRAND } from '#app/generated/brand';
+
+export const DEFAULT_APP_NAME = BRAND.name;
 
 // ============================================================================
 // Environment Variables

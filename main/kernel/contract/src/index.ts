@@ -52,6 +52,13 @@ export {
   type Viewer,
 } from './endpoint';
 
+export {
+  clearCapturedDevEmails,
+  extractEmailLinks,
+  listCapturedDevEmails,
+  recordCapturedDevEmail,
+} from './dev-email-inbox';
+
 export { emptyBodySchema, errorResponseSchema, type ErrorWire } from './envelope';
 
 export {

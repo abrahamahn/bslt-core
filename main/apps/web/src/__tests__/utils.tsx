@@ -45,7 +45,7 @@ export const mockConfig: ClientConfig = {
   isDev: false,
   isProd: false,
   apiUrl: 'http://localhost:3000/api',
-  appName: 'Your App',
+  appName: 'BSLT',
   stripePublishableKey: 'pk_test_123',
   tokenRefreshInterval: 13 * 60 * 1000,
   uiVersion: '1.0.0',

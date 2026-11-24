@@ -22,6 +22,8 @@ export interface IdentityApiKeysRow {
   expiresAt: Date | null; // <- tables.identity_api_keys.columns: expires_at timestamp with time zone
   createdAt: Date; // <- tables.identity_api_keys.columns: created_at timestamp with time zone NOT NULL DEFAULT now()
   updatedAt: Date; // <- tables.identity_api_keys.columns: updated_at timestamp with time zone NOT NULL DEFAULT now()
+  orgId: string | null; // <- tables.identity_api_keys.columns: org_id uuid
+  scopes: string[]; // <- tables.identity_api_keys.columns: scopes text[] NOT NULL DEFAULT '{}'::text[]
 }
 
 /** What an INSERT into `identity_api_keys` takes: a column with a default, or a nullable one, is optional. */
@@ -36,6 +38,8 @@ export interface IdentityApiKeysInsert {
   expiresAt?: Date | null; // <- tables.identity_api_keys.columns: expires_at
   createdAt?: Date; // <- tables.identity_api_keys.columns: created_at
   updatedAt?: Date; // <- tables.identity_api_keys.columns: updated_at
+  orgId?: string | null; // <- tables.identity_api_keys.columns: org_id
+  scopes?: string[]; // <- tables.identity_api_keys.columns: scopes
 }
 
 /** What an UPDATE of `identity_api_keys` may set. */
@@ -50,6 +54,8 @@ export interface IdentityApiKeysUpdate {
   expiresAt?: Date | null; // <- tables.identity_api_keys.columns: expires_at
   createdAt?: Date; // <- tables.identity_api_keys.columns: created_at
   updatedAt?: Date; // <- tables.identity_api_keys.columns: updated_at
+  orgId?: string | null; // <- tables.identity_api_keys.columns: org_id
+  scopes?: string[]; // <- tables.identity_api_keys.columns: scopes
 }
 
 /** Property name to column name, for every column of `identity_api_keys`. */
@@ -64,6 +70,8 @@ export const IDENTITY_API_KEYS_COLUMNS = {
   expiresAt: 'expires_at', // <- tables.identity_api_keys.columns: expires_at
   createdAt: 'created_at', // <- tables.identity_api_keys.columns: created_at
   updatedAt: 'updated_at', // <- tables.identity_api_keys.columns: updated_at
+  orgId: 'org_id', // <- tables.identity_api_keys.columns: org_id
+  scopes: 'scopes', // <- tables.identity_api_keys.columns: scopes
 } as const;
 
 export const IDENTITY_AUTH_TOKENS_TABLE = 'identity_auth_tokens'; // <- tables.identity_auth_tokens

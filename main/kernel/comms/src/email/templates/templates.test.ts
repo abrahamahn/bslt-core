@@ -14,9 +14,29 @@ import { createEmailTemplates } from './templates';
 const templates = createEmailTemplates({ appName: 'Acme' });
 
 describe('email templates — branding', () => {
-  it('renders the configured app name into the layout', () => {
-    const result = templates.subscriptionCreated('Pro', 'https://app.test/billing');
+  it('renders the configured app name, valid accent color, and support email into the layout', () => {
+    const branded = createEmailTemplates({
+      appName: 'Acme',
+      accentColor: '#7c3aed',
+      supportEmail: 'help@acme.example',
+    });
+    const result = branded.subscriptionCreated('Pro', 'https://app.test/billing');
     expect(result.html).toContain('Acme');
+    expect(result.html).toContain('#7c3aed');
+    expect(result.html).toContain('mailto:help@acme.example');
+  });
+
+  it('rejects unsafe accentColor CSS injection and malformed supportEmail, falling back safely', () => {
+    const hostile = createEmailTemplates({
+      appName: 'Acme',
+      accentColor: 'red; background:url(javascript:alert(1))',
+      supportEmail: 'bad" onclick="alert(1)',
+    });
+    const result = hostile.passwordReset('https://app.test/reset?token=abc');
+    expect(result.html).toContain('#2856c6');
+    expect(result.html).not.toContain('javascript:alert');
+    expect(result.html).not.toContain('onclick');
+    expect(result.html).not.toContain('mailto:');
   });
 });
 

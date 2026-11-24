@@ -2,7 +2,7 @@
 
 # HTTP API Reference
 
-Every registered HTTP route (118 total) is attributed to an installed module or `kernel`. Full JSON schemas live in [`openapi.json`](./openapi.json).
+Every registered HTTP route (120 total) is attributed to an installed module or `kernel`. Full JSON schemas live in [`openapi.json`](./openapi.json).
 
 ## Composed Route Inventory
 
@@ -88,6 +88,8 @@ Every registered HTTP route (118 total) is attributed to an installed module or 
 | `POST`   | `/api/compliance/age-assurance/check`       | `compliance` | `role`       | `compliance.startAgeAssurance`        |
 | `GET`    | `/api/compliance/age-assurance/status`      | `compliance` | `role`       | `compliance.getAgeAssuranceStatus`    |
 | `GET`    | `/api/csrf-token`                           | `kernel`     | `undeclared` | `system`                              |
+| `GET`    | `/api/devtools/emails`                      | `devtools`   | `public`     | `devtools.listDevEmails`              |
+| `POST`   | `/api/devtools/emails/clear`                | `devtools`   | `public`     | `devtools.clearDevEmails`             |
 | `GET`    | `/api/legal/current`                        | `compliance` | `public`     | `compliance.getCurrentLegal`          |
 | `GET`    | `/api/platform/context`                     | `kernel`     | `public`     | `system`                              |
 | `POST`   | `/api/platform/errors`                      | `kernel`     | `public`     | `system`                              |
@@ -261,12 +263,14 @@ Append-only audit stream, security event console, and user activity timeline pro
 | `getSecurityMetrics`   | `GET`  | `/api/admin/security/metrics`    | `admin` | Get aggregated security event metrics over a time window (platform admin) |
 | `exportSecurityEvents` | `POST` | `/api/admin/security/export`     | `admin` | Export filtered security audit events as CSV or JSON (platform admin)     |
 
-### `@bslt/devtools` (1 endpoints)
+### `@bslt/devtools` (3 endpoints)
 
 <!-- <- main/modules/devtools/contract/endpoints.ts -->
 
 Developer route manifest introspection and component showcase surfaces.
 
-| Key                | Method | Path                | Auth    | Summary                       |
-| ------------------ | ------ | ------------------- | ------- | ----------------------------- |
-| `getRouteManifest` | `GET`  | `/api/admin/routes` | `admin` | Get registered route manifest |
+| Key                | Method | Path                         | Auth     | Summary                                                      |
+| ------------------ | ------ | ---------------------------- | -------- | ------------------------------------------------------------ |
+| `getRouteManifest` | `GET`  | `/api/admin/routes`          | `admin`  | Get registered route manifest                                |
+| `listDevEmails`    | `GET`  | `/api/devtools/emails`       | `public` | List outbound emails captured in the local development inbox |
+| `clearDevEmails`   | `POST` | `/api/devtools/emails/clear` | `public` | Clear captured emails from the local development inbox       |

@@ -7,8 +7,6 @@
       "webauthn",
       "google",
       "github",
-      "facebook",
-      "microsoft",
       "apple"
     ],
     "billingProvider": "stripe",
@@ -2044,6 +2042,49 @@
       "preHandlers": [],
       "request": null,
       "contract": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/devtools/emails",
+      "head": true,
+      "registeredBy": "route-map",
+      "module": "devtools",
+      "auth": "public",
+      "roles": [],
+      "deprecated": false,
+      "bodyLimit": null,
+      "preHandlers": [],
+      "request": null,
+      "contract": {
+        "endpoint": "devtools.listDevEmails",
+        "body": null,
+        "query": null,
+        "pathParams": null,
+        "responses": {
+          "200": "devEmailInboxResponseSchema"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/devtools/emails/clear",
+      "registeredBy": "route-map",
+      "module": "devtools",
+      "auth": "public",
+      "roles": [],
+      "deprecated": false,
+      "bodyLimit": null,
+      "preHandlers": [],
+      "request": "emptyBodySchema",
+      "contract": {
+        "endpoint": "devtools.clearDevEmails",
+        "body": "emptyBodySchema",
+        "query": null,
+        "pathParams": null,
+        "responses": {
+          "200": "clearDevEmailsResponseSchema"
+        }
+      }
     },
     {
       "method": "GET",

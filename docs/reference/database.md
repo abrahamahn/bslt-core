@@ -17,7 +17,7 @@ Single `public` schema with 27 attributed tables under forced Row-Level Security
 | `compliance_legal_documents`      | `compliance` | `public_read` | `—`          | 7       |
 | `compliance_legal_holds`          | `compliance` | `system`      | `—`          | 10      |
 | `compliance_retention_policies`   | `compliance` | `system`      | `—`          | 4       |
-| `identity_api_keys`               | `identity`   | `owner_user`  | `user_id`    | 10      |
+| `identity_api_keys`               | `identity`   | `owner_user`  | `user_id`    | 12      |
 | `identity_auth_tokens`            | `identity`   | `system`      | `—`          | 11      |
 | `identity_credentials`            | `identity`   | `owner_user`  | `user_id`    | 5       |
 | `identity_lockouts`               | `identity`   | `owner_user`  | `user_id`    | 5       |

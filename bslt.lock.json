@@ -6,6 +6,7 @@
     "compliance/0001_compliance.sql": "9f6019dbe41143100bcb1f2196aa153eb1fb0f8650f807e16f216c646e8a3a54",
     "identity/0001_identity.sql": "bf64bb90cc2cdc3983e5db263307753d1dfe306e3f5bef665eecc42c7b0c6679",
     "identity/0002_remove_kakao_oauth.sql": "d388d2319d23224c5f2852e4a84a7c099b0bfc2a564d406254c4849e8b585373",
+    "identity/0003_org_scoped_api_keys.sql": "56afedc0be15fa9ad61c4e9f4e42eaa2b7bcd1f957767b92c113702b53e32cdf",
     "kernel/0001_sys.sql": "af634ad422e4867c437cef490dc0491da37bb961c653e20ac47284642f2a1b5a",
     "kernel/0002_sys_optional_orgs_guard.sql": "03bdeedf16a99c08f0fe03e19529fd6a868045a231db31765642f87bcf5a6b74"
   }

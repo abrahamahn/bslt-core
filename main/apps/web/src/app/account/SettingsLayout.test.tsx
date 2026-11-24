@@ -3,7 +3,7 @@ import { CapabilityProvider, EMPTY_CAPABILITY_CONTEXT } from '@bslt/web-platform
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { hasBillingModule } from '../../generated/modules';
+import { hasBillingModule, hasOrgsModule } from '../../generated/modules';
 
 import { SettingsLayout } from './SettingsLayout';
 
@@ -76,5 +76,26 @@ describe('SettingsLayout', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Sessions' }));
     expect(mockNavigate).toHaveBeenCalledWith('/settings/sessions');
+  });
+
+  it('shows the Workspace Console shortcut only when orgs.teams flag is enabled', () => {
+    render(<SettingsLayout activeSection="profile" />);
+    expect(screen.getByText('Personal Account')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Workspace Console' })).toBeNull();
+
+    render(
+      <CapabilityProvider
+        initialContext={{
+          ...EMPTY_CAPABILITY_CONTEXT,
+          flags: { 'orgs.teams': true },
+        }}
+      >
+        <SettingsLayout activeSection="profile" />
+      </CapabilityProvider>,
+    );
+    if (hasOrgsModule) {
+      fireEvent.click(screen.getByRole('button', { name: 'Workspace Console' }));
+      expect(mockNavigate).toHaveBeenCalledWith('/organization');
+    }
   });
 });

@@ -142,7 +142,8 @@ describe('appRoutes', () => {
     });
     const pricingRoute = flattenRoutes(routes).find((route) => route.path === 'pricing');
 
-    expect(pricingRoute?.protected).toBe(true);
+    expect(pricingRoute).toBeDefined();
+    expect(pricingRoute?.protected).toBeUndefined();
     expect(
       flattenRoutes(routes).find((route) => route.path === 'settings/billing')?.protected,
     ).toBe(true);
@@ -168,7 +169,7 @@ describe('appRoutes', () => {
   );
 
   it.runIf(hasBillingModule)(
-    'keeps /pricing routed to a graceful protected fallback when billing is disabled',
+    'keeps /pricing routed to a graceful fallback when billing is disabled',
     () => {
       const routes = createAppRoutes({
         advancedAdminEnabled: false,
@@ -179,7 +180,8 @@ describe('appRoutes', () => {
       const flatRoutes = flattenRoutes(routes);
       const paths = new Set(flatRoutes.map((route) => route.path));
 
-      expect(flatRoutes.find((route) => route.path === 'pricing')?.protected).toBe(true);
+      expect(flatRoutes.find((route) => route.path === 'pricing')).toBeDefined();
+      expect(flatRoutes.find((route) => route.path === 'pricing')?.protected).toBeUndefined();
       expect(paths.has('settings/billing')).toBe(false);
       expect(paths.has('billing/success')).toBe(false);
       expect(paths.has('billing/cancel')).toBe(false);

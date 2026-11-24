@@ -36,7 +36,25 @@
 .settings-layout__nav {
   display: flex;
   flex-direction: column;
+  gap: var(--ui-gap-md);
+}
+
+.settings-layout__group {
+  display: flex;
+  flex-direction: column;
   gap: var(--ui-gap-xs);
+}
+
+.settings-layout__group-label {
+  padding: var(--ui-gap-xs) var(--ui-gap-md) 0;
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.settings-layout__switcher {
+  margin-top: var(--ui-gap-xs);
 }
 
 .settings-layout__nav-button {
@@ -88,6 +106,15 @@
   .settings-layout__nav {
     flex-direction: row;
     overflow-x: auto;
+  }
+
+  .settings-layout__group {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .settings-layout__group-label {
+    display: none;
   }
 
   .settings-layout__nav-button {

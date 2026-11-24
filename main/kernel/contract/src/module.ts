@@ -275,6 +275,10 @@ export interface BsltConfig<Ms extends readonly ModuleDefinition[] = readonly Mo
   readonly brand: {
     readonly accent: string;
     readonly logo: string;
+    readonly emailAccent?: string;
+    readonly tagline?: string;
+    readonly domain?: string;
+    readonly supportEmail?: string;
   };
 }
 

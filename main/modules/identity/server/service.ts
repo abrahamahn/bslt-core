@@ -147,6 +147,8 @@ export function generateApiKey(): GeneratedApiKey {
 function toApiKeyDto(record: ApiKeyRecord): ApiKey {
   return {
     id: record.id,
+    orgId: record.orgId,
+    scopes: [...record.scopes],
     name: record.name,
     keyPrefix: record.keyPrefix,
     last4: record.last4,
@@ -170,15 +172,20 @@ export async function createApiKeyForOwner(
   input: CreateApiKeyRequest,
   repo: IdentityApiKeyRepository,
   now: Date = new Date(),
+  actingOrgId: string | null = null,
 ): Promise<CreatedApiKey> {
   const generated = generateApiKey();
   const expiresAt =
     input.expiresInDays === undefined || input.expiresInDays === null
       ? null
       : new Date(now.getTime() + input.expiresInDays * MS_PER_DAY);
+  const orgId = input.scopeToWorkspace === true ? actingOrgId : null;
+  const scopes = [...new Set(input.scopes ?? [])];
 
   const record = await repo.insertApiKey({
     userId: ownerId,
+    orgId,
+    scopes,
     name: input.name,
     tokenHash: generated.tokenHash,
     keyPrefix: generated.keyPrefix,

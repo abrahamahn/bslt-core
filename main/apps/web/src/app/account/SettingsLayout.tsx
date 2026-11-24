@@ -4,9 +4,13 @@ import { Button, Heading, Text } from '@bslt/ui';
 import { useCapabilities } from '@bslt/web-platform';
 import { useCallback, useMemo, type ReactElement, type ReactNode } from 'react';
 
+import { hasOrgsModule } from '../../generated/modules';
+
 import { getActiveSettingsTab, getSettingsNavItems, type SettingsNavItem } from './settingsTabs';
 
 import './SettingsPage.css';
+
+const WORKSPACE_TAB_IDS = new Set(['billing', 'entitlements']);
 
 interface SettingsLayoutProps {
   readonly activeSection?: string;
@@ -23,8 +27,17 @@ export const SettingsLayout = ({
   const navigate = useNavigate();
   const { isFlagEnabled } = useCapabilities();
   const billingEnabled = isFlagEnabled('flags.billing');
+  const teamsEnabled = isFlagEnabled('orgs.teams');
 
   const navItems = useMemo(() => getSettingsNavItems({ billingEnabled }), [billingEnabled]);
+  const personalItems = useMemo(
+    () => navItems.filter((item) => !WORKSPACE_TAB_IDS.has(item.id)),
+    [navItems],
+  );
+  const workspaceItems = useMemo(
+    () => navItems.filter((item) => WORKSPACE_TAB_IDS.has(item.id)),
+    [navItems],
+  );
   const resolvedSection = useMemo(
     () => activeSection ?? getActiveSettingsTab(location),
     [activeSection, location],
@@ -57,24 +70,67 @@ export const SettingsLayout = ({
           </Text>
         </div>
         <nav className="settings-layout__nav" aria-label="Settings sections">
-          {navItems.map((item) => {
-            const isActive = item.id === resolvedSection;
-            return (
-              <Button
-                key={item.id}
-                type="button"
-                variant={isActive ? 'secondary' : 'text'}
-                className="settings-layout__nav-button"
-                aria-current={isActive ? 'page' : undefined}
-                data-active={isActive ? 'true' : 'false'}
-                onClick={() => {
-                  handleSelect(item);
-                }}
-              >
-                {item.label}
-              </Button>
-            );
-          })}
+          <div className="settings-layout__group">
+            <Text as="span" size="xs" tone="muted" className="settings-layout__group-label">
+              Personal Account
+            </Text>
+            {personalItems.map((item) => {
+              const isActive = item.id === resolvedSection;
+              return (
+                <Button
+                  key={item.id}
+                  type="button"
+                  variant={isActive ? 'secondary' : 'text'}
+                  className="settings-layout__nav-button"
+                  aria-current={isActive ? 'page' : undefined}
+                  data-active={isActive ? 'true' : 'false'}
+                  onClick={() => {
+                    handleSelect(item);
+                  }}
+                >
+                  {item.label}
+                </Button>
+              );
+            })}
+          </div>
+          {workspaceItems.length > 0 || (hasOrgsModule && teamsEnabled) ? (
+            <div className="settings-layout__group">
+              <Text as="span" size="xs" tone="muted" className="settings-layout__group-label">
+                Workspace &amp; Plan
+              </Text>
+              {hasOrgsModule && teamsEnabled ? (
+                <Button
+                  type="button"
+                  variant="text"
+                  className="settings-layout__nav-button"
+                  data-active="false"
+                  onClick={() => {
+                    navigate('/organization');
+                  }}
+                >
+                  Workspace Console
+                </Button>
+              ) : null}
+              {workspaceItems.map((item) => {
+                const isActive = item.id === resolvedSection;
+                return (
+                  <Button
+                    key={item.id}
+                    type="button"
+                    variant={isActive ? 'secondary' : 'text'}
+                    className="settings-layout__nav-button"
+                    aria-current={isActive ? 'page' : undefined}
+                    data-active={isActive ? 'true' : 'false'}
+                    onClick={() => {
+                      handleSelect(item);
+                    }}
+                  >
+                    {item.label}
+                  </Button>
+                );
+              })}
+            </div>
+          ) : null}
         </nav>
       </aside>
       <div className="settings-layout__main">

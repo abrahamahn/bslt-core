@@ -297,17 +297,92 @@ describe('bslt module new', () => {
     expect(readFileSync(path.join(root, 'bslt.config.ts'), 'utf8')).toBe(beforeConfig);
   });
 
-  it('parses valid CLI arguments for bslt module new', () => {
+  it('parses valid CLI arguments for bslt module new including --scope user|org', () => {
     expect(parseModuleNewArgs(['new', 'example'])).toEqual({
       id: 'example',
+      scope: 'user',
       dryRun: false,
       install: true,
     });
-    expect(parseModuleNewArgs(['new', 'example', '--dry-run', '--no-install'])).toEqual({
+    expect(
+      parseModuleNewArgs(['new', 'example', '--scope', 'org', '--dry-run', '--no-install']),
+    ).toEqual({
       id: 'example',
+      scope: 'org',
       dryRun: true,
       install: false,
     });
+    expect(parseModuleNewArgs(['new', 'projects', '--scope=org']).scope).toBe('org');
+    expect(() => parseModuleNewArgs(['new', 'projects', '--scope', 'global'])).toThrow(
+      /invalid --scope/iu,
+    );
+  });
+
+  it('scaffolds an org-scoped module with owner_org RLS, orgsModule dependency, and ORG_REQUIRED guard', async () => {
+    const root = await createTempWorkspace();
+    const res = await scaffoldModule('projects', { root, scope: 'org', dryRun: true });
+    expect(res.scope).toBe('org');
+    expect(res.files).toContain('main/modules/projects/server/migrations/0001_projects.sql');
+
+    // Add minimal orgs stub so syncModules/syncRows succeeds when writing org-scoped module
+    mkdirSync(path.join(root, 'main/modules/orgs/server/migrations'), { recursive: true });
+    mkdirSync(path.join(root, 'main/modules/orgs/web'), { recursive: true });
+    writeFileSync(
+      path.join(root, 'main/modules/orgs/module.ts'),
+      "import { defineModule } from '@bslt/contract';\nexport const orgsModule = defineModule({ id: 'orgs', summary: 'orgs', status: 'stable', dependsOn: [], endpoints: {}, events: {}, jobs: {}, tables: ['orgs'] });\n",
+    );
+    writeFileSync(
+      path.join(root, 'main/modules/orgs/server/index.ts'),
+      'export const orgsServer = {};\n',
+    );
+    writeFileSync(
+      path.join(root, 'main/modules/orgs/README.md'),
+      '# `@bslt/orgs`\n\n<!-- bslt:generated reference -->\n<!-- /bslt:generated -->\n',
+    );
+    writeFileSync(
+      path.join(root, 'main/modules/orgs/web/index.ts'),
+      'export const orgsWeb = {};\n',
+    );
+    const catalogPath = path.join(root, 'main/kernel/db/catalog.snapshot.json');
+    const catalog = JSON.parse(readFileSync(catalogPath, 'utf8')) as {
+      sources: { id: string; dependsOn: string[] }[];
+    };
+    catalog.sources.push({ id: 'orgs', dependsOn: ['identity'] });
+    writeFileSync(catalogPath, JSON.stringify(catalog, null, 2));
+    const cfg = readFileSync(path.join(root, 'bslt.config.ts'), 'utf8');
+    writeFileSync(
+      path.join(root, 'bslt.config.ts'),
+      cfg
+        .replace(
+          "import { identityModule } from '@bslt/identity/module';",
+          "import { identityModule } from '@bslt/identity/module';\nimport { orgsModule } from '@bslt/orgs/module';",
+        )
+        .replace(
+          'installedModules: [identityModule]',
+          'installedModules: [identityModule, orgsModule]',
+        ),
+    );
+
+    const written = await scaffoldModule('projects', { root, scope: 'org' });
+    expect(written.scope).toBe('org');
+    const sql = readFileSync(
+      path.join(root, 'main/modules/projects/server/migrations/0001_projects.sql'),
+      'utf8',
+    );
+    expect(sql).toContain('org_id uuid');
+    expect(sql).toContain('REFERENCES orgs(id)');
+    expect(sql).toContain("'owner_org', 'org_id'");
+
+    const manifest = readFileSync(path.join(root, 'main/modules/projects/module.ts'), 'utf8');
+    expect(manifest).toContain('dependsOn: [orgsModule]');
+    expect(manifest).toContain("permissions: ['projects.manage']");
+
+    const serverIndex = readFileSync(
+      path.join(root, 'main/modules/projects/server/index.ts'),
+      'utf8',
+    );
+    expect(serverIndex).toContain('requireActingOrgId(req)');
+    expect(serverIndex).toContain('ORG_REQUIRED');
   });
 
   it('rejects empty or whitespace-only module ids', async () => {

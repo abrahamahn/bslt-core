@@ -31,7 +31,7 @@ BSLT completed its 21-phase modular restructure (`Phases 0–20`) and is tagged 
 | `identity`   | `installed` | `stable` | User identity, authentication, sessions, and API keys.                                                                                                     | 82        | 14     | 10     | 0    |
 | `compliance` | `installed` | `stable` | Versioned legal documents, consent ledger, GDPR export/erasure orchestration, legal holds, retention policies, age assurance, and jurisdiction resolution. | 17        | 7      | 7      | 1    |
 | `audit`      | `installed` | `stable` | Append-only audit stream, security event console, and user activity timeline projection.                                                                   | 6         | 2      | 0      | 1    |
-| `devtools`   | `devOnly`   | `stable` | Developer route manifest introspection and component showcase surfaces.                                                                                    | 1         | 0      | 0      | 0    |
+| `devtools`   | `devOnly`   | `stable` | Developer route manifest introspection and component showcase surfaces.                                                                                    | 3         | 0      | 0      | 0    |
 
 <!-- /bslt:generated -->
 

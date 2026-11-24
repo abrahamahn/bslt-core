@@ -6,7 +6,7 @@
  * Use this in development to see email output without SMTP.
  */
 
-import { generateSecureId } from '@bslt/contract';
+import { generateSecureId, recordCapturedDevEmail } from '@bslt/contract';
 
 import type { EmailOptions, EmailResult, EmailService } from './types';
 
@@ -30,6 +30,14 @@ export class ConsoleEmailService implements EmailService {
 
   send(options: EmailOptions): Promise<EmailResult> {
     const messageId = `dev-${String(Date.now())}-${generateSecureId(9)}`;
+
+    recordCapturedDevEmail({
+      id: messageId,
+      to: options.to,
+      subject: options.subject,
+      text: options.text,
+      html: options.html,
+    });
 
     this.log('\n📧 ═══════════════════════════════════════════════════════════');
     this.log('  EMAIL (Development Mode - Not Sent)');

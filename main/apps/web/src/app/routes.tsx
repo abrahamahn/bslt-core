@@ -4,10 +4,12 @@ import { hasAdminModule } from '../generated/modules';
 import { ProfilePage, SettingsLayout, SettingsPage } from './account';
 import { AdminLayout, type AdminSurfaceId } from './admin';
 import { DashboardPage } from './dashboard';
+import { OnboardingPage } from './onboarding';
 import { resolveAppRouteFlags, routeFlagsToCapabilities, type AppRouteFlags } from './routeFlags';
 import { lazyModuleRoutePage, lazyPage } from './routeLoad';
 import { AppShell, AuthShell, ConsoleShell, PublicShell } from './shells';
 import { webApp } from './webApp';
+import { WorkspaceLayout } from './workspace';
 
 import type { CapabilityContext } from '@bslt/contract';
 import type {
@@ -34,6 +36,7 @@ export const appFrameShells: WebShellConfig = Object.freeze({
   consoleShell: ConsoleShell,
   adminLayout: AdminLayout,
   settingsLayout: SettingsLayout,
+  workspaceLayout: WorkspaceLayout,
   lazyModuleRoutePage,
 });
 
@@ -57,6 +60,13 @@ export const appFrameRoutes: readonly FrameRouteContribution<AppRouteFlags>[] = 
     shell: 'app',
     path: 'dashboard',
     element: DashboardPage,
+    protected: true,
+  },
+  {
+    slot: 'after-modules',
+    shell: 'app',
+    path: 'onboarding',
+    element: OnboardingPage,
     protected: true,
   },
   {

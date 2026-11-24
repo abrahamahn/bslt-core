@@ -1,5 +1,7 @@
 {
   "identity.apiKeys.navLabel": "API Keys",
+  "identity.demoQuickLogin.heading": "Demo quick sign-in",
+  "identity.demoQuickLogin.badge": "Demo Mode",
   "identity.apiKeys.introPrefix": "API keys authenticate programmatic requests as your account. Send them as an",
   "identity.apiKeys.introHeaderCode": " Authorization: Bearer ",
   "identity.apiKeys.introSuffix": " header. Treat a key like a password.",
@@ -17,6 +19,10 @@
   "identity.apiKeys.expiry30": "30 days",
   "identity.apiKeys.expiry90": "90 days",
   "identity.apiKeys.expiry365": "1 year",
+  "identity.apiKeys.scopesLabel": "Scopes (optional)",
+  "identity.apiKeys.scopesPlaceholder": "e.g. read:projects, write:webhooks",
+  "identity.apiKeys.scopeToWorkspaceLabel": "Scope this key to the active workspace",
+  "identity.apiKeys.workspaceScopedBadge": "Workspace",
   "identity.apiKeys.createErrorFallback": "Failed to create key",
   "identity.apiKeys.submitCreating": "Creating…",
   "identity.apiKeys.submitCreate": "Create API key",

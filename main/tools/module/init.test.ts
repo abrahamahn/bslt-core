@@ -427,4 +427,28 @@ describe('bslt init / pnpm quickstart', () => {
       "from '@nova/orgs/module'",
     );
   });
+
+  it('parses valid --preset flags, rejects unknown presets, and writes smart dev defaults in .env.local', async () => {
+    expect(parseQuickstartArgs(['--preset', 'b2b-saas', '--yes']).preset).toBe('b2b-saas');
+    expect(parseQuickstartArgs(['--preset=core']).preset).toBe('core');
+    expect(() => parseQuickstartArgs(['--preset', 'invalid-preset'])).toThrow(/unknown preset/iu);
+
+    const { coreRoot, catalogDir } = createQuickstartFixture();
+    const sourceRoot = readFileSync(path.join(catalogDir, '.source-root'), 'utf8');
+    await releaseOptionalModules({ root: sourceRoot, outDir: catalogDir });
+
+    const res = await runQuickstart({
+      root: coreRoot,
+      catalog: catalogDir,
+      appName: 'Preset App',
+      preset: 'solo-saas',
+      install: false,
+      yes: true,
+    });
+
+    expect(res.addedModules).toEqual(['orgs', 'entitlements', 'billing']);
+    const envLocal = readFileSync(path.join(coreRoot, 'config/env/.env.local'), 'utf8');
+    expect(envLocal).toContain('AUTH_STRATEGIES=local,magic,webauthn');
+    expect(envLocal).toContain('BILLING_PROVIDER=mock');
+  });
 });

@@ -16,4 +16,17 @@ describe('@bslt/devtools endpoints', () => {
       devtoolsEndpoints.getRouteManifest.response.safeParse({ routes: [], count: -5 }).success,
     ).toBe(false);
   });
+
+  it('declares dev email inbox endpoints with valid schemas', () => {
+    expect(devtoolsEndpoints.listDevEmails.method).toBe('GET');
+    expect(devtoolsEndpoints.listDevEmails.path).toBe('/api/devtools/emails');
+    expect(devtoolsEndpoints.clearDevEmails.method).toBe('POST');
+    expect(devtoolsEndpoints.clearDevEmails.path).toBe('/api/devtools/emails/clear');
+    expect(
+      devtoolsEndpoints.listDevEmails.response.safeParse({ emails: [], count: -1 }).success,
+    ).toBe(false);
+    expect(devtoolsEndpoints.clearDevEmails.response.safeParse({ cleared: -1 }).success).toBe(
+      false,
+    );
+  });
 });

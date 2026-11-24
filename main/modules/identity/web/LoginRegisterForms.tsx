@@ -37,6 +37,7 @@ import {
   TotpChallengeError,
   useAuth,
 } from './authService';
+import { DemoQuickLogin, isDemoModeEnabled } from './DemoQuickLogin';
 
 import type {
   ForgotPasswordRequest,
@@ -278,6 +279,15 @@ export const LoginForm = ({
         <OAuthButtons mode="login" {...(isLoading !== undefined && { disabled: isLoading })} />
 
         <PasskeyLoginButton onSuccess={onSuccess} disabled={isLoading} />
+
+        <DemoQuickLogin
+          enabled={isDemoModeEnabled()}
+          disabled={isLoading}
+          onSelect={(email, demoPassword) => {
+            setIdentifier(email);
+            setPassword(demoPassword);
+          }}
+        />
 
         <form
           onSubmit={(e) => {

@@ -2,7 +2,7 @@
 
 # Web Routes & Navigation Reference
 
-Every client/SSR route (41), navigation link, and admin console surface attributed to its owning module or `kernel`.
+Every client/SSR route (44), navigation link, and admin console surface attributed to its owning module or `kernel`.
 
 ## Web Routes
 
@@ -33,9 +33,12 @@ Every client/SSR route (41), navigation link, and admin console surface attribut
 | `/cookies`                   | `compliance` | `CookiePolicyPage`        | `none`       | `PublicShell`                 |
 | `/dashboard`                 | `kernel`     | `DashboardPage`           | `protected`  | `AppShell`                    |
 | `/developer/api-routes`      | `devtools`   | `ApiRoutesPage`           | `publicOnly` | `ConsoleShell`                |
+| `/developer/billing-sandbox` | `devtools`   | `BillingSandboxPage`      | `protected`  | `ConsoleShell`                |
+| `/developer/emails`          | `devtools`   | `DevEmailInboxPage`       | `none`       | `ConsoleShell`                |
 | `/disclaimer`                | `compliance` | `DisclaimerPage`          | `none`       | `PublicShell`                 |
 | `/forbidden`                 | `kernel`     | `ForbiddenPage`           | `none`       | `AppShell`                    |
 | `/login`                     | `identity`   | `LoginModalRoute`         | `none`       | `AuthShell`                   |
+| `/onboarding`                | `kernel`     | `OnboardingPage`          | `protected`  | `AppShell`                    |
 | `/privacy`                   | `compliance` | `PrivacyPolicyPage`       | `none`       | `PublicShell`                 |
 | `/privacy-policy`            | `compliance` | `PrivacyPolicyPage`       | `none`       | `PublicShell`                 |
 | `/profile`                   | `identity`   | `ProfilePage`             | `protected`  | `AppShell`                    |

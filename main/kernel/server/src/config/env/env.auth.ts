@@ -28,8 +28,6 @@ export type AuthStrategy =
   | 'webauthn' // Passkeys/biometric
   | 'google'
   | 'github'
-  | 'facebook'
-  | 'microsoft'
   | 'apple';
 
 /**
@@ -163,11 +161,6 @@ export interface AuthConfig {
   oauth: {
     google?: OAuthProviderConfig;
     github?: OAuthProviderConfig;
-    facebook?: OAuthProviderConfig;
-    microsoft?: OAuthProviderConfig & {
-      /** Azure AD tenant ID ('common' for multi-tenant) */
-      tenantId: string;
-    };
     apple?: OAuthProviderConfig & {
       /** Apple Developer Team ID */
       teamId: string;
@@ -279,13 +272,6 @@ export interface AuthEnv {
   GITHUB_CLIENT_ID?: string | undefined;
   GITHUB_CLIENT_SECRET?: string | undefined;
   GITHUB_CALLBACK_URL?: string | undefined;
-  FACEBOOK_CLIENT_ID?: string | undefined;
-  FACEBOOK_CLIENT_SECRET?: string | undefined;
-  FACEBOOK_CALLBACK_URL?: string | undefined;
-  MICROSOFT_CLIENT_ID?: string | undefined;
-  MICROSOFT_CLIENT_SECRET?: string | undefined;
-  MICROSOFT_CALLBACK_URL?: string | undefined;
-  MICROSOFT_TENANT_ID?: string | undefined;
   APPLE_CLIENT_ID?: string | undefined;
   APPLE_CLIENT_SECRET?: string | undefined;
   APPLE_CALLBACK_URL?: string | undefined;
@@ -352,13 +338,6 @@ export const AuthEnvSchema: Schema<AuthEnv> = object(
     GITHUB_CLIENT_ID: optional(string({ label: 'GITHUB_CLIENT_ID' })),
     GITHUB_CLIENT_SECRET: optional(string({ label: 'GITHUB_CLIENT_SECRET' })),
     GITHUB_CALLBACK_URL: optional(string({ label: 'GITHUB_CALLBACK_URL' })),
-    FACEBOOK_CLIENT_ID: optional(string({ label: 'FACEBOOK_CLIENT_ID' })),
-    FACEBOOK_CLIENT_SECRET: optional(string({ label: 'FACEBOOK_CLIENT_SECRET' })),
-    FACEBOOK_CALLBACK_URL: optional(string({ label: 'FACEBOOK_CALLBACK_URL' })),
-    MICROSOFT_CLIENT_ID: optional(string({ label: 'MICROSOFT_CLIENT_ID' })),
-    MICROSOFT_CLIENT_SECRET: optional(string({ label: 'MICROSOFT_CLIENT_SECRET' })),
-    MICROSOFT_CALLBACK_URL: optional(string({ label: 'MICROSOFT_CALLBACK_URL' })),
-    MICROSOFT_TENANT_ID: optional(string({ label: 'MICROSOFT_TENANT_ID' })),
     APPLE_CLIENT_ID: optional(string({ label: 'APPLE_CLIENT_ID' })),
     APPLE_CLIENT_SECRET: optional(string({ label: 'APPLE_CLIENT_SECRET' })),
     APPLE_CALLBACK_URL: optional(string({ label: 'APPLE_CALLBACK_URL' })),

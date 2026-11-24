@@ -165,6 +165,24 @@ export function useOptionalAdminPlans(): {
   };
 }
 
+export function useOptionalSubscription(_options?: { readonly enabled?: boolean }): {
+  readonly subscription: {
+    readonly id: string;
+    readonly planId: string;
+    readonly plan: { readonly name: string };
+    readonly status: string;
+    readonly cancelAtPeriodEnd?: boolean;
+  } | null;
+  readonly isLoading: boolean;
+  readonly error: Error | null;
+} {
+  return {
+    subscription: null,
+    isLoading: false,
+    error: null,
+  };
+}
+
 export function OptionalAvatarUpload(_props: {
   readonly userName: string;
   readonly onSuccess?: () => void;
@@ -192,6 +210,16 @@ export function OptionalOrgSwitcher(): null {
   return null;
 }
 
+export function useOptionalActiveOrg(): {
+  readonly activeOrgId: string | null;
+  readonly setActiveOrg: (id: string | null) => void;
+} {
+  return {
+    activeOrgId: null,
+    setActiveOrg: () => {},
+  };
+}
+
 export function useOptionalAdminOrgs(): {
   readonly tenants: readonly { readonly isActive: boolean }[];
   readonly total: number;
@@ -205,6 +233,61 @@ export function useOptionalAdminOrgs(): {
     isLoading: false,
     error: null,
     refresh: () => Promise.resolve(),
+  };
+}
+
+export function useOptionalOrganizations(_options?: { readonly enabled?: boolean }): {
+  readonly organizations: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly slug: string;
+    readonly role?: string;
+  }[];
+  readonly isLoading: boolean;
+  readonly error: Error | null;
+  readonly refresh: () => Promise<void>;
+} {
+  return {
+    organizations: [],
+    isLoading: false,
+    error: null,
+    refresh: () => Promise.resolve(),
+  };
+}
+
+export function useOptionalUpdateOrganization(_options?: {
+  readonly onSuccess?: (org: { readonly id: string; readonly name: string }) => void;
+}): {
+  readonly mutate: (vars: {
+    readonly id: string;
+    readonly data: { readonly name?: string };
+  }) => void;
+  readonly isLoading: boolean;
+  readonly error: Error | null;
+  readonly reset: () => void;
+} {
+  return {
+    mutate: () => {},
+    isLoading: false,
+    error: null,
+    reset: () => {},
+  };
+}
+
+export function useOptionalCreateInvitation(_options?: { readonly onSuccess?: () => void }): {
+  readonly mutate: (vars: {
+    readonly tenantId: string;
+    readonly data: { readonly email: string; readonly role: 'admin' | 'member' | 'viewer' };
+  }) => void;
+  readonly isLoading: boolean;
+  readonly error: Error | null;
+  readonly reset: () => void;
+} {
+  return {
+    mutate: () => {},
+    isLoading: false,
+    error: null,
+    reset: () => {},
   };
 }
 

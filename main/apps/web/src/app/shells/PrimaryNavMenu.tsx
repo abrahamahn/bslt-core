@@ -31,6 +31,12 @@ function isLinkActive(pathname: string, to: string): boolean {
   if (targetPath === '/settings' && pathname === '/profile') {
     return true;
   }
+  if (
+    targetPath === '/organization' &&
+    (pathname === '/workspace' || pathname.startsWith('/workspace/'))
+  ) {
+    return true;
+  }
   return pathname === targetPath || pathname.startsWith(`${targetPath}/`);
 }
 

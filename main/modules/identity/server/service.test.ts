@@ -35,6 +35,8 @@ function makeRecord(overrides: Partial<ApiKeyRecord> = {}): ApiKeyRecord {
   return {
     id: KEY_ID,
     userId: OWNER_ID,
+    orgId: null,
+    scopes: [],
     name: 'CI deploy bot',
     keyPrefix: 'bslt_abcdef',
     last4: 'wxyz',
@@ -52,6 +54,8 @@ function makeRepo(overrides: Partial<IdentityApiKeyRepository> = {}): IdentityAp
     insertApiKey: vi.fn(async (data) =>
       makeRecord({
         userId: data.userId,
+        orgId: data.orgId ?? null,
+        scopes: data.scopes ?? [],
         name: data.name,
         keyPrefix: data.keyPrefix,
         last4: data.last4,
@@ -93,6 +97,21 @@ describe('identity API key service', () => {
     );
     expect(listed).toHaveLength(1);
     expect('token' in (listed[0] ?? {})).toBe(false);
+
+    const orgId = '33333333-3333-4333-8333-333333333333';
+    const scoped = await createApiKeyForOwner(
+      OWNER_ID,
+      {
+        name: 'Workspace bot',
+        scopes: ['read:projects', 'write:webhooks', 'read:projects'],
+        scopeToWorkspace: true,
+      },
+      repo,
+      now,
+      orgId,
+    );
+    expect(scoped.orgId).toBe(orgId);
+    expect(scoped.scopes).toEqual(['read:projects', 'write:webhooks']);
   });
 
   it('short-circuits malformed non-UUID key ids to null without querying Postgres', async () => {

@@ -123,8 +123,18 @@ export function getNextUsernameChangeDate(lastChange: Date | null, now: Date = n
 /** Maximum lifetime a caller may request for a new API key (10 years). */
 export const API_KEY_MAX_EXPIRY_DAYS = 3650;
 
+const API_KEY_SCOPE_PATTERN = /^[a-z][a-z0-9:_-]{1,63}$/u;
+
+const apiKeyScopeSchema = refine(
+  string({ label: 'scope', min: 2, max: 64, trim: true }),
+  (value) => API_KEY_SCOPE_PATTERN.test(value),
+  'Scope must start with a letter and contain only lowercase letters, digits, ":", "_", or "-"',
+);
+
 export const apiKeySchema = object({
   id: uuidSchema,
+  orgId: nullable(uuidSchema),
+  scopes: array(string()),
   name: string({ min: 1, max: 100, trim: true }),
   keyPrefix: string({ min: 1 }),
   last4: string({ min: 1 }),
@@ -138,6 +148,8 @@ export type ApiKey = Infer<typeof apiKeySchema>;
 
 export const createdApiKeySchema = object({
   id: uuidSchema,
+  orgId: nullable(uuidSchema),
+  scopes: array(string()),
   name: string({ min: 1, max: 100, trim: true }),
   keyPrefix: string({ min: 1 }),
   last4: string({ min: 1 }),
@@ -153,6 +165,8 @@ export type CreatedApiKey = Infer<typeof createdApiKeySchema>;
 export const createApiKeyRequestSchema = object({
   name: string({ min: 1, max: 100, trim: true }),
   expiresInDays: optional(nullable(number({ int: true, min: 1, max: API_KEY_MAX_EXPIRY_DAYS }))),
+  scopes: optional(array(apiKeyScopeSchema, { max: 20 })),
+  scopeToWorkspace: optional(boolean()),
 });
 
 export type CreateApiKeyRequest = Infer<typeof createApiKeyRequestSchema>;
@@ -1077,16 +1091,7 @@ const EMAIL_OTP_CODE_LENGTH = 6;
 
 const EMAIL_OTP_CODE_REGEX = /^\d{6}$/u;
 
-export const AUTH_STRATEGIES = [
-  'local',
-  'magic',
-  'webauthn',
-  'google',
-  'github',
-  'facebook',
-  'microsoft',
-  'apple',
-] as const;
+export const AUTH_STRATEGIES = ['local', 'magic', 'webauthn', 'google', 'github', 'apple'] as const;
 
 export type AuthStrategy = (typeof AUTH_STRATEGIES)[number];
 

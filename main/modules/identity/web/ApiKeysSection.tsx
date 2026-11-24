@@ -1,7 +1,7 @@
 // main/modules/identity/web/ApiKeysSection.tsx
 import { useState, type ReactElement } from 'react';
 
-import { Alert, Button, FormField, Input, Select, Text } from '@bslt/ui';
+import { Alert, Badge, Button, Checkbox, FormField, Input, Select, Text } from '@bslt/ui';
 import { useModuleMessages } from '@bslt/web-platform';
 
 import enUsMessages from '../i18n/en-US.json';
@@ -93,7 +93,17 @@ const ApiKeyRow = ({
   return (
     <div className="flex items-center justify-between gap-3 border-t p-3">
       <div className="flex flex-col gap-1">
-        <Text size="sm">{apiKey.name}</Text>
+        <div className="flex flex-wrap items-center gap-2">
+          <Text size="sm">{apiKey.name}</Text>
+          {apiKey.orgId !== null ? (
+            <Badge tone="info">{t('identity.apiKeys.workspaceScopedBadge')}</Badge>
+          ) : null}
+          {apiKey.scopes.map((scope) => (
+            <Badge key={scope} tone="neutral">
+              {scope}
+            </Badge>
+          ))}
+        </div>
         <Text size="xs" tone="muted">
           <code>{maskedLabel(apiKey)}</code>
           {metaSummary}
@@ -146,6 +156,8 @@ export const ApiKeysSection = (): ReactElement => {
   const { data: keys, isLoading } = useApiKeys();
   const [name, setName] = useState('');
   const [expiry, setExpiry] = useState<string>('never');
+  const [scopesInput, setScopesInput] = useState('');
+  const [scopeToWorkspace, setScopeToWorkspace] = useState(false);
   const [createdKey, setCreatedKey] = useState<CreatedApiKey | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -154,6 +166,8 @@ export const ApiKeysSection = (): ReactElement => {
       setCreatedKey(response.key);
       setName('');
       setExpiry('never');
+      setScopesInput('');
+      setScopeToWorkspace(false);
     },
   });
   const deleteKey = useDeleteApiKey();
@@ -178,7 +192,16 @@ export const ApiKeysSection = (): ReactElement => {
       return;
     }
     const days = expiryOptions.find((option) => option.value === expiry)?.days ?? null;
-    createKey.create({ name: trimmed, expiresInDays: days });
+    const scopes = scopesInput
+      .split(',')
+      .map((item) => item.trim().toLowerCase())
+      .filter((item) => item.length > 0);
+    createKey.create({
+      name: trimmed,
+      expiresInDays: days,
+      ...(scopes.length > 0 ? { scopes } : {}),
+      ...(scopeToWorkspace ? { scopeToWorkspace: true } : {}),
+    });
   };
 
   return (
@@ -227,6 +250,23 @@ export const ApiKeysSection = (): ReactElement => {
             ))}
           </Select>
         </FormField>
+        <FormField label={t('identity.apiKeys.scopesLabel')} htmlFor="api-key-scopes">
+          <Input
+            id="api-key-scopes"
+            type="text"
+            value={scopesInput}
+            placeholder={t('identity.apiKeys.scopesPlaceholder')}
+            onChange={(e) => {
+              setScopesInput(e.target.value);
+            }}
+          />
+        </FormField>
+        <Checkbox
+          id="api-key-workspace-scope"
+          checked={scopeToWorkspace}
+          onChange={setScopeToWorkspace}
+          label={t('identity.apiKeys.scopeToWorkspaceLabel')}
+        />
         {formError !== null ? <Alert tone="danger">{formError}</Alert> : null}
         {createKey.isError ? (
           <Alert tone="danger">

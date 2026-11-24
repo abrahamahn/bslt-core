@@ -14,6 +14,7 @@ import { PUBLIC_SSR_MODULES, publicRoutes } from './ssr/public-routes';
 import { PublicDocumentShell } from './ssr/PublicDocumentShell';
 
 import { clientConfig } from '#app/config';
+import { applyBrandTheme } from '#app/generated/brand';
 
 import '@bslt/ui/styles/elements.css';
 
@@ -24,6 +25,7 @@ export function bootstrapPublicClient(explicitRoot?: Element | null): HydratePub
     return null;
   }
 
+  applyBrandTheme(root.ownerDocument);
   startConsentSync();
 
   return hydratePublic(root, publicRoutes, {

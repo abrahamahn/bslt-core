@@ -5,9 +5,11 @@ import { createEmailTemplates } from '@bslt/comms/email';
 import { ConsoleEmailService } from '@bslt/comms/email/console';
 import { SmtpEmailService } from '@bslt/comms/email/smtp';
 import { createSmsProviderFromEnv } from '@bslt/comms/sms';
+import { recordCapturedDevEmail } from '@bslt/contract';
 import { createAuthEmailTemplates } from '@bslt/identity/server';
 import { createStorage, DEFAULT_STORAGE_MAX_FILE_SIZE, type StorageConfig } from '@bslt/storage';
 
+import { SERVER_BRAND } from '../../generated/brand';
 import { type AppPorts, type DataContext, type InfraContext } from '../context';
 
 import type { EmailOptions, EmailService, SendResult, StorageClient } from '@bslt/contract';
@@ -24,6 +26,14 @@ function createFallbackEmailService(log: InfraContext['log']): EmailService {
       return Promise.resolve(true);
     },
     send(options: EmailOptions): Promise<SendResult> {
+      const messageId = `core-fallback-${String(Date.now())}`;
+      recordCapturedDevEmail({
+        id: messageId,
+        to: options.to,
+        subject: options.subject,
+        text: options.text,
+        html: options.html,
+      });
       const body = options.text ?? options.html ?? '';
       const to = Array.isArray(options.to) ? options.to.join(', ') : options.to;
       log.info('Email rendered by core fallback provider');
@@ -35,7 +45,7 @@ function createFallbackEmailService(log: InfraContext['log']): EmailService {
 
       return Promise.resolve({
         success: true,
-        messageId: `core-fallback-${String(Date.now())}`,
+        messageId,
       });
     },
   };
@@ -75,6 +85,10 @@ function createStorageService(config: AppConfig): StorageClient | undefined {
   return createStorage(toStorageRuntimeConfig(storageConfig));
 }
 
+function resolveBrandAppName(configured: string): string {
+  return configured.trim() === '' || configured === 'Your App' ? SERVER_BRAND.name : configured;
+}
+
 export function createFallbackCommsState(
   config: AppConfig,
   data: { context: DataContext },
@@ -87,7 +101,7 @@ export function createFallbackCommsState(
     emailTemplates:
       ports.emailTemplates ??
       createAuthEmailTemplates({
-        appName: config.app.name,
+        appName: resolveBrandAppName(config.app.name),
       }),
     storage: 'storage' in ports ? ports.storage : createStorageService(config),
     ...('notifications' in ports ? { notifications: ports.notifications } : {}),
@@ -107,7 +121,9 @@ export function bootstrapCommsPhase(
   ports: AppPorts = {},
 ): Promise<CommsPhaseState> {
   const templates: AuthEmailTemplates = createEmailTemplates({
-    appName: config.app.name,
+    appName: resolveBrandAppName(config.app.name),
+    accentColor: SERVER_BRAND.emailAccent,
+    supportEmail: SERVER_BRAND.supportEmail,
   });
   const composeEmail = (): EmailService =>
     config.email.provider === 'smtp'

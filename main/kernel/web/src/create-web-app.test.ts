@@ -1339,4 +1339,52 @@ describe('createWebApp', () => {
     expect(unwrappedBilling?.element).not.toBe(StubSettingsLayout);
     expect(unwrappedBilling?.children).toBeUndefined();
   });
+
+  it('wraps module /organization and /workspace/* app routes in workspaceLayout when provided', () => {
+    const StubWorkspaceLayout = (): null => null;
+    const StubOrgPage = (): null => null;
+    const StubWorkspaceWebhooks = (): null => null;
+
+    const mod = implementWeb(tasksManifest, {
+      routes: [
+        {
+          path: '/organization',
+          shell: 'app',
+          auth: 'user',
+          title: 'tasks.org',
+          page: lazyModulePage(() => Promise.resolve({ StubOrgPage }), 'StubOrgPage'),
+        },
+        {
+          path: '/workspace/webhooks',
+          shell: 'app',
+          auth: 'user',
+          title: 'tasks.webhooks',
+          page: lazyModulePage(
+            () => Promise.resolve({ StubWorkspaceWebhooks }),
+            'StubWorkspaceWebhooks',
+          ),
+        },
+      ],
+      messages: { 'tasks.org': 'Workspace', 'tasks.webhooks': 'Webhooks' },
+    });
+
+    const app = createWebApp({ modules: [mod] });
+    const routes = app.getRoutes(
+      {},
+      { shells: { ...SHELLS, workspaceLayout: StubWorkspaceLayout } },
+    );
+    const appChildren = routes.find((r) => r.element === StubAppShell)?.children ?? [];
+    const orgRoute = appChildren.find((r) => r.path === 'organization');
+    const webhooksRoute = appChildren.find((r) => r.path === 'workspace/webhooks');
+    expect(orgRoute?.element).toBe(StubWorkspaceLayout);
+    expect(orgRoute?.children?.[0]?.index).toBe(true);
+    expect(webhooksRoute?.element).toBe(StubWorkspaceLayout);
+    expect(webhooksRoute?.children?.[0]?.index).toBe(true);
+
+    const unwrapped = app.getRoutes({}, { shells: SHELLS });
+    const unwrappedOrg = unwrapped
+      .find((r) => r.element === StubAppShell)
+      ?.children?.find((r) => r.path === 'organization');
+    expect(unwrappedOrg?.element).not.toBe(StubWorkspaceLayout);
+  });
 });

@@ -54,29 +54,43 @@ const RESERVED_MODULE_IDS: ReadonlySet<string> = new Set([
 
 export const MODULE_NEW_USAGE = [
   'Usage:',
-  '  pnpm bslt module new <id> [--dry-run] [--no-install]',
+  '  pnpm bslt module new <id> [--scope <user|org>] [--dry-run] [--no-install]',
   '',
   'Examples:',
   '  pnpm bslt module new notes',
+  '  pnpm bslt module new projects --scope org',
   '  pnpm bslt module new notes --dry-run',
 ].join('\n');
 
+type ModuleOwnerScope = 'user' | 'org';
+
 export interface ParsedModuleNewArgs {
   readonly id: string;
+  readonly scope: ModuleOwnerScope;
   readonly dryRun: boolean;
   readonly install: boolean;
 }
 
 export interface ScaffoldModuleOptions {
   readonly root?: string;
+  readonly scope?: ModuleOwnerScope;
   readonly dryRun?: boolean;
 }
 
 export interface ScaffoldModuleResult {
   readonly id: string;
+  readonly scope: ModuleOwnerScope;
   readonly moduleDir: string;
   readonly dryRun: boolean;
   readonly files: readonly string[];
+}
+
+function parseModuleScope(raw: string): ModuleOwnerScope {
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === 'user' || normalized === 'org') {
+    return normalized;
+  }
+  throw new Error(`bslt module new: invalid --scope "${raw}" (expected "user" or "org")`);
 }
 
 export function parseModuleNewArgs(argv: readonly string[]): ParsedModuleNewArgs {
@@ -89,13 +103,24 @@ export function parseModuleNewArgs(argv: readonly string[]): ParsedModuleNewArgs
 
   let dryRun = false;
   let install = true;
+  let scope: ModuleOwnerScope = 'user';
   const positionals: string[] = [];
 
-  for (const arg of rest) {
+  for (let i = 0; i < rest.length; i += 1) {
+    const arg = rest[i] ?? '';
     if (arg === '--dry-run') {
       dryRun = true;
     } else if (arg === '--no-install') {
       install = false;
+    } else if (arg === '--scope') {
+      const nextVal = rest[i + 1];
+      if (nextVal === undefined || nextVal.startsWith('-')) {
+        throw new Error('bslt module new: --scope requires "user" or "org"');
+      }
+      scope = parseModuleScope(nextVal);
+      i += 1;
+    } else if (arg.startsWith('--scope=')) {
+      scope = parseModuleScope(arg.slice('--scope='.length));
     } else if (arg.startsWith('-')) {
       throw new Error(`bslt module new: unknown option "${arg}"`);
     } else {
@@ -110,7 +135,7 @@ export function parseModuleNewArgs(argv: readonly string[]): ParsedModuleNewArgs
     throw new Error(`bslt module new: unexpected argument "${positionals[1] ?? ''}"`);
   }
 
-  return { id: positionals[0], dryRun, install };
+  return { id: positionals[0], scope, dryRun, install };
 }
 
 function capitalize(value: string): string {
@@ -183,16 +208,28 @@ function patchBsltConfig(configContent: string, id: string): string {
   return withImport.replace(installedRegex, `$1${currentList.join(', ')}$3`);
 }
 
-function buildModuleCatalogTable(id: string): Attributed<CatalogTable> {
+function buildModuleCatalogTable(
+  id: string,
+  scope: ModuleOwnerScope = 'user',
+): Attributed<CatalogTable> {
+  const isOrg = scope === 'org';
+  const ownerColumn = isOrg ? 'org_id' : 'owner_user_id';
+  const rlsClass = isOrg ? 'owner_org' : 'owner_user';
+  const rlsFn = isOrg ? 'sys_current_org_id()' : 'sys_current_user_id()';
+  const policyPrefix = isOrg ? 'rls_org' : 'rls_user';
+  const fkeyClause = isOrg
+    ? `${id}_org_id_fkey FOREIGN KEY (org_id) REFERENCES orgs(id) ON DELETE CASCADE`
+    : `${id}_owner_user_id_fkey FOREIGN KEY (owner_user_id) REFERENCES identity_users(id) ON DELETE CASCADE`;
+
   const constraints = [
-    `${id}_owner_user_id_fkey FOREIGN KEY (owner_user_id) REFERENCES identity_users(id) ON DELETE CASCADE`,
+    fkeyClause,
     `${id}_pkey PRIMARY KEY (id)`,
     `${id}_title_check CHECK (((char_length(TRIM(BOTH FROM title)) > 0) AND (char_length(title) <= 120)))`,
   ].sort(compareText);
 
   const indexes = [
-    `CREATE INDEX idx_${id}_owner_created ON public.${id} USING btree (owner_user_id, created_at DESC)`,
-    `CREATE INDEX idx_${id}_owner_open ON public.${id} USING btree (owner_user_id, created_at DESC) WHERE (completed = false)`,
+    `CREATE INDEX idx_${id}_owner_created ON public.${id} USING btree (${ownerColumn}, created_at DESC)`,
+    `CREATE INDEX idx_${id}_owner_open ON public.${id} USING btree (${ownerColumn}, created_at DESC) WHERE (completed = false)`,
     `CREATE UNIQUE INDEX ${id}_pkey ON public.${id} USING btree (id)`,
   ].sort(compareText);
 
@@ -202,7 +239,7 @@ function buildModuleCatalogTable(id: string): Attributed<CatalogTable> {
     source: id,
     kind: 'table',
     owner: 'bslt_owner',
-    comment: 'rls:owner_user',
+    comment: `rls:${rlsClass}`,
     rowSecurity: {
       enabled: true,
       forced: true,
@@ -210,7 +247,7 @@ function buildModuleCatalogTable(id: string): Attributed<CatalogTable> {
     partition: null,
     columns: [
       'id uuid NOT NULL DEFAULT uuid_generate_v4()',
-      'owner_user_id uuid NOT NULL',
+      `${ownerColumn} uuid NOT NULL`,
       'title text NOT NULL',
       'completed boolean NOT NULL DEFAULT false',
       'created_at timestamp with time zone NOT NULL DEFAULT now()',
@@ -220,36 +257,36 @@ function buildModuleCatalogTable(id: string): Attributed<CatalogTable> {
     indexes,
     policies: [
       {
-        name: 'rls_user_delete',
+        name: `${policyPrefix}_delete`,
         command: 'DELETE',
         permissive: true,
         roles: ['authenticated'],
-        using: '(owner_user_id = sys_current_user_id())',
+        using: `(${ownerColumn} = ${rlsFn})`,
         withCheck: null,
       },
       {
-        name: 'rls_user_insert',
+        name: `${policyPrefix}_insert`,
         command: 'INSERT',
         permissive: true,
         roles: ['authenticated'],
         using: null,
-        withCheck: '(owner_user_id = sys_current_user_id())',
+        withCheck: `(${ownerColumn} = ${rlsFn})`,
       },
       {
-        name: 'rls_user_select',
+        name: `${policyPrefix}_select`,
         command: 'SELECT',
         permissive: true,
         roles: ['authenticated'],
-        using: '(owner_user_id = sys_current_user_id())',
+        using: `(${ownerColumn} = ${rlsFn})`,
         withCheck: null,
       },
       {
-        name: 'rls_user_update',
+        name: `${policyPrefix}_update`,
         command: 'UPDATE',
         permissive: true,
         roles: ['authenticated'],
-        using: '(owner_user_id = sys_current_user_id())',
-        withCheck: '(owner_user_id = sys_current_user_id())',
+        using: `(${ownerColumn} = ${rlsFn})`,
+        withCheck: `(${ownerColumn} = ${rlsFn})`,
       },
     ],
     triggers: [
@@ -260,16 +297,17 @@ function buildModuleCatalogTable(id: string): Attributed<CatalogTable> {
   };
 }
 
-function updateCatalogWithModule(root: string, id: string): void {
+function updateCatalogWithModule(root: string, id: string, scope: ModuleOwnerScope = 'user'): void {
   const catalogPath = path.join(root, DB_CATALOG.file);
   if (!existsSync(catalogPath)) return;
 
   const current = loadCatalog(root);
+  const depOwner = scope === 'org' ? 'orgs' : 'identity';
   const rawSources: MigrationSource[] = [
     ...current.sources
       .filter((source) => source.id !== id)
       .map((source) => ({ id: source.id, dir: source.id, dependsOn: source.dependsOn })),
-    { id, dir: id, dependsOn: ['identity'] },
+    { id, dir: id, dependsOn: [depOwner] },
   ];
   const orderedSources = orderSources(rawSources).map((source) => ({
     id: source.id,
@@ -278,7 +316,7 @@ function updateCatalogWithModule(root: string, id: string): void {
 
   const nextTables = [
     ...current.tables.filter((table) => table.name !== id),
-    buildModuleCatalogTable(id),
+    buildModuleCatalogTable(id, scope),
   ].sort((a, b) => compareText(a.name, b.name));
 
   const nextCatalog: AttributedCatalog = {
@@ -290,7 +328,12 @@ function updateCatalogWithModule(root: string, id: string): void {
   writeFileSync(catalogPath, serializeCatalog(nextCatalog));
 }
 
-function renderScaffoldFiles(id: string): Map<string, string> {
+function renderScaffoldFiles(id: string, scope: ModuleOwnerScope = 'user'): Map<string, string> {
+  const isOrg = scope === 'org';
+  const ownerColumn = isOrg ? 'org_id' : 'owner_user_id';
+  const ownerCamel = isOrg ? 'orgId' : 'ownerUserId';
+  const rlsClass = isOrg ? 'owner_org' : 'owner_user';
+  const scopeLabel = isOrg ? 'Organization-owned' : 'User-owned';
   const Pascal = capitalize(id);
   const UPPER = id.toUpperCase();
   const base = `main/modules/${id}`;
@@ -303,7 +346,7 @@ function renderScaffoldFiles(id: string): Map<string, string> {
         name: `@bslt/${id}`,
         version: '1.0.0',
         type: 'module',
-        description: `User-owned ${id} module`,
+        description: `${scopeLabel} ${id} module`,
         author: 'Abraham Joongwhan Ahn',
         sideEffects: false,
         license: 'MIT',
@@ -347,7 +390,7 @@ function renderScaffoldFiles(id: string): Map<string, string> {
         dependencies: {
           '@bslt/contract': 'workspace:*',
           '@bslt/db': 'workspace:*',
-          '@bslt/identity': 'workspace:*',
+          ...(isOrg ? { '@bslt/orgs': 'workspace:*' } : { '@bslt/identity': 'workspace:*' }),
           '@bslt/schema': 'workspace:*',
           '@bslt/server-system': 'workspace:*',
         },
@@ -509,15 +552,15 @@ User-owned ${id} module.
     `${base}/module.ts`,
     `// ${base}/module.ts
 import { defineModule } from '@bslt/contract';
-import { identityModule } from '@bslt/identity/module';
+${isOrg ? "import { orgsModule } from '@bslt/orgs/module';" : "import { identityModule } from '@bslt/identity/module';"}
 
 import { ${id}Endpoints, ${id}Events } from './contract';
 
 export const ${id}Module = defineModule({
   id: '${id}',
-  summary: 'User-owned ${id} module.',
+  summary: '${scopeLabel} ${id} module.',
   status: 'stable',
-  dependsOn: [identityModule],
+  dependsOn: [${isOrg ? 'orgsModule' : 'identityModule'}],${isOrg ? `\n  permissions: ['${id}.manage'],` : ''}
   endpoints: ${id}Endpoints,
   events: ${id}Events,
   jobs: {},
@@ -766,7 +809,7 @@ describe('${id} contract schemas', () => {
     `// ${base}/contract/errors.ts
 import { defineErrors } from '@bslt/contract';
 
-export const ${id}Errors = defineErrors('${id}', {
+export const ${id}Errors = defineErrors('${id}', {${isOrg ? '\n  ORG_REQUIRED: 400,' : ''}
   ${UPPER}_NOT_FOUND: 404,
 });
 `,
@@ -1121,34 +1164,34 @@ export {
   files.set(
     `${base}/server/migrations/0001_${id}.sql`,
     `-- 0001_${id}.sql
--- Owned DDL baseline of the ${id} module (\`@bslt/${id}\`): user-owned ${id}.
+-- Owned DDL baseline of the ${id} module (\`@bslt/${id}\`): ${scopeLabel.toLowerCase()} ${id}.
 --
--- Depends on: kernel, identity (users).
+-- Depends on: kernel, ${isOrg ? 'orgs (orgs)' : 'identity (users)'}.
 --
 -- Commands per role (sys_apply_rls: user, admin, system):
 --
 --   table  class       user  admin  system
---   ${id}  owner_user  all   -      -
+--   ${id}  ${rlsClass}  all   -      -
 
 CREATE TABLE ${id} (
     id            uuid        NOT NULL DEFAULT uuid_generate_v4(),
-    owner_user_id uuid        NOT NULL,
+    ${ownerColumn} uuid        NOT NULL,
     title         text        NOT NULL,
     completed     boolean     NOT NULL DEFAULT false,
     created_at    timestamptz NOT NULL DEFAULT now(),
     updated_at    timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT ${id}_pkey PRIMARY KEY (id),
     CONSTRAINT ${id}_title_check CHECK (((char_length(TRIM(BOTH FROM title)) > 0) AND (char_length(title) <= 120))),
-    CONSTRAINT ${id}_owner_user_id_fkey FOREIGN KEY (owner_user_id) REFERENCES identity_users(id) ON DELETE CASCADE
+    CONSTRAINT ${id}_${ownerColumn}_fkey FOREIGN KEY (${ownerColumn}) REFERENCES ${isOrg ? 'orgs(id)' : 'identity_users(id)'} ON DELETE CASCADE
 );
 
-CREATE INDEX idx_${id}_owner_created ON ${id} (owner_user_id, created_at DESC);
-CREATE INDEX idx_${id}_owner_open ON ${id} (owner_user_id, created_at DESC) WHERE (completed = false);
+CREATE INDEX idx_${id}_owner_created ON ${id} (${ownerColumn}, created_at DESC);
+CREATE INDEX idx_${id}_owner_open ON ${id} (${ownerColumn}, created_at DESC) WHERE (completed = false);
 
 CREATE TRIGGER update_${id}_updated_at BEFORE UPDATE ON ${id} FOR EACH ROW EXECUTE FUNCTION sys_update_updated_at_column();
 
 SELECT sys_apply_rls(
-    '${id}', 'owner_user', 'owner_user_id',
+    '${id}', '${rlsClass}', '${ownerColumn}',
     ARRAY['select', 'insert', 'update', 'delete'],
     ARRAY[]::text[],
     ARRAY[]::text[]
@@ -1172,10 +1215,10 @@ import {
 import type { RawDb } from '@bslt/db';
 
 export interface ${Pascal}Repository {
-  listByOwner(ownerUserId: string): Promise<${Pascal}Row[]>;
+  listByOwner(${ownerCamel}: string): Promise<${Pascal}Row[]>;
   create(data: ${Pascal}Insert): Promise<${Pascal}Row>;
-  updateForOwner(ownerUserId: string, id: string, data: ${Pascal}Update): Promise<${Pascal}Row | null>;
-  deleteForOwner(ownerUserId: string, id: string): Promise<${Pascal}Row | null>;
+  updateForOwner(${ownerCamel}: string, id: string, data: ${Pascal}Update): Promise<${Pascal}Row | null>;
+  deleteForOwner(${ownerCamel}: string, id: string): Promise<${Pascal}Row | null>;
 }
 
 function transformRow(row: Record<string, unknown>): ${Pascal}Row {
@@ -1184,10 +1227,10 @@ function transformRow(row: Record<string, unknown>): ${Pascal}Row {
 
 export function ${id}Repository(db: RawDb): ${Pascal}Repository {
   return {
-    async listByOwner(ownerUserId: string): Promise<${Pascal}Row[]> {
+    async listByOwner(${ownerCamel}: string): Promise<${Pascal}Row[]> {
       const results = await db.query(
         select(${UPPER}_TABLE)
-          .where(eq('owner_user_id', ownerUserId))
+          .where(eq('${ownerColumn}', ${ownerCamel}))
           .orderBy('created_at', 'desc')
           .toSql(),
       );
@@ -1206,7 +1249,7 @@ export function ${id}Repository(db: RawDb): ${Pascal}Repository {
     },
 
     async updateForOwner(
-      ownerUserId: string,
+      ${ownerCamel}: string,
       id: string,
       data: ${Pascal}Update,
     ): Promise<${Pascal}Row | null> {
@@ -1214,17 +1257,17 @@ export function ${id}Repository(db: RawDb): ${Pascal}Repository {
       const result = await db.queryOne(
         update(${UPPER}_TABLE)
           .set(snakeData)
-          .where(and(eq('id', id), eq('owner_user_id', ownerUserId)))
+          .where(and(eq('id', id), eq('${ownerColumn}', ${ownerCamel})))
           .returningAll()
           .toSql(),
       );
       return result !== null ? transformRow(result) : null;
     },
 
-    async deleteForOwner(ownerUserId: string, id: string): Promise<${Pascal}Row | null> {
+    async deleteForOwner(${ownerCamel}: string, id: string): Promise<${Pascal}Row | null> {
       const result = await db.queryOne(
         deleteFrom(${UPPER}_TABLE)
-          .where(and(eq('id', id), eq('owner_user_id', ownerUserId)))
+          .where(and(eq('id', id), eq('${ownerColumn}', ${ownerCamel})))
           .returningAll()
           .toSql(),
       );
@@ -1471,7 +1514,7 @@ import type { ${Pascal}Repository } from './repository';
 function toItem(record: ${Pascal}Row): ${Pascal}Item {
   return {
     id: record.id,
-    ownerId: record.ownerUserId,
+    ownerId: record.${ownerCamel},
     title: record.title,
     completed: record.completed,
     createdAt: record.createdAt.toISOString(),
@@ -1480,23 +1523,23 @@ function toItem(record: ${Pascal}Row): ${Pascal}Item {
 }
 
 export async function list${Pascal}Items(
-  ownerUserId: string,
+  ${ownerCamel}: string,
   repo: ${Pascal}Repository,
 ): Promise<${Pascal}Item[]> {
-  const records = await repo.listByOwner(ownerUserId);
+  const records = await repo.listByOwner(${ownerCamel});
   return records.map(toItem);
 }
 
 export async function create${Pascal}Item(
-  ownerUserId: string,
+  ${ownerCamel}: string,
   input: Create${Pascal}Request,
   repo: ${Pascal}Repository,
 ): Promise<${Pascal}Item> {
-  return toItem(await repo.create({ ownerUserId, title: input.title }));
+  return toItem(await repo.create({ ${ownerCamel}, title: input.title }));
 }
 
 export async function update${Pascal}Item(
-  ownerUserId: string,
+  ${ownerCamel}: string,
   id: string,
   input: Update${Pascal}Request,
   repo: ${Pascal}Repository,
@@ -1505,16 +1548,16 @@ export async function update${Pascal}Item(
     ...(input.title !== undefined ? { title: input.title } : {}),
     ...(input.completed !== undefined ? { completed: input.completed } : {}),
   };
-  const record = await repo.updateForOwner(ownerUserId, id, patch);
+  const record = await repo.updateForOwner(${ownerCamel}, id, patch);
   return record !== null ? toItem(record) : null;
 }
 
 export async function delete${Pascal}Item(
-  ownerUserId: string,
+  ${ownerCamel}: string,
   id: string,
   repo: ${Pascal}Repository,
 ): Promise<${Pascal}Item | null> {
-  const record = await repo.deleteForOwner(ownerUserId, id);
+  const record = await repo.deleteForOwner(${ownerCamel}, id);
   return record !== null ? toItem(record) : null;
 }
 `,
@@ -1645,7 +1688,7 @@ describe('${id} service', () => {
   files.set(
     `${base}/server/index.ts`,
     `// ${base}/server/index.ts
-import { implementServer, type KernelServices } from '@bslt/server-system/module';
+import { implementServer, type KernelServices${isOrg ? ', type RequestContext' : ''} } from '@bslt/server-system/module';
 
 import { ${id}Events } from '../contract';
 import { ${id}Module } from '../module';
@@ -1661,17 +1704,32 @@ import {
 interface ${Pascal}Service {
   readonly events: KernelServices['events'];
 }
-
+${
+  isOrg
+    ? `
+function requireActingOrgId(req: RequestContext): string {
+  const orgId = req.viewer?.actingOrg?.orgId;
+  if (orgId === undefined) {
+    return req.fail('ORG_REQUIRED', 'Organization context is required');
+  }
+  return orgId;
+}
+`
+    : ''
+}
 export const ${id}Server = implementServer(${id}Module, {
   migrations: new URL('./migrations/', import.meta.url),
   create: (k): ${Pascal}Service => ({ events: k.events }),
   handlers: {
     list: async (_input, req) => ({
-      items: await req.tx((tx) => list${Pascal}Items(req.viewer.userId, ${id}Repository(tx))),
+      items: await req.tx((tx) =>
+        list${Pascal}Items(${isOrg ? 'requireActingOrgId(req)' : 'req.viewer.userId'}, ${id}Repository(tx)),
+      ),
     }),
     create: async (input, req, s) => ({
       item: await req.tx(async (tx) => {
-        const created = await create${Pascal}Item(req.viewer.userId, input.body, ${id}Repository(tx));
+        const ownerScopeId = ${isOrg ? 'requireActingOrgId(req)' : 'req.viewer.userId'};
+        const created = await create${Pascal}Item(ownerScopeId, input.body, ${id}Repository(tx));
         await s.events.publish(
           tx,
           ${id}Events.created,
@@ -1682,9 +1740,10 @@ export const ${id}Server = implementServer(${id}Module, {
       }),
     }),
     update: async (input, req, s) => {
+      const ownerScopeId = ${isOrg ? 'requireActingOrgId(req)' : 'req.viewer.userId'};
       const item = await req.tx(async (tx) => {
         const updated = await update${Pascal}Item(
-          req.viewer.userId,
+          ownerScopeId,
           input.params.id,
           input.body,
           ${id}Repository(tx),
@@ -1709,9 +1768,10 @@ export const ${id}Server = implementServer(${id}Module, {
       return { item };
     },
     delete: async (input, req, s) => {
+      const ownerScopeId = ${isOrg ? 'requireActingOrgId(req)' : 'req.viewer.userId'};
       const item = await req.tx(async (tx) => {
         const deleted = await delete${Pascal}Item(
-          req.viewer.userId,
+          ownerScopeId,
           input.params.id,
           ${id}Repository(tx),
         );
@@ -3001,6 +3061,7 @@ export async function scaffoldModule(
   options: ScaffoldModuleOptions = {},
 ): Promise<ScaffoldModuleResult> {
   const root = options.root ?? REPO_ROOT;
+  const scope: ModuleOwnerScope = options.scope ?? 'user';
   const dryRun = options.dryRun === true;
 
   validateModuleId(id, root);
@@ -3011,7 +3072,7 @@ export async function scaffoldModule(
   }
   const patchedConfig = patchBsltConfig(readFileSync(configPath, 'utf8'), id);
 
-  const rawFiles = renderScaffoldFiles(id);
+  const rawFiles = renderScaffoldFiles(id, scope);
   rawFiles.set('bslt.config.ts', patchedConfig);
   const formatted = await formatScaffoldFiles(rawFiles, root);
   const fileList = [...formatted.keys()].sort(compareText);
@@ -3019,6 +3080,7 @@ export async function scaffoldModule(
   if (dryRun) {
     return {
       id,
+      scope,
       moduleDir: `main/modules/${id}`,
       dryRun: true,
       files: fileList,
@@ -3034,12 +3096,13 @@ export async function scaffoldModule(
   await syncModules({ root });
 
   if (existsSync(path.join(root, DB_CATALOG.file))) {
-    updateCatalogWithModule(root, id);
+    updateCatalogWithModule(root, id, scope);
     await syncRows({ root });
   }
 
   return {
     id,
+    scope,
     moduleDir: `main/modules/${id}`,
     dryRun: false,
     files: fileList,
@@ -3061,6 +3124,7 @@ export async function runModuleNewCli(argv: readonly string[]): Promise<number> 
   try {
     result = await scaffoldModule(parsed.id, {
       root: REPO_ROOT,
+      scope: parsed.scope,
       dryRun: parsed.dryRun,
     });
   } catch (error) {

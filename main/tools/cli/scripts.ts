@@ -56,10 +56,13 @@ export const DB_COMMANDS: Readonly<Record<string, Subcommand>> = {
       }),
   },
   seed: {
-    usage: 'insert the development test users (refuses in production)',
-    run: () =>
+    usage:
+      'insert development test users [--demo for plans, workspace, flags, tasks] (refuses in production)',
+    run: (argv) =>
       guarded('Seed', async () => {
-        await (await import('../scripts/db/seed')).seed({ closeConnection: true });
+        await (
+          await import('../scripts/db/seed')
+        ).seed({ closeConnection: true, demo: argv.includes('--demo') });
         return 0;
       }),
   },
@@ -182,6 +185,11 @@ export const SCRIPT_COMMANDS: Readonly<Record<string, Subcommand>> = {
       (await import('../scripts/dev/run-tests')).main(argv);
       return 0;
     },
+  },
+  doctor: {
+    usage:
+      'verify Node version, config, migration checksums, secrets, OAuth, and Postgres [--json]',
+    run: async (argv) => (await import('../scripts/dev/doctor')).runDoctorCli(argv),
   },
   export: {
     usage:

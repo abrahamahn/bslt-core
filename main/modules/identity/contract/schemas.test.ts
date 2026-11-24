@@ -109,6 +109,8 @@ import {
 
 const VALID_KEY = {
   id: '11111111-1111-4111-8111-111111111111',
+  orgId: null,
+  scopes: [],
   name: 'CI deploy bot',
   keyPrefix: 'bslt_abcdef',
   last4: 'wxyz',

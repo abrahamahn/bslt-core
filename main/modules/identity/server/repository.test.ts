@@ -52,6 +52,8 @@ describe('identityRepository (API keys)', () => {
       {
         id: SAMPLE_ROW.id,
         userId: SAMPLE_ROW.user_id,
+        orgId: null,
+        scopes: [],
         name: SAMPLE_ROW.name,
         keyPrefix: SAMPLE_ROW.key_prefix,
         last4: SAMPLE_ROW.last4,

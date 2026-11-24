@@ -37,16 +37,7 @@ export const CSRF_EXEMPT_PATHS = new Set([
   '/api/auth/resend-verification',
 ]);
 
-export const AUTH_STRATEGIES = [
-  'local',
-  'magic',
-  'webauthn',
-  'google',
-  'github',
-  'facebook',
-  'microsoft',
-  'apple',
-] as const;
+export const AUTH_STRATEGIES = ['local', 'magic', 'webauthn', 'google', 'github', 'apple'] as const;
 
 export const AUTH_VALIDATION = {
   MIN_SECRET_LENGTH: 32,

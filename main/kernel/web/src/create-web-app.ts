@@ -31,6 +31,7 @@ export interface WebShellConfig {
   readonly consoleShell: ElementType;
   readonly adminLayout?: ElementType | undefined;
   readonly settingsLayout?: ElementType | undefined;
+  readonly workspaceLayout?: ElementType | undefined;
   readonly lazyModuleRoutePage: (descriptor: LazyPageDescriptor) => ElementType;
 }
 
@@ -786,6 +787,23 @@ export function createWebApp<
                 {
                   path: relativePath,
                   element: shells.settingsLayout,
+                  ...(route.auth !== 'public' ? { protected: true } : {}),
+                  ...(route.publicOnly === true ? { publicOnly: true } : {}),
+                  children: [{ index: true, element: pageElement }],
+                },
+              ];
+            }
+            if (
+              shellName === 'app' &&
+              shells.workspaceLayout !== undefined &&
+              (route.path === '/organization' ||
+                route.path === '/workspace' ||
+                route.path.startsWith('/workspace/'))
+            ) {
+              return [
+                {
+                  path: relativePath,
+                  element: shells.workspaceLayout,
                   ...(route.auth !== 'public' ? { protected: true } : {}),
                   ...(route.publicOnly === true ? { publicOnly: true } : {}),
                   children: [{ index: true, element: pageElement }],

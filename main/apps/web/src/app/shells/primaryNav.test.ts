@@ -54,6 +54,7 @@ describe('getPrimaryNavLinks', () => {
       { label: 'Home', to: '/' },
       { label: 'Docs', to: '/clean?doc=readme' },
       { label: 'API Routes', to: '/developer/api-routes' },
+      { label: 'Email Inbox', to: '/developer/emails' },
       { label: 'UI Library', to: '/ui-library' },
     ]);
   });
@@ -72,7 +73,7 @@ describe('getPrimaryNavLinks', () => {
     ]);
     if (installedModules.some((m) => m.id === 'orgs')) {
       expect(getPrimaryNavLinks({ ...SIGNED_IN, teamsEnabled: true })).toContainEqual({
-        label: 'Organization',
+        label: 'Workspace',
         to: '/organization',
       });
     }

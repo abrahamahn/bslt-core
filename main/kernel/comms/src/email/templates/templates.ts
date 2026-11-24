@@ -20,9 +20,27 @@ import { escapeHtml } from '@bslt/contract';
 import type { EmailOptions } from '../types';
 
 const DEFAULT_APP_NAME = 'Your App';
+const DEFAULT_ACCENT_COLOR = '#2856c6';
+const SAFE_EMAIL_COLOR_PATTERN =
+  /^(?:#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?|rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\))$/u;
+const SAFE_SUPPORT_EMAIL_PATTERN = /^[^\s@<>"]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/u;
 
 interface EmailTemplateOptions {
   appName?: string | undefined;
+  accentColor?: string | undefined;
+  supportEmail?: string | undefined;
+}
+
+function resolveAccentColor(value: string | undefined): string {
+  if (typeof value !== 'string') return DEFAULT_ACCENT_COLOR;
+  const trimmed = value.trim();
+  return SAFE_EMAIL_COLOR_PATTERN.test(trimmed) ? trimmed : DEFAULT_ACCENT_COLOR;
+}
+
+function resolveSupportEmail(value: string | undefined): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return SAFE_SUPPORT_EMAIL_PATTERN.test(trimmed) ? trimmed : undefined;
 }
 
 // ============================================================================
@@ -33,14 +51,16 @@ const styles = {
   body: "font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background-color: #ffffff;",
   heading: 'color: #333333; font-size: 24px; font-weight: 600; margin-bottom: 16px;',
   text: 'color: #4b5563; font-size: 16px; line-height: 1.5; margin-bottom: 16px;',
-  button:
-    'display: inline-block; padding: 12px 24px; background-color: #0066cc; color: white; text-decoration: none; border-radius: 6px; font-weight: 500; text-align: center;',
   buttonSuccess:
     'display: inline-block; padding: 12px 24px; background-color: #16a34a; color: white; text-decoration: none; border-radius: 6px; font-weight: 500; text-align: center;',
   subtext: 'color: #6b7280; font-size: 14px; margin-top: 24px;',
   footer: 'color: #9ca3af; font-size: 12px; margin-top: 12px;',
   alert: 'color: #dc2626; font-weight: 500; margin-top: 12px;',
 } as const;
+
+function buildPrimaryButtonStyle(accentColor: string): string {
+  return `display: inline-block; padding: 12px 24px; background-color: ${accentColor}; color: white; text-decoration: none; border-radius: 6px; font-weight: 500; text-align: center;`;
+}
 
 // ============================================================================
 // Responsive Base Layout
@@ -61,15 +81,28 @@ const styles = {
 function renderLayout(
   title: string,
   content: string,
-  options?: { unsubscribeUrl?: string; appName?: string },
+  options?: {
+    unsubscribeUrl?: string;
+    appName?: string;
+    accentColor?: string;
+    supportEmail?: string;
+  },
 ): string {
-  const appName = resolveAppName(options?.appName);
+  const appName = escapeHtml(resolveAppName(options?.appName));
+  const accentColor = resolveAccentColor(options?.accentColor);
+  const supportEmail = resolveSupportEmail(options?.supportEmail);
   const unsubscribeLink =
     options?.unsubscribeUrl !== undefined && options.unsubscribeUrl !== ''
       ? `<a href="${options.unsubscribeUrl}" style="color: #9ca3af; text-decoration: underline;">Unsubscribe</a>`
       : '';
+  const supportLink =
+    supportEmail !== undefined
+      ? `<a href="mailto:${supportEmail}" style="color: #9ca3af; text-decoration: underline;">${escapeHtml(supportEmail)}</a>`
+      : '';
 
-  const footerSeparator = unsubscribeLink !== '' ? ' &middot; ' : '';
+  const footerLinks = [supportLink, unsubscribeLink].filter((part) => part !== '');
+  const footerTrailing =
+    footerLinks.length > 0 ? ` &middot; ${footerLinks.join(' &middot; ')}` : '';
 
   return `
 <!DOCTYPE html>
@@ -111,7 +144,7 @@ function renderLayout(
       <td align="center" style="padding: 24px 12px;">
 
         <!-- Email container -->
-        <table role="presentation" class="email-container" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+        <table role="presentation" class="email-container" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-top: 3px solid ${accentColor}; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
 
           <!-- Header -->
           <tr>
@@ -139,7 +172,7 @@ function renderLayout(
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; color: #9ca3af; line-height: 1.6; text-align: center;">
-                    &copy; ${String(new Date().getFullYear())} ${appName}. All rights reserved.${footerSeparator}${unsubscribeLink}
+                    &copy; ${String(new Date().getFullYear())} ${appName}. All rights reserved.${footerTrailing}
                     <br>
                     <span style="color: #d1d5db;">This is an automated message. Please do not reply directly.</span>
                   </td>
@@ -170,11 +203,20 @@ function resolveAppName(value: string | undefined): string {
 
 export function createEmailTemplates(options: EmailTemplateOptions = {}) {
   const appName = resolveAppName(options.appName);
+  const accentColor = resolveAccentColor(options.accentColor);
+  const supportEmail = resolveSupportEmail(options.supportEmail);
+  const primaryButtonStyle = buildPrimaryButtonStyle(accentColor);
   const renderBrandedLayout = (
     title: string,
     content: string,
     layoutOptions?: { unsubscribeUrl?: string },
-  ): string => renderLayout(title, content, { ...layoutOptions, appName });
+  ): string =>
+    renderLayout(title, content, {
+      ...layoutOptions,
+      appName,
+      accentColor,
+      ...(supportEmail !== undefined ? { supportEmail } : {}),
+    });
 
   return {
     /**
@@ -202,8 +244,8 @@ If you did not request this, please ignore this email.
         <p style="${styles.text}">You requested to reset your password. Click the button below to choose a new one.</p>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
           <tr>
-            <td align="center" style="border-radius: 6px; background-color: #0066cc;">
-              <a href="${resetUrl}" target="_blank" style="${styles.button}">
+            <td align="center" style="border-radius: 6px; background-color: ${accentColor};">
+              <a href="${resetUrl}" target="_blank" style="${primaryButtonStyle}">
                 Reset Password
               </a>
             </td>
@@ -241,8 +283,8 @@ If you did not request this, please ignore this email.
         <p style="${styles.text}">Click the button below to sign in:</p>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
           <tr>
-            <td align="center" style="border-radius: 6px; background-color: #0066cc;">
-              <a href="${loginUrl}" target="_blank" style="${styles.button}">
+            <td align="center" style="border-radius: 6px; background-color: ${accentColor};">
+              <a href="${loginUrl}" target="_blank" style="${primaryButtonStyle}">
                 Sign In
               </a>
             </td>
@@ -535,7 +577,7 @@ If no, your account may be compromised. Please:
         <p style="${styles.alert}">
           If this wasn't you, revert the change immediately:
         </p>
-        <p><a href="${revertUrl}" style="${styles.button}">Revert email change</a></p>
+        <p><a href="${revertUrl}" style="${primaryButtonStyle}">Revert email change</a></p>
         `
           : '';
 
@@ -745,8 +787,8 @@ ${actionUrl}
         <p style="${styles.alert}">If you did not perform this action, please secure your account immediately:</p>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
           <tr>
-            <td align="center" style="border-radius: 6px; background-color: #0066cc;">
-              <a href="${actionUrl}" target="_blank" style="${styles.button}">
+            <td align="center" style="border-radius: 6px; background-color: ${accentColor};">
+              <a href="${actionUrl}" target="_blank" style="${primaryButtonStyle}">
                 Secure My Account
               </a>
             </td>
@@ -780,8 +822,8 @@ Thank you for your support.
         <p style="${styles.text}">Your subscription to the <strong>${planName}</strong> plan is now active.</p>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
           <tr>
-            <td align="center" style="border-radius: 6px; background-color: #0066cc;">
-              <a href="${manageUrl}" target="_blank" style="${styles.button}">
+            <td align="center" style="border-radius: 6px; background-color: ${accentColor};">
+              <a href="${manageUrl}" target="_blank" style="${primaryButtonStyle}">
                 Manage Subscription
               </a>
             </td>
@@ -820,8 +862,8 @@ ${resubscribeUrl}
         <p style="${styles.text}">You'll keep access until <strong>${accessUntil}</strong>. After that, your plan reverts to the free tier.</p>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
           <tr>
-            <td align="center" style="border-radius: 6px; background-color: #0066cc;">
-              <a href="${resubscribeUrl}" target="_blank" style="${styles.button}">
+            <td align="center" style="border-radius: 6px; background-color: ${accentColor};">
+              <a href="${resubscribeUrl}" target="_blank" style="${primaryButtonStyle}">
                 Resubscribe
               </a>
             </td>
@@ -856,8 +898,8 @@ ${updateUrl}
         <p style="${styles.text}">Please update your payment method to avoid service interruption.</p>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
           <tr>
-            <td align="center" style="border-radius: 6px; background-color: #0066cc;">
-              <a href="${updateUrl}" target="_blank" style="${styles.button}">
+            <td align="center" style="border-radius: 6px; background-color: ${accentColor};">
+              <a href="${updateUrl}" target="_blank" style="${primaryButtonStyle}">
                 Update Payment Method
               </a>
             </td>
@@ -957,8 +999,8 @@ ${resubscribeUrl}
         <p style="${styles.text}">Your account has been downgraded to the free tier.</p>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
           <tr>
-            <td align="center" style="border-radius: 6px; background-color: #0066cc;">
-              <a href="${resubscribeUrl}" target="_blank" style="${styles.button}">
+            <td align="center" style="border-radius: 6px; background-color: ${accentColor};">
+              <a href="${resubscribeUrl}" target="_blank" style="${primaryButtonStyle}">
                 Re-subscribe
               </a>
             </td>
@@ -1005,8 +1047,8 @@ If you were not expecting this invitation, you can ignore this email.
         <p style="${styles.text}"><strong>${safeInviter}</strong> invited you to join <strong>${safeWorkspace}</strong> as <strong>${safeRole}</strong>.</p>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
           <tr>
-            <td align="center" style="border-radius: 6px; background-color: #0066cc;">
-              <a href="${acceptUrl}" target="_blank" style="${styles.button}">
+            <td align="center" style="border-radius: 6px; background-color: ${accentColor};">
+              <a href="${acceptUrl}" target="_blank" style="${primaryButtonStyle}">
                 Accept Invitation
               </a>
             </td>

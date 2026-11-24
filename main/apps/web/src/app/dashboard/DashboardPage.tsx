@@ -13,9 +13,19 @@ import {
   Skeleton,
   Text,
 } from '@bslt/ui';
+import { useCapabilities } from '@bslt/web-platform';
+import { useMemo, useState } from 'react';
 
-import { useOptionalMyAvatar } from '../../generated/modules';
+import {
+  hasBillingModule,
+  hasOrgsModule,
+  useOptionalActiveOrg,
+  useOptionalMyAvatar,
+  useOptionalOrganizations,
+  useOptionalSubscription,
+} from '../../generated/modules';
 import { openCommandPalette } from '../command-palette';
+import { isChecklistDismissed, isOnboardingCompleted, setChecklistDismissed } from '../onboarding';
 import { webApp } from '../webApp';
 
 import './DashboardPage.css';
@@ -135,6 +145,9 @@ const SurfaceRow = ({ label, value, detail, tone = 'info' }: SurfaceRowProps): J
 export const DashboardPage = (): JSX.Element => {
   const { user, isLoading } = useAuth();
   const locale = useLocale();
+  const { isFlagEnabled } = useCapabilities();
+  const teamsEnabled = hasOrgsModule && isFlagEnabled('orgs.teams');
+  const billingEnabled = hasBillingModule && isFlagEnabled('flags.billing');
   const firstName = user?.firstName ?? '';
   const lastName = user?.lastName ?? '';
   const hasName = firstName.length > 0 || lastName.length > 0;
@@ -149,6 +162,24 @@ export const DashboardPage = (): JSX.Element => {
   const profileReady = hasName && hasAvatar;
   const username = user?.username?.trim() ?? '';
   const hasUsername = username.length > 0;
+  const { activeOrgId } = useOptionalActiveOrg();
+  const { organizations } = useOptionalOrganizations({
+    enabled: teamsEnabled && user !== null && !isLoading,
+  });
+  const activeOrg = useMemo(() => {
+    if (!teamsEnabled || organizations.length === 0) return null;
+    if (activeOrgId !== null) {
+      return organizations.find((org) => org.id === activeOrgId) ?? organizations[0] ?? null;
+    }
+    return organizations[0] ?? null;
+  }, [activeOrgId, organizations, teamsEnabled]);
+  const { subscription } = useOptionalSubscription({
+    enabled: billingEnabled && user !== null && !isLoading,
+  });
+  const [checklistDismissed, setDismissedState] = useState<boolean>(() =>
+    isChecklistDismissed(user?.id),
+  );
+  const onboardingDone = isOnboardingCompleted(user?.id);
   const {
     data: profileCompleteness,
     isLoading: profileCompletenessLoading,
@@ -160,6 +191,69 @@ export const DashboardPage = (): JSX.Element => {
     profileCompleteness?.percentage ?? getFallbackProfilePercent({ hasAvatar, hasName });
   const missingProfileFields = profileCompleteness?.missingFields.length ?? (profileReady ? 0 : 1);
   const currentSession = sessions.find((session) => session.isCurrent) ?? null;
+
+  const activePlanLabel =
+    subscription?.status === 'active' || subscription?.status === 'trialing'
+      ? subscription.plan.name
+      : 'Free';
+  const showUpgradeCta =
+    billingEnabled && subscription?.status !== 'active' && subscription?.status !== 'trialing';
+
+  const checklistItems = useMemo(
+    () => [
+      {
+        id: 'profile',
+        label: 'Complete your profile name',
+        detail: hasName ? 'Profile display name is configured.' : 'Add your first and last name.',
+        done: hasName,
+        to: '/profile',
+      },
+      {
+        id: 'email',
+        label: 'Verify your email address',
+        detail:
+          user?.emailVerified === true
+            ? 'Email address is verified.'
+            : 'Confirm your email for account recovery and notifications.',
+        done: user?.emailVerified === true,
+        to: '/settings/security',
+      },
+      {
+        id: 'onboarding',
+        label: 'Run workspace setup wizard',
+        detail: onboardingDone
+          ? 'Initial workspace setup completed.'
+          : 'Walk through profile, workspace branding, and team invites.',
+        done: onboardingDone,
+        to: '/onboarding',
+      },
+      ...(teamsEnabled
+        ? [
+            {
+              id: 'workspace',
+              label: 'Configure your team workspace',
+              detail:
+                activeOrg !== null
+                  ? `Active workspace: ${activeOrg.name}`
+                  : 'Create or switch into a shared team workspace.',
+              done: activeOrg !== null,
+              to: '/workspace',
+            },
+          ]
+        : []),
+    ],
+    [activeOrg, hasName, onboardingDone, teamsEnabled, user?.emailVerified],
+  );
+  const completedChecklistCount = checklistItems.filter((item) => item.done).length;
+  const checklistPercent =
+    checklistItems.length > 0
+      ? Math.round((completedChecklistCount / checklistItems.length) * 100)
+      : 100;
+
+  const handleDismissChecklist = (): void => {
+    setChecklistDismissed(user?.id, true);
+    setDismissedState(true);
+  };
 
   if (isLoading) {
     return (
@@ -181,15 +275,35 @@ export const DashboardPage = (): JSX.Element => {
     <PageContainer className="dashboard-page" maxWidth={1180}>
       <section className="dashboard-command">
         <div className="dashboard-command__main">
-          <div>
-            <Heading as="h1" size="xl">
-              Dashboard
-            </Heading>
+          <div className="dashboard-command__identity">
+            <div className="dashboard-command__workspace-row">
+              <Heading as="h1" size="xl">
+                Dashboard
+              </Heading>
+              {activeOrg !== null ? <Badge tone="info">{activeOrg.name}</Badge> : null}
+              {billingEnabled ? (
+                <Badge tone={showUpgradeCta ? 'neutral' : 'premium'}>{activePlanLabel}</Badge>
+              ) : null}
+            </div>
             <Text tone="muted" size="sm" className="dashboard-page__subtitle">
               Welcome back, {greetingName}.
             </Text>
           </div>
           <div className="dashboard-command__actions">
+            {showUpgradeCta ? (
+              <Link to="/pricing">
+                <Button variant="primary" size="small">
+                  Upgrade plan
+                </Button>
+              </Link>
+            ) : null}
+            {activeOrg !== null ? (
+              <Link to="/workspace">
+                <Button variant="secondary" size="small">
+                  Workspace
+                </Button>
+              </Link>
+            ) : null}
             {webApp.dashboardQuickActions.map((action) => (
               <Link key={action.to} to={action.to}>
                 <Button variant="secondary" size="small">
@@ -279,6 +393,42 @@ export const DashboardPage = (): JSX.Element => {
           />
         ))}
       </div>
+
+      {!checklistDismissed && completedChecklistCount < checklistItems.length ? (
+        <Card className="dashboard-checklist">
+          <div className="dashboard-checklist__header">
+            <div>
+              <Heading as="h2" size="sm">
+                Workspace Setup Checklist
+              </Heading>
+              <Text tone="muted" size="sm">
+                {String(completedChecklistCount)} of {String(checklistItems.length)} steps complete.
+              </Text>
+            </div>
+            <Button type="button" variant="text" size="small" onClick={handleDismissChecklist}>
+              Dismiss
+            </Button>
+          </div>
+          <div className="dashboard-checklist__progress">
+            <Progress value={checklistPercent} aria-label="Setup checklist progress" />
+          </div>
+          <div className="dashboard-checklist__list">
+            {checklistItems.map((item) => (
+              <Link key={item.id} to={item.to} className="dashboard-checklist__item">
+                <div className="dashboard-surface-row__copy">
+                  <Text as="span" size="sm" className="dashboard-surface-row__label">
+                    {item.label}
+                  </Text>
+                  <Text as="span" tone="muted" size="sm">
+                    {item.detail}
+                  </Text>
+                </div>
+                <Badge tone={item.done ? 'success' : 'info'}>{item.done ? 'Done' : 'Start'}</Badge>
+              </Link>
+            ))}
+          </div>
+        </Card>
+      ) : null}
 
       <div className="dashboard-content-grid">
         <Card className="dashboard-panel">

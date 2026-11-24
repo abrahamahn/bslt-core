@@ -18,8 +18,10 @@ Developer route manifest introspection (`GET /api/admin/routes`) and development
 
 ### Endpoints
 
-| Key                | Method | Path                | Auth    | Summary                       |
-| ------------------ | ------ | ------------------- | ------- | ----------------------------- |
-| `getRouteManifest` | `GET`  | `/api/admin/routes` | `admin` | Get registered route manifest |
+| Key                | Method | Path                         | Auth     | Summary                                                      |
+| ------------------ | ------ | ---------------------------- | -------- | ------------------------------------------------------------ |
+| `getRouteManifest` | `GET`  | `/api/admin/routes`          | `admin`  | Get registered route manifest                                |
+| `listDevEmails`    | `GET`  | `/api/devtools/emails`       | `public` | List outbound emails captured in the local development inbox |
+| `clearDevEmails`   | `POST` | `/api/devtools/emails/clear` | `public` | Clear captured emails from the local development inbox       |
 
 <!-- /bslt:generated -->

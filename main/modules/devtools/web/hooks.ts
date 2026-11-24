@@ -2,12 +2,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { createEndpointClient } from '@bslt/client-engine';
-import { useQuery, useTransport } from '@bslt/react';
+import { useEndpointMutation, useQuery, useQueryCache, useTransport } from '@bslt/react';
 import { useIsMobile, useLocalStorage } from '@bslt/react/hooks';
 
 import { devtoolsModule } from '../module';
 
-import type { RouteManifestResponse } from '../contract';
+import type { DevEmailInboxResponse, DevEmailItem, RouteManifestResponse } from '../contract';
 import type { UILibraryPaneConfig } from './catalog';
 import type { DocKey } from './docsMeta';
 
@@ -152,5 +152,43 @@ export function useUILibraryPanes(storageKey = 'demo-pane-config'): UseUILibrary
     togglePane,
     handlePaneResize,
     resetLayout,
+  };
+}
+
+interface UseDevEmailsResult {
+  readonly emails: readonly DevEmailItem[];
+  readonly count: number;
+  readonly isLoading: boolean;
+  readonly error: Error | null;
+  readonly isClearing: boolean;
+  readonly refresh: () => Promise<void>;
+  readonly clearInbox: () => void;
+}
+
+export function useDevEmails(): UseDevEmailsResult {
+  const transport = useTransport();
+  const queryCache = useQueryCache();
+  const client = useMemo(() => createEndpointClient(devtoolsModule, transport), [transport]);
+  const query = useQuery<DevEmailInboxResponse>({
+    queryKey: ['devtools', 'emails'],
+    queryFn: () => client.listDevEmails(),
+    staleTime: 0,
+  });
+  const clearMutation = useEndpointMutation(client.clearDevEmails, {
+    onSuccess: () => {
+      queryCache.invalidateQuery(['devtools', 'emails']);
+    },
+  });
+
+  return {
+    emails: query.data?.emails ?? [],
+    count: query.data?.count ?? 0,
+    isLoading: query.isLoading,
+    error: query.error ?? clearMutation.error,
+    isClearing: clearMutation.isLoading,
+    refresh: query.refetch,
+    clearInbox: () => {
+      clearMutation.mutate({ body: {} });
+    },
   };
 }

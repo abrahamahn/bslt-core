@@ -9,7 +9,7 @@
       Pre-paint theme: sets data-theme from the stored preference before the
       first paint, so the critical CSS below picks the right side of every
       light/dark pair. A FILE, never inline — production CSP is script-src 'self'
-      (main/shared/src/modules/system/security/csp.ts), which would silently
+      (main/kernel/server/src/security/headers.ts), which would silently
       block an inline script in production only.
     -->
     <script src="/theme-init.js"></script>
@@ -20,7 +20,7 @@
       defines those variables has not loaded yet — that is the whole point of this
       block, and a token here would resolve to nothing. The colours below are the
       `--ui-color-bg` / `--ui-color-primary` / `--ui-color-border` tokens of
-      main/client/ui/src/styles/theme.css, and the light/dark selectors mirror that
+      main/kernel/ui/src/styles/theme.css, and the light/dark selectors mirror that
       file exactly: `[data-theme]` when the user has chosen (theme-init.js writes it
       onto <html> pre-paint; ThemeProvider re-asserts it on mount), the OS
       preference when they have not. So the splash matches the app it hands off

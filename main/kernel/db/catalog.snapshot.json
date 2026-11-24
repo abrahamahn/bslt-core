@@ -1130,7 +1130,9 @@
         "last_used_at timestamp with time zone",
         "expires_at timestamp with time zone",
         "created_at timestamp with time zone NOT NULL DEFAULT now()",
-        "updated_at timestamp with time zone NOT NULL DEFAULT now()"
+        "updated_at timestamp with time zone NOT NULL DEFAULT now()",
+        "org_id uuid",
+        "scopes text[] NOT NULL DEFAULT '{}'::text[]"
       ],
       "constraints": [
         "identity_api_keys_name_check CHECK (((char_length(TRIM(BOTH FROM name)) > 0) AND (char_length(name) <= 100)))",
@@ -1141,6 +1143,7 @@
       "indexes": [
         "CREATE UNIQUE INDEX identity_api_keys_pkey ON public.identity_api_keys USING btree (id)",
         "CREATE UNIQUE INDEX identity_api_keys_token_hash_key ON public.identity_api_keys USING btree (token_hash)",
+        "CREATE INDEX idx_identity_api_keys_org_created ON public.identity_api_keys USING btree (org_id, created_at DESC) WHERE (org_id IS NOT NULL)",
         "CREATE INDEX idx_identity_api_keys_owner_created ON public.identity_api_keys USING btree (user_id, created_at DESC)"
       ],
       "policies": [

@@ -121,24 +121,6 @@ export function loadAuthConfig(env: FullEnv, apiBaseUrl: string, appName = 'Your
       providers.github = githubConfig;
     }
 
-    const facebookConfig = createOAuth(
-      env.FACEBOOK_CLIENT_ID,
-      env.FACEBOOK_CLIENT_SECRET,
-      env.FACEBOOK_CALLBACK_URL ?? buildUrl('/api/auth/oauth/facebook/callback'),
-    );
-    if (facebookConfig !== undefined) {
-      providers.facebook = facebookConfig;
-    }
-
-    if (env.MICROSOFT_CLIENT_ID !== undefined && env.MICROSOFT_CLIENT_ID !== '') {
-      providers.microsoft = {
-        clientId: env.MICROSOFT_CLIENT_ID,
-        clientSecret: env.MICROSOFT_CLIENT_SECRET ?? '',
-        callbackUrl: env.MICROSOFT_CALLBACK_URL ?? buildUrl('/api/auth/oauth/microsoft/callback'),
-        tenantId: env.MICROSOFT_TENANT_ID ?? 'common',
-      };
-    }
-
     if (env.APPLE_CLIENT_ID !== undefined && env.APPLE_CLIENT_ID !== '') {
       providers.apple = {
         clientId: env.APPLE_CLIENT_ID,

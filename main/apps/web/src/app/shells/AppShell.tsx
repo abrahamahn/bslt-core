@@ -1,11 +1,16 @@
 // main/apps/web/src/app/shells/AppShell.tsx
-import { NewDeviceBanner } from '@bslt/identity/web';
+import { NewDeviceBanner, useAuth } from '@bslt/identity/web';
 import { useIsMobile } from '@bslt/react/hooks';
 import { Outlet } from '@bslt/react/router';
-import { LeftSidebarLayout, ScrollArea } from '@bslt/ui';
+import { LeftSidebarLayout, ScrollArea, Text } from '@bslt/ui';
+import { useCapabilities } from '@bslt/web-platform';
 import { useCallback, useState, type ReactElement, type ReactNode } from 'react';
 
-import { OptionalImpersonationBanner } from '../../generated/modules';
+import {
+  hasOrgsModule,
+  OptionalImpersonationBanner,
+  OptionalOrgSwitcher,
+} from '../../generated/modules';
 
 import { MobilePrimaryBar, PrimaryNavMenu } from './PrimaryNavMenu';
 import { ShellHeader } from './ShellHeader';
@@ -18,6 +23,9 @@ interface AppShellProps {
 
 export const AppShell = ({ children }: AppShellProps): ReactElement => {
   const isMobile = useIsMobile();
+  const { isAuthenticated } = useAuth();
+  const { isFlagEnabled } = useCapabilities();
+  const showSidebarWorkspace = isAuthenticated && hasOrgsModule && isFlagEnabled('orgs.teams');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const toggleMobileNav = useCallback((): void => {
@@ -43,6 +51,14 @@ export const AppShell = ({ children }: AppShellProps): ReactElement => {
           className="shell-app__sidebar"
           data-open={mobileNavOpen ? 'true' : 'false'}
         >
+          {showSidebarWorkspace ? (
+            <div className="shell-app__workspace-bar">
+              <Text as="span" size="xs" tone="muted" className="shell-app__workspace-label">
+                Active Workspace
+              </Text>
+              <OptionalOrgSwitcher />
+            </div>
+          ) : null}
           <PrimaryNavMenu onNavigate={closeMobileNav} />
         </LeftSidebarLayout>
         <main id="main-content" className="shell-app__main">

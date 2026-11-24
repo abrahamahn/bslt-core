@@ -73,7 +73,7 @@ describe('App', () => {
 
       await waitFor(() => {
         // HomePage renders the configured app name heading
-        expect(screen.getAllByText('Your App').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('BSLT').length).toBeGreaterThanOrEqual(1);
       });
     });
 
@@ -133,7 +133,7 @@ describe('App', () => {
 
       // Verify the app renders content - the HomePage renders the configured app name heading
       await waitFor(() => {
-        expect(screen.getAllByText('Your App').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('BSLT').length).toBeGreaterThanOrEqual(1);
       });
     });
 
@@ -154,7 +154,7 @@ describe('App', () => {
 
       // App renders immediately without waiting for cache restoration
       await waitFor(() => {
-        expect(screen.getAllByText('Your App').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('BSLT').length).toBeGreaterThanOrEqual(1);
       });
     });
 
@@ -162,7 +162,7 @@ describe('App', () => {
       render(<App environment={mockEnvironment} />);
 
       await waitFor(() => {
-        expect(screen.getAllByText('Your App').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('BSLT').length).toBeGreaterThanOrEqual(1);
       });
 
       // Verify queryCache is available in environment
@@ -176,7 +176,7 @@ describe('App', () => {
       render(<App environment={mockEnvironment} />);
 
       await waitFor(() => {
-        expect(screen.getAllByText('Your App').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('BSLT').length).toBeGreaterThanOrEqual(1);
       });
 
       fireEvent.keyDown(window, { key: 'K', ctrlKey: true });

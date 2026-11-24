@@ -31,6 +31,8 @@ const { useApiKeys, useCreateApiKey, useDeleteApiKey } = await import('./hooks')
 
 const mockKey: ApiKey = {
   id: '11111111-1111-4111-8111-111111111111',
+  orgId: null,
+  scopes: [],
   name: 'CI deploy bot',
   keyPrefix: 'bslt_abc',
   last4: 'wxyz',

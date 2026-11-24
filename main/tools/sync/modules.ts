@@ -24,8 +24,10 @@ export const GENERATED_MODULES_DIRECTORIES = [
 ] as const;
 
 const SERVER_GENERATED_MODULES = 'main/apps/server/src/generated/modules.ts';
+const SERVER_GENERATED_BRAND = 'main/apps/server/src/generated/brand.ts';
 const WEB_GENERATED_MODULES = 'main/apps/web/src/generated/modules.ts';
 const WEB_GENERATED_PUBLIC_MODULES = 'main/apps/web/src/generated/public-modules.ts';
+const WEB_GENERATED_BRAND = 'main/apps/web/src/generated/brand.ts';
 const MODULE_GRAPH_JSON = 'main/tools/generated/module-graph.json';
 const README_START_MARKER = '<!-- bslt:generated reference -->';
 const README_END_MARKER = '<!-- /bslt:generated -->';
@@ -62,10 +64,21 @@ export interface ParsedModuleInfo {
   readonly jobKeys: readonly string[];
 }
 
+export interface ParsedBrandConfig {
+  readonly name: string;
+  readonly accent: string;
+  readonly emailAccent: string;
+  readonly logo: string;
+  readonly tagline: string;
+  readonly domain: string;
+  readonly supportEmail: string;
+}
+
 export interface ParsedModulesWorkspace {
   readonly installedIds: readonly string[];
   readonly devOnlyIds: readonly string[];
   readonly modules: ReadonlyMap<string, ParsedModuleInfo>;
+  readonly brand: ParsedBrandConfig;
 }
 
 function parseSourceFile(filePath: string): ts.SourceFile {
@@ -499,6 +512,39 @@ function parseModuleIdList(
   return ids;
 }
 
+function readOptionalStringProp(
+  props: ReadonlyMap<string, ts.Expression>,
+  key: string,
+): string | undefined {
+  const raw = props.get(key);
+  if (raw === undefined) return undefined;
+  const expr = unwrap(raw);
+  return ts.isStringLiteral(expr) || ts.isNoSubstitutionTemplateLiteral(expr)
+    ? expr.text
+    : undefined;
+}
+
+function parseBrandConfig(configProps: ReadonlyMap<string, ts.Expression>): ParsedBrandConfig {
+  const name = readOptionalStringProp(configProps, 'name') ?? 'BSLT';
+  const brandRaw = configProps.get('brand');
+  const brandExpr = brandRaw !== undefined ? unwrap(brandRaw) : undefined;
+  const brandProps =
+    brandExpr !== undefined && ts.isObjectLiteralExpression(brandExpr)
+      ? objectProperties(brandExpr)
+      : new Map<string, ts.Expression>();
+
+  const domain = readOptionalStringProp(brandProps, 'domain') ?? 'bslt.dev';
+  return {
+    name,
+    accent: readOptionalStringProp(brandProps, 'accent') ?? 'oklch(0.62 0.19 264)',
+    emailAccent: readOptionalStringProp(brandProps, 'emailAccent') ?? '#2856c6',
+    logo: readOptionalStringProp(brandProps, 'logo') ?? '/brand/logo.svg',
+    tagline: readOptionalStringProp(brandProps, 'tagline') ?? 'Clone-and-own SaaS starter',
+    domain,
+    supportEmail: readOptionalStringProp(brandProps, 'supportEmail') ?? `support@${domain}`,
+  };
+}
+
 export function loadModulesWorkspace(root: string = REPO_ROOT): ParsedModulesWorkspace {
   const configPath = path.join(root, 'bslt.config.ts');
   if (!existsSync(configPath)) {
@@ -534,6 +580,7 @@ export function loadModulesWorkspace(root: string = REPO_ROOT): ParsedModulesWor
     'installedModules',
   );
   const devOnlyIds = parseModuleIdList(configProps.get('devOnly'), importedModules, 'devOnly');
+  const brand = parseBrandConfig(configProps);
 
   const modulesDir = path.join(root, 'main/modules');
   const discoveredIds = existsSync(modulesDir)
@@ -556,7 +603,7 @@ export function loadModulesWorkspace(root: string = REPO_ROOT): ParsedModulesWor
     }
   }
 
-  return { installedIds, devOnlyIds, modules };
+  return { installedIds, devOnlyIds, modules, brand };
 }
 
 function validateInstalledOrder(workspace: ParsedModulesWorkspace): void {
@@ -805,7 +852,10 @@ function emitWebGeneratedModules(workspace: ParsedModulesWorkspace): string {
       } else if (id === 'analytics' && hasAnalytics) {
         extraSpecifiers.push('AnalyticsTracker as OptionalAnalyticsTracker');
       } else if (id === 'billing' && hasBilling) {
-        extraSpecifiers.push('useAdminPlans as useOptionalAdminPlans');
+        extraSpecifiers.push(
+          'useAdminPlans as useOptionalAdminPlans',
+          'useSubscription as useOptionalSubscription',
+        );
       } else if (id === 'files' && hasFiles) {
         extraSpecifiers.push(
           'AvatarUpload as OptionalAvatarUpload',
@@ -821,7 +871,11 @@ function emitWebGeneratedModules(workspace: ParsedModulesWorkspace): string {
       } else if (id === 'orgs' && hasOrgs) {
         extraSpecifiers.push(
           'OrgSwitcher as OptionalOrgSwitcher',
+          'useActiveOrg as useOptionalActiveOrg',
           'useAdminOrgs as useOptionalAdminOrgs',
+          'useCreateInvitation as useOptionalCreateInvitation',
+          'useOrganizations as useOptionalOrganizations',
+          'useUpdateOrganization as useOptionalUpdateOrganization',
         );
       }
       extraSpecifiers.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase(), 'en-US'));
@@ -1011,7 +1065,7 @@ function emitWebGeneratedModules(workspace: ParsedModulesWorkspace): string {
   }
 
   if (hasBilling) {
-    optionalLines.push('export { useOptionalAdminPlans };', '');
+    optionalLines.push('export { useOptionalAdminPlans, useOptionalSubscription };', '');
   } else {
     optionalLines.push(
       'export function useOptionalAdminPlans(): {',
@@ -1025,6 +1079,26 @@ function emitWebGeneratedModules(workspace: ParsedModulesWorkspace): string {
       '    isLoading: false,',
       '    error: null,',
       '    refresh: () => Promise.resolve(),',
+      '  };',
+      '}',
+      '',
+      'export function useOptionalSubscription(_options?: { readonly enabled?: boolean }): {',
+      '  readonly subscription:',
+      '    | {',
+      '        readonly id: string;',
+      '        readonly planId: string;',
+      '        readonly plan: { readonly name: string };',
+      '        readonly status: string;',
+      '        readonly cancelAtPeriodEnd?: boolean;',
+      '      }',
+      '    | null;',
+      '  readonly isLoading: boolean;',
+      '  readonly error: Error | null;',
+      '} {',
+      '  return {',
+      '    subscription: null,',
+      '    isLoading: false,',
+      '    error: null,',
       '  };',
       '}',
       '',
@@ -1062,11 +1136,31 @@ function emitWebGeneratedModules(workspace: ParsedModulesWorkspace): string {
   }
 
   if (hasOrgs) {
-    optionalLines.push('export { OptionalOrgSwitcher, useOptionalAdminOrgs };', '');
+    optionalLines.push(
+      'export {',
+      '  OptionalOrgSwitcher,',
+      '  useOptionalActiveOrg,',
+      '  useOptionalAdminOrgs,',
+      '  useOptionalCreateInvitation,',
+      '  useOptionalOrganizations,',
+      '  useOptionalUpdateOrganization,',
+      '};',
+      '',
+    );
   } else {
     optionalLines.push(
       'export function OptionalOrgSwitcher(): null {',
       '  return null;',
+      '}',
+      '',
+      'export function useOptionalActiveOrg(): {',
+      '  readonly activeOrgId: string | null;',
+      '  readonly setActiveOrg: (id: string | null) => void;',
+      '} {',
+      '  return {',
+      '    activeOrgId: null,',
+      '    setActiveOrg: () => {},',
+      '  };',
       '}',
       '',
       'export function useOptionalAdminOrgs(): {',
@@ -1082,6 +1176,60 @@ function emitWebGeneratedModules(workspace: ParsedModulesWorkspace): string {
       '    isLoading: false,',
       '    error: null,',
       '    refresh: () => Promise.resolve(),',
+      '  };',
+      '}',
+      '',
+      'export function useOptionalOrganizations(_options?: { readonly enabled?: boolean }): {',
+      '  readonly organizations: readonly {',
+      '    readonly id: string;',
+      '    readonly name: string;',
+      '    readonly slug: string;',
+      '    readonly role?: string;',
+      '  }[];',
+      '  readonly isLoading: boolean;',
+      '  readonly error: Error | null;',
+      '  readonly refresh: () => Promise<void>;',
+      '} {',
+      '  return {',
+      '    organizations: [],',
+      '    isLoading: false,',
+      '    error: null,',
+      '    refresh: () => Promise.resolve(),',
+      '  };',
+      '}',
+      '',
+      'export function useOptionalUpdateOrganization(_options?: {',
+      '  readonly onSuccess?: (org: { readonly id: string; readonly name: string }) => void;',
+      '}): {',
+      '  readonly mutate: (vars: { readonly id: string; readonly data: { readonly name?: string } }) => void;',
+      '  readonly isLoading: boolean;',
+      '  readonly error: Error | null;',
+      '  readonly reset: () => void;',
+      '} {',
+      '  return {',
+      '    mutate: () => {},',
+      '    isLoading: false,',
+      '    error: null,',
+      '    reset: () => {},',
+      '  };',
+      '}',
+      '',
+      'export function useOptionalCreateInvitation(_options?: {',
+      '  readonly onSuccess?: () => void;',
+      '}): {',
+      '  readonly mutate: (vars: {',
+      '    readonly tenantId: string;',
+      "    readonly data: { readonly email: string; readonly role: 'admin' | 'member' | 'viewer' };",
+      '  }) => void;',
+      '  readonly isLoading: boolean;',
+      '  readonly error: Error | null;',
+      '  readonly reset: () => void;',
+      '} {',
+      '  return {',
+      '    mutate: () => {},',
+      '    isLoading: false,',
+      '    error: null,',
+      '    reset: () => {},',
       '  };',
       '}',
       '',
@@ -1482,6 +1630,48 @@ export interface SyncModulesResult {
   readonly total: number;
 }
 
+function emitServerGeneratedBrand(workspace: ParsedModulesWorkspace): string {
+  const { brand } = workspace;
+  return [
+    `// ${SERVER_GENERATED_BRAND}`,
+    `// @generated by \`${SYNC_MODULES_COMMAND}\` from bslt.config.ts. Do not edit.`,
+    '',
+    'export const SERVER_BRAND = {',
+    `  name: ${JSON.stringify(brand.name)}, // <- bslt.config.ts#name`,
+    `  accent: ${JSON.stringify(brand.accent)}, // <- bslt.config.ts#brand.accent`,
+    `  emailAccent: ${JSON.stringify(brand.emailAccent)}, // <- bslt.config.ts#brand.emailAccent`,
+    `  logo: ${JSON.stringify(brand.logo)}, // <- bslt.config.ts#brand.logo`,
+    `  tagline: ${JSON.stringify(brand.tagline)}, // <- bslt.config.ts#brand.tagline`,
+    `  domain: ${JSON.stringify(brand.domain)}, // <- bslt.config.ts#brand.domain`,
+    `  supportEmail: ${JSON.stringify(brand.supportEmail)}, // <- bslt.config.ts#brand.supportEmail`,
+    '} as const;',
+    '',
+  ].join('\n');
+}
+
+function emitWebGeneratedBrand(workspace: ParsedModulesWorkspace): string {
+  const { brand } = workspace;
+  return [
+    `// ${WEB_GENERATED_BRAND}`,
+    `// @generated by \`${SYNC_MODULES_COMMAND}\` from bslt.config.ts. Do not edit.`,
+    '',
+    'export const BRAND = {',
+    `  name: ${JSON.stringify(brand.name)}, // <- bslt.config.ts#name`,
+    `  accent: ${JSON.stringify(brand.accent)}, // <- bslt.config.ts#brand.accent`,
+    `  logo: ${JSON.stringify(brand.logo)}, // <- bslt.config.ts#brand.logo`,
+    `  tagline: ${JSON.stringify(brand.tagline)}, // <- bslt.config.ts#brand.tagline`,
+    `  domain: ${JSON.stringify(brand.domain)}, // <- bslt.config.ts#brand.domain`,
+    `  supportEmail: ${JSON.stringify(brand.supportEmail)}, // <- bslt.config.ts#brand.supportEmail`,
+    '} as const;',
+    '',
+    'export function applyBrandTheme(doc: Document | undefined = typeof document !== "undefined" ? document : undefined): void {',
+    '  if (doc === undefined) return;',
+    '  doc.documentElement.style.setProperty("--ui-color-brand", BRAND.accent);',
+    '}',
+    '',
+  ].join('\n');
+}
+
 export function emitModulesFiles(root: string = REPO_ROOT): Map<string, string> {
   const workspace = loadModulesWorkspace(root);
   validateInstalledOrder(workspace);
@@ -1493,8 +1683,10 @@ export function emitModulesFiles(root: string = REPO_ROOT): Map<string, string> 
   ]);
 
   files.set(SERVER_GENERATED_MODULES, emitServerGeneratedModules(workspace));
+  files.set(SERVER_GENERATED_BRAND, emitServerGeneratedBrand(workspace));
   files.set(WEB_GENERATED_MODULES, emitWebGeneratedModules(workspace));
   files.set(WEB_GENERATED_PUBLIC_MODULES, emitWebGeneratedPublicModules(workspace));
+  files.set(WEB_GENERATED_BRAND, emitWebGeneratedBrand(workspace));
   files.set(MODULE_GRAPH_JSON, emitModuleGraphJson(workspace));
 
   const referencedIds = [...new Set([...workspace.installedIds, ...workspace.devOnlyIds])];
@@ -1573,8 +1765,10 @@ export async function syncModules(options: SyncModulesOptions = {}): Promise<Syn
 
   const ownedPureGenerated = new Set<string>([
     SERVER_GENERATED_MODULES,
+    SERVER_GENERATED_BRAND,
     WEB_GENERATED_MODULES,
     WEB_GENERATED_PUBLIC_MODULES,
+    WEB_GENERATED_BRAND,
     MODULE_GRAPH_JSON,
   ]);
   const orphans = existingGeneratedFiles(root).filter(

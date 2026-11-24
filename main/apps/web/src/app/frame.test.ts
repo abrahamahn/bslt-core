@@ -43,8 +43,15 @@ describe('appFrame', () => {
     const paletteIds = (appFrame.palette ?? []).map((entry) => entry.id);
     expect(paletteIds).toEqual(
       hasAdminModule
-        ? ['nav-dashboard', 'nav-profile', 'nav-settings', 'action-change-theme']
-        : ['nav-dashboard', 'nav-profile', 'nav-settings', 'nav-admin', 'action-change-theme'],
+        ? ['nav-dashboard', 'nav-profile', 'nav-settings', 'nav-onboarding', 'action-change-theme']
+        : [
+            'nav-dashboard',
+            'nav-profile',
+            'nav-settings',
+            'nav-onboarding',
+            'nav-admin',
+            'action-change-theme',
+          ],
     );
     expect(paletteIds).not.toContain('nav-billing');
 

@@ -409,4 +409,40 @@ describe('seed script', () => {
       expect(seedModule.TEST_USERS).toBeDefined();
     });
   });
+
+  describe('demo scenario seeding (--demo)', () => {
+    it('seeds plans, flags, Acme Studio workspace, status components, and tasks when tables exist', async () => {
+      process.env['NODE_ENV'] = 'development';
+      const mockQueryOne = vi.fn().mockResolvedValue({ exists: true });
+      mockCreateDbClient.mockReturnValue({
+        execute: mockExecute,
+        queryOne: mockQueryOne,
+        close: mockClose,
+      });
+
+      const { DEMO_BILLING_PLANS, seed } = await import('./seed');
+      await seed({ demo: true });
+
+      expect(DEMO_BILLING_PLANS).toHaveLength(3);
+      // 3 users + 3 plans + 5 flags + 2 org/invite queries + 5 status + 3 tasks = 21 executes
+      expect(mockExecute).toHaveBeenCalledTimes(21);
+      expect(consoleOutput.some((msg) => msg.includes('Acme Studio'))).toBe(true);
+    });
+
+    it('gracefully skips optional module tables when running on Minimal Core', async () => {
+      process.env['NODE_ENV'] = 'development';
+      const mockQueryOne = vi.fn().mockResolvedValue({ exists: false });
+      mockCreateDbClient.mockReturnValue({
+        execute: mockExecute,
+        queryOne: mockQueryOne,
+        close: mockClose,
+      });
+
+      const { seed } = await import('./seed');
+      await seed({ demo: true });
+
+      // Only the 3 base identity users are seeded when optional tables are absent.
+      expect(mockExecute).toHaveBeenCalledTimes(3);
+    });
+  });
 });

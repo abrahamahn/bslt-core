@@ -80,6 +80,15 @@ export const appFrame: AppFrameConfig<AppRouteFlags, DocumentType> = Object.free
       keywords: ['profile', 'account', 'preferences', 'security'],
       order: 20,
     },
+    {
+      id: 'nav-onboarding',
+      label: 'Run Workspace Setup',
+      description: 'Open the guided profile, workspace, and team setup wizard',
+      category: 'navigation',
+      to: '/onboarding',
+      keywords: ['onboarding', 'setup', 'getting started', 'wizard', 'workspace'],
+      order: 25,
+    },
     ...(hasAdminModule
       ? []
       : [

@@ -1,0 +1,119 @@
+/* main/apps/web/src/app/onboarding/OnboardingPage.css */
+
+.onboarding-page {
+  display: grid;
+  gap: var(--ui-gap-lg);
+  width: 100%;
+}
+
+.onboarding-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ui-gap-md);
+}
+
+.onboarding-header__copy {
+  display: grid;
+  gap: var(--ui-gap-xs);
+}
+
+.onboarding-stepper {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ui-gap-sm);
+}
+
+.onboarding-step-pill {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-gap-sm);
+  padding: var(--ui-gap-sm) var(--ui-gap-md);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-color-bg);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--ui-motion-duration-fast) var(--ui-motion-ease-standard),
+    background-color var(--ui-motion-duration-fast) var(--ui-motion-ease-standard);
+}
+
+.onboarding-step-pill[data-active='true'] {
+  border-color: var(--ui-color-brand);
+  background: var(--ui-color-surface);
+}
+
+.onboarding-step-pill:hover {
+  border-color: var(--ui-color-border-control);
+}
+
+.onboarding-card {
+  display: grid;
+  gap: var(--ui-gap-lg);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-color-bg);
+  box-shadow: var(--ui-elevation-xs);
+}
+
+.onboarding-form {
+  display: grid;
+  gap: var(--ui-gap-md);
+}
+
+.onboarding-form__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ui-gap-md);
+}
+
+.onboarding-field {
+  display: grid;
+  gap: var(--ui-gap-xs);
+}
+
+.onboarding-field__label {
+  font-weight: var(--ui-font-weight-medium);
+}
+
+.onboarding-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-gap-md);
+  padding-top: var(--ui-gap-md);
+  border-top: 1px solid var(--ui-color-border);
+}
+
+.onboarding-actions__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-gap-sm);
+}
+
+.onboarding-plan-callout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-gap-md);
+  padding: var(--ui-gap-md);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-color-surface);
+}
+
+@media (max-width: 48rem) {
+  .onboarding-header,
+  .onboarding-actions,
+  .onboarding-plan-callout {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .onboarding-stepper,
+  .onboarding-form__row {
+    grid-template-columns: 1fr;
+  }
+}
