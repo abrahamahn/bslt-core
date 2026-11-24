@@ -86,9 +86,9 @@ export const DEMO_BILLING_PLANS = [
     trialDays: 0,
     sortOrder: 0,
     features: [
-      { key: 'projects', name: 'Projects', included: true, value: 3 },
-      { key: 'storage', name: 'Storage (GB)', included: true, value: 1 },
-      { key: 'api_access', name: 'API access', included: false, value: false },
+      { key: 'projects:limit', name: 'Projects', included: true, value: 3 },
+      { key: 'storage:limit', name: 'Storage (GB)', included: true, value: 1 },
+      { key: 'api:access', name: 'API access', included: false, value: false },
     ],
   },
   {
@@ -101,10 +101,10 @@ export const DEMO_BILLING_PLANS = [
     trialDays: 14,
     sortOrder: 1,
     features: [
-      { key: 'projects', name: 'Projects', included: true, value: 25 },
-      { key: 'storage', name: 'Storage (GB)', included: true, value: 100 },
-      { key: 'api_access', name: 'API access', included: true, value: true },
-      { key: 'team_members', name: 'Team members', included: true, value: true },
+      { key: 'projects:limit', name: 'Projects', included: true, value: 25 },
+      { key: 'storage:limit', name: 'Storage (GB)', included: true, value: 100 },
+      { key: 'api:access', name: 'API access', included: true, value: true },
+      { key: 'team:invite', name: 'Team members', included: true, value: true },
     ],
   },
   {
@@ -117,11 +117,11 @@ export const DEMO_BILLING_PLANS = [
     trialDays: 14,
     sortOrder: 2,
     features: [
-      { key: 'projects', name: 'Projects', included: true, value: 250 },
-      { key: 'storage', name: 'Storage (GB)', included: true, value: 1000 },
-      { key: 'api_access', name: 'API access', included: true, value: true },
-      { key: 'team_members', name: 'Team members', included: true, value: true },
-      { key: 'custom_branding', name: 'Custom branding', included: true, value: true },
+      { key: 'projects:limit', name: 'Projects', included: true, value: 250 },
+      { key: 'storage:limit', name: 'Storage (GB)', included: true, value: 1000 },
+      { key: 'api:access', name: 'API access', included: true, value: true },
+      { key: 'team:invite', name: 'Team members', included: true, value: true },
+      { key: 'branding:custom', name: 'Custom branding', included: true, value: true },
     ],
   },
 ] as const;

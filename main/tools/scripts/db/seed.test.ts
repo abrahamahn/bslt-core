@@ -424,6 +424,20 @@ describe('seed script', () => {
       await seed({ demo: true });
 
       expect(DEMO_BILLING_PLANS).toHaveLength(3);
+      const validBillingFeatureKeys = new Set([
+        'projects:limit',
+        'storage:limit',
+        'media:max_file_size_mb',
+        'team:invite',
+        'api:access',
+        'branding:custom',
+        'media:processing',
+      ]);
+      for (const plan of DEMO_BILLING_PLANS) {
+        for (const feature of plan.features) {
+          expect(validBillingFeatureKeys.has(feature.key)).toBe(true);
+        }
+      }
       // 3 users + 3 plans + 5 flags + 2 org/invite queries + 5 status + 3 tasks = 21 executes
       expect(mockExecute).toHaveBeenCalledTimes(21);
       expect(consoleOutput.some((msg) => msg.includes('Acme Studio'))).toBe(true);
