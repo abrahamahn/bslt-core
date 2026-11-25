@@ -13,6 +13,7 @@ import { PRODUCT_TAGLINE } from '#app/app/productMeta';
 import { ChangelogPage } from '#app/pages/ChangelogPage';
 import { DOC_CHAPTERS } from '#app/pages/docsCatalog';
 import { DocsPage } from '#app/pages/DocsPage';
+import { DOCS_REFERENCE } from '#app/pages/docsReference.generated';
 import { PublicLandingPage } from '#app/pages/LandingPage';
 
 export const PUBLIC_SSR_MODULES = installedPublicSsrModules;
@@ -39,18 +40,32 @@ const changelogPublicRoute = definePublicRoute<Record<string, never>>({
   Component: () => <ChangelogPage />,
 });
 
-const docsPublicRoutes: readonly PublicRoute<unknown>[] = DOC_CHAPTERS.map((chapter) =>
-  definePublicRoute<Record<string, never>>({
-    path: chapter.path,
-    cacheSeconds: Infinity,
-    load: () => Promise.resolve({}),
-    head: () => ({
-      title: `${chapter.title} — App Guide`,
-      description: chapter.summary,
+const docsPublicRoutes: readonly PublicRoute<unknown>[] = [
+  ...DOC_CHAPTERS.map((chapter) =>
+    definePublicRoute<Record<string, never>>({
+      path: chapter.path,
+      cacheSeconds: Infinity,
+      load: () => Promise.resolve({}),
+      head: () => ({
+        title: `${chapter.title} — Docs`,
+        description: chapter.summary,
+      }),
+      Component: () => <DocsPage sectionId={chapter.id} />,
     }),
-    Component: () => <DocsPage sectionId={chapter.id} />,
-  }),
-);
+  ),
+  ...DOCS_REFERENCE.modules.map((mod) =>
+    definePublicRoute<Record<string, never>>({
+      path: `/docs/modules/${mod.id}`,
+      cacheSeconds: Infinity,
+      load: () => Promise.resolve({}),
+      head: () => ({
+        title: `@bslt/${mod.id} Module Reference — Docs`,
+        description: mod.summary,
+      }),
+      Component: () => <DocsPage sectionId="modules" moduleId={mod.id} />,
+    }),
+  ),
+];
 
 export const publicRoutes: readonly PublicRoute<unknown>[] = [
   landingPublicRoute,

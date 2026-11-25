@@ -71,6 +71,13 @@ export const appFrameRoutes: readonly FrameRouteContribution<AppRouteFlags>[] = 
   },
   {
     slot: 'before-modules',
+    shell: 'public',
+    path: 'docs/modules/:moduleId',
+    element: DocsPage,
+    unlisted: true,
+  },
+  {
+    slot: 'before-modules',
     shell: 'app',
     path: 'settings',
     element: SettingsPage,

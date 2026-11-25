@@ -148,6 +148,7 @@ function shouldRequireColocatedTest(sourcePath: string): boolean {
   if (relativePath === 'main/kernel/ui/src/icons.generated.ts') return false;
   if (relativePath === 'main/kernel/web/src/ssr/security-headers.generated.ts') return false;
   if (relativePath === 'main/modules/devtools/web/generated/story-index.generated.ts') return false;
+  if (relativePath === 'main/apps/web/src/pages/docsReference.generated.ts') return false;
 
   return true;
 }

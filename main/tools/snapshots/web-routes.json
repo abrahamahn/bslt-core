@@ -295,6 +295,17 @@
           "takesPrecedenceOver": []
         },
         {
+          "path": "/docs/modules/:moduleId",
+          "page": "DocsPage",
+          "guard": "none",
+          "publicOnlyRedirectTo": null,
+          "layouts": [
+            "PublicShell"
+          ],
+          "adminSurface": null,
+          "takesPrecedenceOver": []
+        },
+        {
           "path": "/forbidden",
           "page": "ForbiddenPage",
           "guard": "none",
@@ -1024,6 +1035,17 @@
         },
         {
           "path": "/docs/:section",
+          "page": "DocsPage",
+          "guard": "none",
+          "publicOnlyRedirectTo": null,
+          "layouts": [
+            "PublicShell"
+          ],
+          "adminSurface": null,
+          "takesPrecedenceOver": []
+        },
+        {
+          "path": "/docs/modules/:moduleId",
           "page": "DocsPage",
           "guard": "none",
           "publicOnlyRedirectTo": null,

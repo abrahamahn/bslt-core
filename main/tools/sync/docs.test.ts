@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { REPO_ROOT } from '../lib/paths';
 
-import { GENERATED_REFERENCE_DOCS, run, syncDocs } from './docs';
+import { GENERATED_REFERENCE_DOCS, GENERATED_WEB_DOCS_REFERENCE, run, syncDocs } from './docs';
 
 const tempDirs: string[] = [];
 
@@ -77,11 +77,13 @@ describe('bslt sync docs & generated-docs gate', () => {
     expect(direction).toContain('`identity`');
     expect(direction).toContain('`compliance`');
 
-    // Hand-editing a generated reference doc fails check
+    // Hand-editing a generated reference doc or web docs reference fails check
     writeFileSync(path.join(root, 'docs/reference/module-dag.md'), '# Tampered\n', 'utf8');
+    writeFileSync(path.join(root, GENERATED_WEB_DOCS_REFERENCE), '// tampered\n', 'utf8');
     const drifted = await run({ root });
     expect(drifted.ok).toBe(false);
     expect(drifted.problems).toContain('docs/reference/module-dag.md');
+    expect(drifted.problems).toContain(GENERATED_WEB_DOCS_REFERENCE);
 
     // Sync restores module-dag.md
     await syncDocs({ root });
@@ -106,6 +108,7 @@ describe('bslt sync docs & generated-docs gate', () => {
     const ejcDoc = readFileSync(path.join(root, 'docs/reference/events-jobs-cron.md'), 'utf8');
     const webDoc = readFileSync(path.join(root, 'docs/reference/web-routes.md'), 'utf8');
     const dagDoc = readFileSync(path.join(root, 'docs/reference/module-dag.md'), 'utf8');
+    const webRefTs = readFileSync(path.join(root, GENERATED_WEB_DOCS_REFERENCE), 'utf8');
 
     expect(apiDoc).toContain('`kernel`');
     expect(apiDoc).toContain('`identity`');
@@ -116,5 +119,9 @@ describe('bslt sync docs & generated-docs gate', () => {
     expect(webDoc).toContain('`/dashboard`');
     expect(webDoc).toContain('`/terms`');
     expect(dagDoc).toContain('flowchart TD');
+    expect(webRefTs).toContain('export const DOCS_REFERENCE');
+    expect(webRefTs).toContain('/api/auth/login');
+    expect(webRefTs).toContain('identity_users');
+    expect(webRefTs).toContain('sys.outbox.retention');
   });
 });

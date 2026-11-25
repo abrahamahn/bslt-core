@@ -42,6 +42,8 @@ export const GENERATED_REFERENCE_DOCS = [
   'docs/reference/web-routes.md',
 ] as const;
 
+export const GENERATED_WEB_DOCS_REFERENCE = 'main/apps/web/src/pages/docsReference.generated.ts';
+
 const ALLOWED_NON_DOC_REFERENCE_FILES = new Set(['openapi.json']);
 const DIRECTION_DOC_REL = 'docs/DIRECTION.md';
 const STATUS_START_MARKER = '<!-- bslt:generated status -->';
@@ -86,7 +88,10 @@ interface WebRoutesConfiguration {
     >;
     readonly footer?: ReadonlyArray<{
       readonly section: string;
-      readonly links: ReadonlyArray<{ readonly title: string; readonly path: string }>;
+      readonly links: ReadonlyArray<{
+        readonly title: string;
+        readonly path: string;
+      }>;
     }>;
     readonly commandPalette?: ReadonlyArray<{
       readonly id: string;
@@ -95,7 +100,10 @@ interface WebRoutesConfiguration {
       readonly navigatesTo: string | null;
     }>;
   };
-  readonly settings?: ReadonlyArray<{ readonly id: string; readonly label: string }>;
+  readonly settings?: ReadonlyArray<{
+    readonly id: string;
+    readonly label: string;
+  }>;
   readonly admin?: ReadonlyArray<{
     readonly id: string;
     readonly label: string;
@@ -642,6 +650,314 @@ function updateDirectionWithStatusBlock(existingText: string, statusBlock: strin
   );
 }
 
+function renderWebDocsReferenceModule(
+  root: string,
+  workspace: ParsedModulesWorkspace,
+  apiSurface: ApiSurfaceSnapshot,
+  webSnapshot: WebRoutesSnapshot,
+): string {
+  const allModuleIds = [...workspace.installedIds, ...workspace.devOnlyIds];
+  const knownModules = new Set(allModuleIds);
+  const devSet = new Set(workspace.devOnlyIds);
+  const kernelTags = new Set(['kernel', 'system', 'realtime']);
+
+  // Build endpoint summary lookup from contract/endpoints.ts declarations
+  const summaryByContract = new Map<string, string>();
+  const summaryByMethodPath = new Map<string, string>();
+  for (const modId of allModuleIds) {
+    const mod = workspace.modules.get(modId);
+    if (mod === undefined) continue;
+    for (const ep of mod.endpoints) {
+      if (ep.summary !== '') {
+        summaryByContract.set(`${mod.id}.${ep.key}`, ep.summary);
+        summaryByMethodPath.set(`${ep.method.toUpperCase()} ${ep.path}`, ep.summary);
+      }
+    }
+  }
+
+  const apiRoutes = apiSurface.routes.map((route) => {
+    const rawModule =
+      route.module !== undefined && route.module !== null && route.module !== ''
+        ? route.module
+        : 'kernel';
+    const owner = kernelTags.has(rawModule) ? 'kernel' : rawModule;
+    if (owner !== 'kernel' && !knownModules.has(owner)) {
+      throw new Error(
+        `Unattributed HTTP route ${route.method} ${route.path}: unknown owner "${rawModule}"`,
+      );
+    }
+    const contractEndpoint = route.contract?.endpoint ?? 'system';
+    const summary =
+      summaryByContract.get(contractEndpoint) ??
+      summaryByMethodPath.get(`${route.method.toUpperCase()} ${route.path}`) ??
+      '';
+    const responseEntries = Object.entries(route.contract?.responses ?? {})
+      .sort(([a], [b]) => compareText(a, b))
+      .map(([status, schema]) => `${status}:${schema}`);
+    return {
+      method: route.method,
+      path: route.path,
+      owner,
+      auth: route.auth,
+      roles: [...(route.roles ?? [])],
+      contract: contractEndpoint,
+      summary,
+      body: route.contract?.body ?? null,
+      query: route.contract?.query ?? null,
+      pathParams: route.contract?.pathParams ?? null,
+      responses: responseEntries,
+    };
+  });
+
+  const pageMap = collectPageComponentToModule(root, allModuleIds);
+  const allEnabled =
+    webSnapshot.configurations.find((c) => c.name === 'all-enabled') ??
+    webSnapshot.configurations[webSnapshot.configurations.length - 1];
+  if (allEnabled === undefined) {
+    throw new Error('web-routes.json contains no configurations');
+  }
+
+  const webRoutes = allEnabled.routes.map((route) => ({
+    path: route.path,
+    owner: attributeWebPath(route.path, route.page, pageMap, knownModules),
+    page: route.page,
+    guard: route.guard,
+    layouts: [...route.layouts],
+    adminSurface: route.adminSurface,
+  }));
+
+  const adminSurfaces = (allEnabled.admin ?? []).map((surface) => ({
+    id: surface.id,
+    label: surface.label,
+    href: surface.href,
+    owner: attributeWebPath(surface.href, null, pageMap, knownModules),
+    inNavigation: surface.inNavigation,
+  }));
+
+  const catalog = loadCatalog(root);
+  const dbTables = catalog.tables.map((table) => {
+    const owner = table.source;
+    if (owner !== 'kernel' && !knownModules.has(owner)) {
+      throw new Error(`Unattributed database table "${table.name}": unknown source "${owner}"`);
+    }
+    const rlsDesc = describeTableRls(table);
+    return {
+      name: table.name,
+      owner,
+      rlsClass: rlsDesc.rls?.class ?? 'unclassified',
+      ownerColumn: rlsDesc.rls?.ownerColumn ?? null,
+      columnCount: table.columns.length,
+    };
+  });
+
+  const dbTypes = catalog.types.map((t) => ({
+    name: t.name,
+    owner: t.source,
+    kind: t.kind,
+    details: t.kind === 'enum' ? t.labels.join(', ') : (t.baseType ?? ''),
+  }));
+
+  const dbFunctions = catalog.functions.map((fn) => ({
+    name: fn.name,
+    owner: fn.source,
+    security: fn.securityDefiner ? ('definer' as const) : ('invoker' as const),
+    volatility: fn.volatility,
+  }));
+
+  const events: Array<{
+    readonly owner: string;
+    readonly name: string;
+    readonly key: string;
+    readonly webhook: boolean;
+  }> = [];
+  const jobs: Array<{ readonly owner: string; readonly name: string }> = [
+    { owner: 'kernel', name: 'sys.outbox.retention' },
+    { owner: 'kernel', name: 'sys.jobs.retention' },
+    { owner: 'kernel', name: 'sys.jobs.dead_metrics' },
+  ];
+
+  for (const modId of allModuleIds) {
+    const mod = workspace.modules.get(modId);
+    if (mod === undefined) continue;
+    for (const ev of mod.events) {
+      events.push({
+        owner: mod.id,
+        name: ev.name,
+        key: ev.key,
+        webhook: ev.webhook,
+      });
+    }
+    for (const jobKey of mod.jobKeys) {
+      jobs.push({
+        owner: mod.id,
+        name: `${mod.id}.${jobKey}`,
+      });
+    }
+  }
+
+  const crons = collectCronEntries(root, allModuleIds).map((c) => ({
+    owner: c.owner,
+    name: c.name,
+    schedule: c.schedule,
+  }));
+
+  const apiCountByOwner = new Map<string, number>();
+  for (const route of apiRoutes) {
+    apiCountByOwner.set(route.owner, (apiCountByOwner.get(route.owner) ?? 0) + 1);
+  }
+  const webCountByOwner = new Map<string, number>();
+  for (const route of webRoutes) {
+    webCountByOwner.set(route.owner, (webCountByOwner.get(route.owner) ?? 0) + 1);
+  }
+  const tableCountByOwner = new Map<string, number>();
+  for (const table of dbTables) {
+    tableCountByOwner.set(table.owner, (tableCountByOwner.get(table.owner) ?? 0) + 1);
+  }
+
+  const modules = allModuleIds.flatMap((modId) => {
+    const mod = workspace.modules.get(modId);
+    if (mod === undefined) return [];
+    return [
+      {
+        id: mod.id,
+        scope: devSet.has(modId) ? ('devOnly' as const) : ('installed' as const),
+        status: mod.status,
+        summary: mod.summary,
+        dependsOn: [...mod.dependsOn],
+        endpointCount: apiCountByOwner.get(mod.id) ?? mod.endpoints.length,
+        webRouteCount: webCountByOwner.get(mod.id) ?? 0,
+        tableCount: tableCountByOwner.get(mod.id) ?? mod.tables.length,
+        eventCount: mod.events.length,
+        jobCount: mod.jobKeys.length,
+      },
+    ];
+  });
+
+  const payload = {
+    modules,
+    apiRoutes,
+    webRoutes,
+    adminSurfaces,
+    dbTables,
+    dbTypes,
+    dbFunctions,
+    events,
+    jobs,
+    crons,
+  };
+
+  const serializedJsonLiteral = JSON.stringify(JSON.stringify(payload));
+
+  return [
+    `// ${GENERATED_WEB_DOCS_REFERENCE}`,
+    `// @generated by \`${SYNC_DOCS_COMMAND}\` from bslt.config.ts, snapshots, and catalog.snapshot.json. Do not edit.`,
+    '',
+    'export interface DocsApiEndpointRef {',
+    '  readonly method: string;',
+    '  readonly path: string;',
+    '  readonly owner: string;',
+    '  readonly auth: string;',
+    '  readonly roles: readonly string[];',
+    '  readonly contract: string;',
+    '  readonly summary: string;',
+    '  readonly body: string | null;',
+    '  readonly query: string | null;',
+    '  readonly pathParams: string | null;',
+    '  readonly responses: readonly string[];',
+    '}',
+    '',
+    'export interface DocsWebRouteRef {',
+    '  readonly path: string;',
+    '  readonly owner: string;',
+    '  readonly page: string;',
+    '  readonly guard: string;',
+    '  readonly layouts: readonly string[];',
+    '  readonly adminSurface: string | null;',
+    '}',
+    '',
+    'interface DocsAdminSurfaceRef {',
+    '  readonly id: string;',
+    '  readonly label: string;',
+    '  readonly href: string;',
+    '  readonly owner: string;',
+    '  readonly inNavigation: boolean;',
+    '}',
+    '',
+    'export interface DocsModuleRef {',
+    '  readonly id: string;',
+    "  readonly scope: 'installed' | 'devOnly';",
+    '  readonly status: string;',
+    '  readonly summary: string;',
+    '  readonly dependsOn: readonly string[];',
+    '  readonly endpointCount: number;',
+    '  readonly webRouteCount: number;',
+    '  readonly tableCount: number;',
+    '  readonly eventCount: number;',
+    '  readonly jobCount: number;',
+    '}',
+    '',
+    'interface DocsDbTableRef {',
+    '  readonly name: string;',
+    '  readonly owner: string;',
+    '  readonly rlsClass: string;',
+    '  readonly ownerColumn: string | null;',
+    '  readonly columnCount: number;',
+    '}',
+    '',
+    'interface DocsDbTypeRef {',
+    '  readonly name: string;',
+    '  readonly owner: string;',
+    '  readonly kind: string;',
+    '  readonly details: string;',
+    '}',
+    '',
+    'interface DocsDbFunctionRef {',
+    '  readonly name: string;',
+    '  readonly owner: string;',
+    "  readonly security: 'definer' | 'invoker';",
+    '  readonly volatility: string;',
+    '}',
+    '',
+    'interface DocsEventRef {',
+    '  readonly owner: string;',
+    '  readonly name: string;',
+    '  readonly key: string;',
+    '  readonly webhook: boolean;',
+    '}',
+    '',
+    'interface DocsJobRef {',
+    '  readonly owner: string;',
+    '  readonly name: string;',
+    '}',
+    '',
+    'interface DocsCronRef {',
+    '  readonly owner: string;',
+    '  readonly name: string;',
+    '  readonly schedule: string;',
+    '}',
+    '',
+    'interface DocsReferenceData {',
+    '  readonly modules: readonly DocsModuleRef[];',
+    '  readonly apiRoutes: readonly DocsApiEndpointRef[];',
+    '  readonly webRoutes: readonly DocsWebRouteRef[];',
+    '  readonly adminSurfaces: readonly DocsAdminSurfaceRef[];',
+    '  readonly dbTables: readonly DocsDbTableRef[];',
+    '  readonly dbTypes: readonly DocsDbTypeRef[];',
+    '  readonly dbFunctions: readonly DocsDbFunctionRef[];',
+    '  readonly events: readonly DocsEventRef[];',
+    '  readonly jobs: readonly DocsJobRef[];',
+    '  readonly crons: readonly DocsCronRef[];',
+    '}',
+    '',
+    `const DOCS_REFERENCE_JSON = ${serializedJsonLiteral};`,
+    '',
+    'export const DOCS_REFERENCE: DocsReferenceData = JSON.parse(',
+    '  DOCS_REFERENCE_JSON,',
+    ') as DocsReferenceData;',
+    '',
+  ].join('\n');
+}
+
 export async function buildGeneratedDocsMap(
   root: string = REPO_ROOT,
 ): Promise<Map<string, string>> {
@@ -662,6 +978,10 @@ export async function buildGeneratedDocsMap(
     ['docs/reference/events-jobs-cron.md', renderEventsJobsCronReference(root, workspace)],
     ['docs/reference/web-routes.md', renderWebRoutesReference(root, workspace, webRoutes)],
     ['docs/reference/module-dag.md', renderModuleDagReference(workspace)],
+    [
+      GENERATED_WEB_DOCS_REFERENCE,
+      renderWebDocsReferenceModule(root, workspace, apiSurface, webRoutes),
+    ],
   ]);
 
   const directionAbs = path.join(root, DIRECTION_DOC_REL);
@@ -677,7 +997,9 @@ export async function buildGeneratedDocsMap(
 
   const prettierConfigPath = path.join(root, 'config/.prettierrc');
   const prettierOptions = existsSync(prettierConfigPath)
-    ? await prettier.resolveConfig(prettierConfigPath, { config: prettierConfigPath })
+    ? await prettier.resolveConfig(prettierConfigPath, {
+        config: prettierConfigPath,
+      })
     : null;
 
   const formatted = new Map<string, string>();
@@ -686,7 +1008,7 @@ export async function buildGeneratedDocsMap(
       relPath,
       await prettier.format(content, {
         ...(prettierOptions ?? {}),
-        parser: 'markdown',
+        parser: relPath.endsWith('.ts') ? 'typescript' : 'markdown',
       }),
     );
   }

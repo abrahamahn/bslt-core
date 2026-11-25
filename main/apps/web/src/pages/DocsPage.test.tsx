@@ -1,17 +1,19 @@
 // main/apps/web/src/pages/DocsPage.test.tsx
 import { MemoryRouter, Route, Routes } from '@bslt/react/router';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { DocsPage } from './DocsPage';
+import { DOCS_REFERENCE } from './docsReference.generated';
 
 describe('DocsPage', () => {
-  it('renders the overview guide chapter by default with live route links and next-chapter pager', () => {
+  it('renders the overview guide chapter with live platform stats and next-chapter pager', () => {
     render(
       <MemoryRouter initialEntries={['/docs']}>
         <Routes>
           <Route path="/docs" element={<DocsPage />} />
           <Route path="/docs/:section" element={<DocsPage />} />
+          <Route path="/docs/modules/:moduleId" element={<DocsPage />} />
         </Routes>
       </MemoryRouter>,
     );
@@ -23,36 +25,56 @@ describe('DocsPage', () => {
       'aria-current',
       'page',
     );
+    const statsSection = screen.getByLabelText('Live platform inventory');
+    expect(
+      within(statsSection).getByText(String(DOCS_REFERENCE.apiRoutes.length)),
+    ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Create an Account/i })).toHaveAttribute(
       'href',
       '/register',
     );
-    expect(screen.getByRole('link', { name: /Identity & Security/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /Next chapter/i })).toHaveAttribute(
       'href',
-      '/docs/auth',
+      '/docs/api',
     );
   });
 
-  it('navigates between chapters from the sidebar and renders chapter-specific routes and CLI snippets', () => {
+  it('navigates across reference explorers, module deep dives, and guided chapters', () => {
     render(
       <MemoryRouter initialEntries={['/docs']}>
         <Routes>
           <Route path="/docs" element={<DocsPage />} />
           <Route path="/docs/:section" element={<DocsPage />} />
+          <Route path="/docs/modules/:moduleId" element={<DocsPage />} />
         </Routes>
       </MemoryRouter>,
     );
 
+    fireEvent.click(screen.getByRole('button', { name: /HTTP API Reference/i }));
+    expect(
+      screen.getByRole('heading', { level: 1, name: /HTTP API Reference/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('/api/auth/login')).toBeInTheDocument();
+
+    const sidebarNav = screen.getByRole('navigation', {
+      name: 'App guide navigation',
+    });
+    fireEvent.click(within(sidebarNav).getByRole('button', { name: /^identity \d+$/ }));
+    expect(screen.getByRole('heading', { level: 1, name: '@bslt/identity' })).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole('button', { name: 'Workspaces & Teams' }));
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Workspaces, Roles & Self-Service Webhooks' }),
+      screen.getByRole('heading', {
+        level: 1,
+        name: 'Workspaces, Roles & Self-Service Webhooks',
+      }),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Workspace Webhooks/i })).toHaveAttribute(
       'href',
       '/workspace/webhooks',
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Branding, CLI & Dev Sandbox' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Branding, CLI & Sandbox' }));
     expect(
       screen.getByRole('heading', {
         level: 1,
@@ -62,20 +84,24 @@ describe('DocsPage', () => {
     expect(screen.getByText(/pnpm quickstart --preset b2b-saas/i)).toBeInTheDocument();
   });
 
-  it('filters sidebar chapters by search query and shows an empty hint on no matches', () => {
+  it('falls back cleanly on unknown module slug and shows empty hint on unmatched sidebar search', () => {
     render(
-      <MemoryRouter initialEntries={['/docs/billing']}>
+      <MemoryRouter initialEntries={['/docs/modules/does-not-exist']}>
         <Routes>
           <Route path="/docs/:section" element={<DocsPage />} />
+          <Route path="/docs/modules/:moduleId" element={<DocsPage />} />
         </Routes>
       </MemoryRouter>,
     );
 
+    // Unknown moduleId falls back to the Modules & Kernel catalog view
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Pricing, Subscriptions & Entitlements' }),
+      screen.getByRole('heading', { level: 1, name: /Vertical Modules/i }),
     ).toBeInTheDocument();
 
-    const filterInput = screen.getByRole('searchbox', { name: 'Filter app guide topics' });
+    const filterInput = screen.getByRole('searchbox', {
+      name: 'Filter app guide topics',
+    });
     fireEvent.change(filterInput, { target: { value: 'passkey' } });
     expect(screen.getByRole('button', { name: 'Identity & Security' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Billing & Entitlements' })).toBeNull();

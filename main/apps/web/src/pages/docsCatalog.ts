@@ -1,13 +1,18 @@
 // main/apps/web/src/pages/docsCatalog.ts
 /**
- * Starter-Owned App Guide Catalog
+ * Starter-Owned App Guide & Auto-Synced Platform Reference Catalog
  *
- * Pure, zero-auth metadata describing the spaces, routes, modules, and CLI
- * workflows inside this BSLT application. Keeps public SSR lean while giving
- * both anonymous visitors and signed-in users a complete map of the product.
+ * Combines human-friendly onboarding walkthroughs with live, build-time
+ * generated reference metadata (`DOCS_REFERENCE` from `pnpm bslt sync docs`)
+ * covering every installed module, HTTP API endpoint, web route, PostgreSQL
+ * RLS table, outbox domain event, background job, and cron schedule.
  */
 
-type DocGroupId = 'start' | 'spaces' | 'modules';
+import { DOCS_REFERENCE, type DocsModuleRef } from './docsReference.generated';
+
+type DocGroupId = 'start' | 'reference' | 'spaces';
+
+type DocChapterView = 'guide' | 'api' | 'routes' | 'modules' | 'database' | 'events';
 
 export interface DocRouteLink {
   readonly path: `/${string}`;
@@ -23,68 +28,212 @@ interface DocSubsection {
   readonly code?: string;
 }
 
-interface DocGuideChapter {
+export interface DocGuideChapter {
   readonly id: string;
   readonly path: `/${string}`;
   readonly group: DocGroupId;
+  readonly view: DocChapterView;
   readonly navLabel: string;
+  readonly navCount?: number;
   readonly eyebrow: string;
   readonly title: string;
   readonly summary: string;
   readonly audience:
     'Everyone' | 'Personal Account' | 'Workspace Teams' | 'Platform Admin' | 'Developers';
   readonly keywords: readonly string[];
+  readonly relatedModules?: readonly string[];
   readonly routes: readonly DocRouteLink[];
   readonly sections: readonly DocSubsection[];
 }
 
-export const DOC_GROUP_ORDER: readonly DocGroupId[] = ['start', 'spaces', 'modules'];
+interface DocKernelPackage {
+  readonly name: string;
+  readonly layer: 'Isomorphic' | 'Server' | 'Client';
+  readonly summary: string;
+}
+
+interface DocPlatformStat {
+  readonly label: string;
+  readonly value: number;
+  readonly detail: string;
+  readonly to: `/${string}`;
+}
+
+export const DOC_GROUP_ORDER: readonly DocGroupId[] = ['start', 'reference', 'spaces'];
 
 export const DOC_GROUP_LABELS: Readonly<Record<DocGroupId, string>> = {
   start: 'Start Here',
-  spaces: 'Core Product Spaces',
-  modules: 'Modules & Operations',
+  reference: 'Full Reference (Auto-Synced)',
+  spaces: 'Product Guides & CLI',
 };
+
+export const DOC_KERNEL_PACKAGES: readonly DocKernelPackage[] = [
+  {
+    name: '@bslt/schema',
+    layer: 'Isomorphic',
+    summary: 'Owned runtime validation combinators, coercion, and JSON Schema generation.',
+  },
+  {
+    name: '@bslt/contract',
+    layer: 'Isomorphic',
+    summary: 'Typed endpoint contracts, module manifests, event defs, and capability context.',
+  },
+  {
+    name: '@bslt/protocols',
+    layer: 'Isomorphic',
+    summary: 'Zero-dep wire protocols: PostgreSQL, JWT, TOTP, CBOR, COSE, WebPush, and OTLP.',
+  },
+  {
+    name: '@bslt/db',
+    layer: 'Server',
+    summary:
+      'PostgreSQL 17 pool, transactional RLS session context, typed repositories, and migrations.',
+  },
+  {
+    name: '@bslt/server-system',
+    layer: 'Server',
+    summary:
+      'Owned node:http router, middleware, rate limiting, outbox, background jobs, and crons.',
+  },
+  {
+    name: '@bslt/realtime',
+    layer: 'Server',
+    summary:
+      'WebSocket transport, pub/sub channel fan-out, and authenticated live event streaming.',
+  },
+  {
+    name: '@bslt/storage',
+    layer: 'Server',
+    summary:
+      'Local & S3-compatible object storage, signed URLs, multipart sessions, and media probing.',
+  },
+  {
+    name: '@bslt/comms',
+    layer: 'Server',
+    summary: 'Transactional email templates, SMTP/dev-inbox transport, SMS, and WebPush delivery.',
+  },
+  {
+    name: '@bslt/client-engine',
+    layer: 'Client',
+    summary:
+      'Typed browser REST client, CSRF handling, token refresh, and cache/offline primitives.',
+  },
+  {
+    name: '@bslt/react',
+    layer: 'Client',
+    summary:
+      'Owned React 19 router, hooks, query/mutation state, and real-time subscription hooks.',
+  },
+  {
+    name: '@bslt/ui',
+    layer: 'Client',
+    summary:
+      '87 owned accessible UI primitives, semantic CSS tokens, icons, and responsive layouts.',
+  },
+  {
+    name: '@bslt/web-platform',
+    layer: 'Client',
+    summary: 'Module web composition, shell contracts, public SSR routes, and capability gating.',
+  },
+];
+
+const installedModuleCount = DOCS_REFERENCE.modules.length;
+const apiEndpointCount = DOCS_REFERENCE.apiRoutes.length;
+const webRouteCount = DOCS_REFERENCE.webRoutes.length;
+const dbTableCount = DOCS_REFERENCE.dbTables.length;
+const eventCount = DOCS_REFERENCE.events.length;
+const jobCount = DOCS_REFERENCE.jobs.length;
+const webhookEventCount = DOCS_REFERENCE.events.filter((ev) => ev.webhook).length;
+
+export function getPlatformStats(): readonly DocPlatformStat[] {
+  return [
+    {
+      label: 'HTTP API Endpoints',
+      value: apiEndpointCount,
+      detail: 'Typed contract routes with schemas & auth policies',
+      to: '/docs/api',
+    },
+    {
+      label: 'Web Routes & Screens',
+      value: webRouteCount,
+      detail: `${String(DOCS_REFERENCE.adminSurfaces.length)} Admin surfaces, public SSR & workspace UI`,
+      to: '/docs/routes',
+    },
+    {
+      label: 'Vertical Modules',
+      value: installedModuleCount,
+      detail: `Plus ${String(DOC_KERNEL_PACKAGES.length)} owned @bslt/* kernel packages`,
+      to: '/docs/modules',
+    },
+    {
+      label: 'PostgreSQL RLS Tables',
+      value: dbTableCount,
+      detail: `${String(DOCS_REFERENCE.dbTypes.length)} enums & ${String(DOCS_REFERENCE.dbFunctions.length)} SQL security functions`,
+      to: '/docs/database',
+    },
+    {
+      label: 'Outbox Domain Events',
+      value: eventCount,
+      detail: `${String(webhookEventCount)} outbound webhook-eligible events`,
+      to: '/docs/events',
+    },
+    {
+      label: 'Background Jobs',
+      value: jobCount,
+      detail: `Plus ${String(DOCS_REFERENCE.crons.length)} scheduled cron entries`,
+      to: '/docs/events',
+    },
+  ];
+}
 
 export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
   {
     id: 'overview',
     path: '/docs',
     group: 'start',
+    view: 'guide',
     navLabel: 'App Tour & Map',
     eyebrow: '01 / OVERVIEW',
     title: 'Inside the BSLT App',
-    summary:
-      'A complete tour of every space, module, and live route wired into this application — organized around four clear boundaries so personal settings, team workspaces, and platform operations never collide.',
+    summary: `A complete, auto-synced guide to all ${String(installedModuleCount)} modules, ${String(apiEndpointCount)} HTTP API endpoints, ${String(webRouteCount)} web screens, ${String(dbTableCount)} RLS tables, and ${String(eventCount)} domain events wired into this application.`,
     audience: 'Everyone',
-    keywords: ['tour', 'overview', 'architecture', 'map', 'spaces', 'quickstart', 'navigation'],
+    keywords: [
+      'tour',
+      'overview',
+      'architecture',
+      'map',
+      'spaces',
+      'quickstart',
+      'navigation',
+      'inventory',
+    ],
     routes: [
+      {
+        path: '/docs/api',
+        label: `HTTP API Explorer (${String(apiEndpointCount)})`,
+        access: 'Public',
+        description:
+          'Search and filter every registered REST endpoint by module, HTTP method, auth role, and schema.',
+      },
+      {
+        path: '/docs/routes',
+        label: `All Web Screens (${String(webRouteCount)})`,
+        access: 'Public',
+        description:
+          'Complete screen directory across Public, Auth, Personal Settings, Workspace, and Admin Console.',
+      },
+      {
+        path: '/docs/modules',
+        label: `Vertical Modules (${String(installedModuleCount)})`,
+        access: 'Public',
+        description:
+          'Deep-dive pages for every installed vertical module plus the 12 @bslt/* kernel packages.',
+      },
       {
         path: '/register',
         label: 'Create an Account',
         access: 'Public',
         description: 'Register a new user account, accept legal terms, and start the guided setup.',
-      },
-      {
-        path: '/onboarding',
-        label: '3-Step Onboarding Wizard',
-        access: 'Signed-in',
-        description:
-          'Confirm profile details, name your workspace, and invite teammates in one flow.',
-      },
-      {
-        path: '/dashboard',
-        label: 'Workspace Dashboard',
-        access: 'Signed-in',
-        description:
-          'Active workspace & plan badges, KPI cards, setup checklist, and quick actions.',
-      },
-      {
-        path: '/pricing',
-        label: 'Public Pricing & Plans',
-        access: 'Public',
-        description:
-          'Compare Free, Pro, and Team tiers with seamless signup-to-checkout continuity.',
       },
     ],
     sections: [
@@ -112,11 +261,149 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
     ],
   },
   {
+    id: 'api',
+    path: '/docs/api',
+    group: 'reference',
+    view: 'api',
+    navLabel: 'HTTP API Reference',
+    navCount: apiEndpointCount,
+    eyebrow: 'REFERENCE / HTTP API',
+    title: `HTTP API Reference (${String(apiEndpointCount)} Endpoints)`,
+    summary:
+      'Every registered HTTP endpoint auto-synced from the composed server route table and module contracts — searchable by path, contract ID, module, HTTP method, auth role, and request/response schemas.',
+    audience: 'Developers',
+    keywords: [
+      'api',
+      'endpoints',
+      'rest',
+      'http',
+      'openapi',
+      'schemas',
+      'contracts',
+      'curl',
+      'routes',
+    ],
+    routes: [],
+    sections: [],
+  },
+  {
+    id: 'routes',
+    path: '/docs/routes',
+    group: 'reference',
+    view: 'routes',
+    navLabel: 'Web Routes & Screens',
+    navCount: webRouteCount,
+    eyebrow: 'REFERENCE / WEB SURFACE',
+    title: `Web Routes & Screens (${String(webRouteCount)} Routes)`,
+    summary:
+      'Every client and SSR-prerendered page in the web application, attributed to its owning module with route guards, shell stack, and all Platform Admin Console surfaces.',
+    audience: 'Everyone',
+    keywords: [
+      'web',
+      'routes',
+      'screens',
+      'pages',
+      'navigation',
+      'shells',
+      'guards',
+      'admin',
+      'ssr',
+    ],
+    routes: [],
+    sections: [],
+  },
+  {
+    id: 'modules',
+    path: '/docs/modules',
+    group: 'reference',
+    view: 'modules',
+    navLabel: 'Modules & Kernel',
+    navCount: installedModuleCount,
+    eyebrow: 'REFERENCE / ARCHITECTURE',
+    title: `Vertical Modules (${String(installedModuleCount)}) & Kernel (${String(DOC_KERNEL_PACKAGES.length)})`,
+    summary:
+      'Self-contained vertical domain modules composed via bslt.config.ts over 12 zero-dependency @bslt/* kernel packages. Open any module to inspect its exact API endpoints, screens, RLS tables, events, and jobs.',
+    audience: 'Developers',
+    keywords: [
+      'modules',
+      'kernel',
+      'architecture',
+      'dag',
+      'dependencies',
+      'packages',
+      'tasks',
+      'files',
+      'search',
+      'notifications',
+      'moderation',
+      'compliance',
+      'support',
+      'status',
+      'analytics',
+    ],
+    routes: [],
+    sections: [],
+  },
+  {
+    id: 'database',
+    path: '/docs/database',
+    group: 'reference',
+    view: 'database',
+    navLabel: 'Database & RLS',
+    navCount: dbTableCount,
+    eyebrow: 'REFERENCE / POSTGRESQL 17',
+    title: `Database Schema & Forced RLS (${String(dbTableCount)} Tables)`,
+    summary:
+      'One flat public PostgreSQL 17 schema with forced Row-Level Security (sys_apply_rls) across every attributed table, plus custom enum types and security-definer/invoker helper functions.',
+    audience: 'Developers',
+    keywords: [
+      'database',
+      'postgres',
+      'postgresql',
+      'rls',
+      'tables',
+      'schema',
+      'enums',
+      'functions',
+      'migrations',
+      'tenancy',
+    ],
+    routes: [],
+    sections: [],
+  },
+  {
+    id: 'events',
+    path: '/docs/events',
+    group: 'reference',
+    view: 'events',
+    navLabel: 'Events, Jobs & Crons',
+    navCount: eventCount,
+    eyebrow: 'REFERENCE / ASYNC RUNTIME',
+    title: `Domain Events (${String(eventCount)}), Jobs (${String(jobCount)}) & Crons`,
+    summary:
+      'Transactional outbox events (sys_outbox), outbound webhook triggers, durable PostgreSQL background jobs (sys_jobs), and scheduled cron definitions.',
+    audience: 'Developers',
+    keywords: [
+      'events',
+      'outbox',
+      'webhooks',
+      'jobs',
+      'worker',
+      'queue',
+      'cron',
+      'schedules',
+      'async',
+    ],
+    routes: [],
+    sections: [],
+  },
+  {
     id: 'auth',
     path: '/docs/auth',
     group: 'spaces',
+    view: 'guide',
     navLabel: 'Identity & Security',
-    eyebrow: '02 / PERSONAL ACCOUNT',
+    eyebrow: 'GUIDE / PERSONAL ACCOUNT',
     title: 'Identity, Authentication & Account Security',
     summary:
       'Complete user lifecycle and personal security controls backed by PostgreSQL 17 forced Row-Level Security, Argon2id hashing, token-family reuse detection, and owned WebAuthn/OAuth protocols.',
@@ -130,6 +417,7 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
       '2fa',
       'mfa',
       'totp',
+      'sms',
       'oauth',
       'google',
       'github',
@@ -139,6 +427,7 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
       'gdpr',
       'privacy',
     ],
+    relatedModules: ['identity', 'compliance', 'notifications'],
     routes: [
       {
         path: '/profile',
@@ -151,7 +440,7 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
         label: 'Security & Sign-in',
         access: 'Signed-in',
         description:
-          'Password changes, WebAuthn passkeys, TOTP 2FA, and connected Google/GitHub/Apple accounts.',
+          'Password changes, WebAuthn passkeys, TOTP/SMS 2FA, backup codes, and OAuth connections.',
       },
       {
         path: '/settings/sessions',
@@ -180,11 +469,11 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
         heading: 'Sign-In Strategies & Session Safety',
         body: 'Identity supports multiple composable authentication methods controlled via AUTH_STRATEGIES, with zero external auth SDK dependencies:',
         bullets: [
-          'Email + password with Argon2id hashing, account lockout protection, email verification, and password reset flows.',
+          'Email + password with Argon2id hashing, account lockout protection, email verification, email-change confirm/revert, and password reset flows.',
           'Passwordless Magic Links and Email OTP codes for low-friction login.',
-          'Hardware-backed WebAuthn Passkeys (implemented directly over owned CBOR/COSE primitives) plus TOTP 2FA with recovery codes.',
+          'Hardware-backed WebAuthn Passkeys (implemented directly over owned CBOR/COSE primitives), TOTP 2FA, SMS MFA, trusted devices, and recovery backup codes.',
           'Social OAuth sign-in and account linking for Google, GitHub, and Apple.',
-          'Rotating HttpOnly refresh-token cookies with automatic token-family revocation on reuse detection.',
+          'Rotating HttpOnly refresh-token cookies with automatic token-family revocation on reuse detection plus sudo re-authentication.',
         ],
       },
       {
@@ -192,7 +481,7 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
         body: 'Every signed-in user gets a unified Settings space under /settings/* strictly scoped to their personal identity:',
         bullets: [
           'Create personal or workspace-scoped API keys (org_id + scopes[]) that display the raw secret once and store only the SHA-256 hash.',
-          'Manage notification channels (/settings/notifications), appearance theme & timezone (/settings/preferences), and legal acceptances (/settings/legal).',
+          'Manage notification channels & WebPush subscriptions (/settings/notifications), appearance theme & timezone (/settings/preferences), and legal acceptances (/settings/legal).',
         ],
       },
     ],
@@ -201,8 +490,9 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
     id: 'workspaces',
     path: '/docs/workspaces',
     group: 'spaces',
+    view: 'guide',
     navLabel: 'Workspaces & Teams',
-    eyebrow: '03 / MULTI-TENANT WORKSPACE',
+    eyebrow: 'GUIDE / MULTI-TENANT WORKSPACE',
     title: 'Workspaces, Roles & Self-Service Webhooks',
     summary:
       'Every team gets a dedicated Workspace Control Center at /workspace with PostgreSQL tenant isolation, custom bitmask roles, email invitations, seat quotas, and self-service webhook endpoints.',
@@ -220,6 +510,7 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
       'audit',
       'seats',
     ],
+    relatedModules: ['orgs', 'webhooks', 'audit', 'files', 'tasks', 'search'],
     routes: [
       {
         path: '/workspace',
@@ -281,8 +572,9 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
     id: 'billing',
     path: '/docs/billing',
     group: 'spaces',
+    view: 'guide',
     navLabel: 'Billing & Entitlements',
-    eyebrow: '04 / MONETIZATION',
+    eyebrow: 'GUIDE / MONETIZATION',
     title: 'Pricing, Subscriptions & Entitlements',
     summary:
       'Provider-agnostic subscription billing supporting Stripe, PayPal, and an offline Mock provider — connected end-to-end from public /pricing through checkout into live plan entitlements.',
@@ -301,6 +593,7 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
       'usage',
       'proration',
     ],
+    relatedModules: ['billing', 'entitlements', 'flags'],
     routes: [
       {
         path: '/pricing',
@@ -345,99 +638,14 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
     ],
   },
   {
-    id: 'modules',
-    path: '/docs/modules',
-    group: 'modules',
-    navLabel: 'Everyday App Modules',
-    eyebrow: '05 / VERTICAL MODULES',
-    title: 'Tasks, Files, Search, Status & Compliance',
-    summary:
-      'Beyond identity, teams, and billing, the full workspace includes vertical domain modules you can keep, customize, or remove cleanly via bslt.config.ts.',
-    audience: 'Everyone',
-    keywords: [
-      'tasks',
-      'files',
-      'media',
-      'uploads',
-      'search',
-      'notifications',
-      'activities',
-      'support',
-      'status',
-      'legal',
-      'changelog',
-      'modules',
-    ],
-    routes: [
-      {
-        path: '/tasks',
-        label: 'Tasks',
-        access: 'Signed-in',
-        description:
-          'Owner-isolated personal task tracker demonstrating clean CRUD + RLS module architecture.',
-      },
-      {
-        path: '/files',
-        label: 'Files & Media',
-        access: 'Signed-in',
-        description:
-          'Direct & resumable multipart uploads, content scanning, signed URLs, media transforms, and storage quotas.',
-      },
-      {
-        path: '/search',
-        label: 'Workspace Search',
-        access: 'Signed-in',
-        description:
-          'Search your own tasks, files, and active workspace teammates (admins can toggle to Directory search).',
-      },
-      {
-        path: '/activities',
-        label: 'Activity Feed',
-        access: 'Signed-in',
-        description: 'Chronological stream of account and workspace events.',
-      },
-      {
-        path: '/support',
-        label: 'Support & Contact',
-        access: 'Public',
-        description:
-          'Public support intake form plus priority support requests for signed-in users.',
-      },
-      {
-        path: '/status',
-        label: 'System Status',
-        access: 'Public',
-        description: 'SSR-rendered real-time service health and incident timeline.',
-      },
-      {
-        path: '/changelog',
-        label: 'Product Changelog',
-        access: 'Public',
-        description: 'Starter-owned SSR release notes driven by your brand configuration.',
-      },
-    ],
-    sections: [
-      {
-        heading: 'Built-In Productivity & Storage Workflows',
-        body: 'Each vertical module is self-contained with its own contract, migrations, forced RLS policies, server handlers, React UI, and i18n bundle:',
-        bullets: [
-          'Files & Media (/files): enforces MIME/size validation, fail-closed content scanning, resumable multipart upload sessions, ffmpeg media probing/transforms, and optional FILE_MAX_USER_STORAGE_BYTES quotas.',
-          'Workspace Search (/search): accessible from the header search bar and ⌘K for every signed-in user, scoped strictly to your own tasks, files, and active workspace members.',
-          'Real-Time Notifications: WebSocket-backed notification bell in the header with per-channel preferences under /settings/notifications.',
-          'Legal & Compliance (/terms, /privacy, /cookies, /acceptable-use, /disclaimer): versioned legal documents, cookie consent banner, CPRA Do-Not-Sell control, and mandatory ToS re-acceptance gates.',
-        ],
-      },
-    ],
-  },
-  {
     id: 'admin',
     path: '/docs/admin',
-    group: 'modules',
+    group: 'spaces',
+    view: 'guide',
     navLabel: 'Platform Admin Console',
-    eyebrow: '06 / PLATFORM OPERATIONS',
+    eyebrow: 'GUIDE / PLATFORM OPERATIONS',
     title: 'Platform Admin & Governance Console',
-    summary:
-      'A unified operator console under /admin/* with a grouped sticky sidebar for monitoring health, managing users & tenants, tuning feature flags, moderating content, and auditing compliance.',
+    summary: `A unified operator console under /admin/* with ${String(DOCS_REFERENCE.adminSurfaces.length)} surfaces across Operations, Users & Orgs, Trust & Compliance, and Billing & Webhooks.`,
     audience: 'Platform Admin',
     keywords: [
       'admin',
@@ -454,6 +662,7 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
       'impersonation',
       'webhooks',
     ],
+    relatedModules: ['admin', 'flags', 'moderation', 'compliance', 'audit', 'support', 'webhooks'],
     routes: [
       {
         path: '/admin/health',
@@ -482,7 +691,7 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
           'Toggle runtime platform capabilities (flags.billing, orgs.teams, flags.media, etc.) live.',
       },
       {
-        path: '/admin/billing',
+        path: '/admin/billing/plans',
         label: 'Admin Billing Plans',
         access: 'Platform Admin',
         description: 'Create, edit, archive, and Stripe-sync subscription plans and grant trials.',
@@ -518,9 +727,10 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
   {
     id: 'cli',
     path: '/docs/cli',
-    group: 'modules',
-    navLabel: 'Branding, CLI & Dev Sandbox',
-    eyebrow: '07 / DEVELOPER EXPERIENCE',
+    group: 'spaces',
+    view: 'guide',
+    navLabel: 'Branding, CLI & Sandbox',
+    eyebrow: 'GUIDE / DEVELOPER EXPERIENCE',
     title: 'Single-Manifest Branding, CLI Presets & Offline Sandbox',
     summary:
       'Clone once, rebrand from a single config file, pick your starter preset, install optional modules from the v1.0.0 release catalog, and test emails & billing completely offline.',
@@ -539,6 +749,7 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
       'self-host',
       'devtools',
     ],
+    relatedModules: ['devtools'],
     routes: [
       {
         path: '/developer/emails',
@@ -556,9 +767,10 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
       },
       {
         path: '/developer/api-routes',
-        label: 'API Route Inspector',
+        label: 'Live API Route Inspector',
         access: 'Dev only',
-        description: 'Browse every registered API route, auth policy, and contract schema.',
+        description:
+          'Inspect live running server routes, auth policies, and contract schemas in dev.',
       },
       {
         path: '/ui-library',
@@ -579,7 +791,7 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
       },
       {
         heading: 'Essential CLI Workflows',
-        body: 'The owned bslt CLI automates onboarding, module composition, diagnostics, and verification:',
+        body: 'The owned bslt CLI automates onboarding, module composition, diagnostics, docs syncing, and verification:',
         code: [
           '# 1. Bootstrap a fresh clone with a curated SaaS preset',
           'pnpm quickstart --preset b2b-saas   # or: core | solo-saas',
@@ -594,6 +806,9 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
           'BSLT_MODULE_CATALOG=https://github.com/abrahamahn/bslt-core/releases/download/v1.0.0/modules.catalog.json \\',
           '  pnpm bslt module add billing',
           'pnpm bslt module new projects --scope org',
+          '',
+          '# 5. Keep OpenAPI, markdown references, and this live /docs hub synced',
+          'pnpm bslt sync openapi && pnpm bslt sync docs',
         ].join('\n'),
       },
     ],
@@ -608,6 +823,11 @@ export function resolveDocChapter(slug: string | undefined): DocGuideChapter {
   return DOC_CHAPTERS[0] as DocGuideChapter;
 }
 
+export function resolveDocModule(moduleId: string | undefined): DocsModuleRef | undefined {
+  if (moduleId === undefined || moduleId.length === 0) return undefined;
+  return DOCS_REFERENCE.modules.find((mod) => mod.id === moduleId);
+}
+
 export function filterDocChapters(query: string): readonly DocGuideChapter[] {
   const normalized = query.trim().toLowerCase();
   if (normalized.length === 0) return DOC_CHAPTERS;
@@ -617,11 +837,22 @@ export function filterDocChapters(query: string): readonly DocGuideChapter[] {
       chapter.title,
       chapter.summary,
       ...chapter.keywords,
+      ...(chapter.relatedModules ?? []),
       ...chapter.routes.map((route) => `${route.label} ${route.path} ${route.description}`),
       ...chapter.sections.map((section) => `${section.heading} ${section.body}`),
     ]
       .join(' ')
       .toLowerCase();
+    return haystack.includes(normalized);
+  });
+}
+
+export function filterDocModules(query: string): readonly DocsModuleRef[] {
+  const normalized = query.trim().toLowerCase();
+  if (normalized.length === 0) return DOCS_REFERENCE.modules;
+  return DOCS_REFERENCE.modules.filter((mod) => {
+    const haystack =
+      `${mod.id} @bslt/${mod.id} ${mod.summary} ${mod.scope} ${mod.dependsOn.join(' ')}`.toLowerCase();
     return haystack.includes(normalized);
   });
 }

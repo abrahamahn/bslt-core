@@ -2,7 +2,7 @@
 
 # Web Routes & Navigation Reference
 
-Every client/SSR route (48), navigation link, and admin console surface attributed to its owning module or `kernel`.
+Every client/SSR route (49), navigation link, and admin console surface attributed to its owning module or `kernel`.
 
 ## Web Routes
 
@@ -39,6 +39,7 @@ Every client/SSR route (48), navigation link, and admin console surface attribut
 | `/disclaimer`                | `compliance` | `DisclaimerPage`          | `none`       | `PublicShell`                 |
 | `/docs`                      | `kernel`     | `DocsPage`                | `none`       | `PublicShell`                 |
 | `/docs/:section`             | `kernel`     | `DocsPage`                | `none`       | `PublicShell`                 |
+| `/docs/modules/:moduleId`    | `kernel`     | `DocsPage`                | `none`       | `PublicShell`                 |
 | `/forbidden`                 | `kernel`     | `ForbiddenPage`           | `none`       | `AppShell`                    |
 | `/login`                     | `identity`   | `LoginModalRoute`         | `none`       | `AuthShell`                   |
 | `/onboarding`                | `kernel`     | `OnboardingPage`          | `protected`  | `AppShell`                    |
