@@ -273,6 +273,28 @@
           "takesPrecedenceOver": []
         },
         {
+          "path": "/docs",
+          "page": "DocsPage",
+          "guard": "none",
+          "publicOnlyRedirectTo": null,
+          "layouts": [
+            "PublicShell"
+          ],
+          "adminSurface": null,
+          "takesPrecedenceOver": []
+        },
+        {
+          "path": "/docs/:section",
+          "page": "DocsPage",
+          "guard": "none",
+          "publicOnlyRedirectTo": null,
+          "layouts": [
+            "PublicShell"
+          ],
+          "adminSurface": null,
+          "takesPrecedenceOver": []
+        },
+        {
           "path": "/forbidden",
           "page": "ForbiddenPage",
           "guard": "none",
@@ -436,6 +458,10 @@
               "to": "/"
             },
             {
+              "label": "App Guide",
+              "to": "/docs"
+            },
+            {
               "label": "Changelog",
               "to": "/changelog"
             }
@@ -480,6 +506,10 @@
               {
                 "title": "Home",
                 "path": "/"
+              },
+              {
+                "title": "App Guide",
+                "path": "/docs"
               },
               {
                 "title": "Changelog",
@@ -537,6 +567,12 @@
             "label": "Run Workspace Setup",
             "category": "navigation",
             "navigatesTo": "/onboarding"
+          },
+          {
+            "id": "nav-docs",
+            "label": "Open App Guide & Docs",
+            "category": "navigation",
+            "navigatesTo": "/docs"
           },
           {
             "id": "nav-admin",
@@ -976,6 +1012,28 @@
           "takesPrecedenceOver": []
         },
         {
+          "path": "/docs",
+          "page": "DocsPage",
+          "guard": "none",
+          "publicOnlyRedirectTo": null,
+          "layouts": [
+            "PublicShell"
+          ],
+          "adminSurface": null,
+          "takesPrecedenceOver": []
+        },
+        {
+          "path": "/docs/:section",
+          "page": "DocsPage",
+          "guard": "none",
+          "publicOnlyRedirectTo": null,
+          "layouts": [
+            "PublicShell"
+          ],
+          "adminSurface": null,
+          "takesPrecedenceOver": []
+        },
+        {
           "path": "/forbidden",
           "page": "ForbiddenPage",
           "guard": "none",
@@ -1173,6 +1231,10 @@
               "to": "/"
             },
             {
+              "label": "App Guide",
+              "to": "/docs"
+            },
+            {
               "label": "Changelog",
               "to": "/changelog"
             },
@@ -1235,6 +1297,10 @@
                 "path": "/"
               },
               {
+                "title": "App Guide",
+                "path": "/docs"
+              },
+              {
                 "title": "Changelog",
                 "path": "/changelog"
               }
@@ -1290,6 +1356,12 @@
             "label": "Run Workspace Setup",
             "category": "navigation",
             "navigatesTo": "/onboarding"
+          },
+          {
+            "id": "nav-docs",
+            "label": "Open App Guide & Docs",
+            "category": "navigation",
+            "navigatesTo": "/docs"
           },
           {
             "id": "nav-admin",

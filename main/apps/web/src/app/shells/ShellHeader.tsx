@@ -185,6 +185,15 @@ export const ShellHeader = ({
           );
         })}
       </nav>
+    ) : variant === 'auth' ? (
+      <nav aria-label="App guide" className="shell-header__public-nav">
+        <Link to="/docs" className="shell-header__public-link">
+          App Guide
+        </Link>
+        <Link to="/pricing" className="shell-header__public-link">
+          Pricing
+        </Link>
+      </nav>
     ) : null;
 
   const rightSection = (

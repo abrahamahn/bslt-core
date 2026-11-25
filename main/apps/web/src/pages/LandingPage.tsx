@@ -74,6 +74,9 @@ function LandingPageContent({
           <Link to={primaryHref} className="btn btn-primary btn-medium no-underline">
             {primaryLabel}
           </Link>
+          <Link to="/docs" className="btn btn-secondary btn-medium no-underline">
+            Explore App Guide
+          </Link>
           {isAuthenticated ? null : (
             <Link to="/login" className="btn btn-secondary btn-medium no-underline">
               Sign in

@@ -2,7 +2,7 @@
 
 # Web Routes & Navigation Reference
 
-Every client/SSR route (46), navigation link, and admin console surface attributed to its owning module or `kernel`.
+Every client/SSR route (48), navigation link, and admin console surface attributed to its owning module or `kernel`.
 
 ## Web Routes
 
@@ -37,6 +37,8 @@ Every client/SSR route (46), navigation link, and admin console surface attribut
 | `/developer/billing-sandbox` | `devtools`   | `BillingSandboxPage`      | `protected`  | `ConsoleShell`                |
 | `/developer/emails`          | `devtools`   | `DevEmailInboxPage`       | `none`       | `ConsoleShell`                |
 | `/disclaimer`                | `compliance` | `DisclaimerPage`          | `none`       | `PublicShell`                 |
+| `/docs`                      | `kernel`     | `DocsPage`                | `none`       | `PublicShell`                 |
+| `/docs/:section`             | `kernel`     | `DocsPage`                | `none`       | `PublicShell`                 |
 | `/forbidden`                 | `kernel`     | `ForbiddenPage`           | `none`       | `AppShell`                    |
 | `/login`                     | `identity`   | `LoginModalRoute`         | `none`       | `AuthShell`                   |
 | `/onboarding`                | `kernel`     | `OnboardingPage`          | `protected`  | `AppShell`                    |
@@ -69,6 +71,7 @@ Every client/SSR route (46), navigation link, and admin console surface attribut
 | Section | Title                 | Path              | Owner        |
 | ------- | --------------------- | ----------------- | ------------ |
 | Product | Home                  | `/`               | `kernel`     |
+| Product | App Guide             | `/docs`           | `kernel`     |
 | Product | Changelog             | `/changelog`      | `kernel`     |
 | Legal   | Terms of Service      | `/terms`          | `compliance` |
 | Legal   | Privacy Policy        | `/privacy`        | `compliance` |

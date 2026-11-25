@@ -265,6 +265,7 @@ describe('bslt snapshot web-routes', () => {
 
     expect(starter.navigation.primary.signedOut).toEqual([
       { label: 'Home', to: '/' },
+      { label: 'App Guide', to: '/docs' },
       { label: 'Changelog', to: '/changelog' },
     ]);
     const signedInLinks = starter.navigation.primary.signedIn.map((link) => link.to);

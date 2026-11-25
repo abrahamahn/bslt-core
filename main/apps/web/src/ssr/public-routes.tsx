@@ -11,6 +11,8 @@ import { installedPublicSsrModules, installedPublicSsrRoutes } from '../generate
 
 import { PRODUCT_TAGLINE } from '#app/app/productMeta';
 import { ChangelogPage } from '#app/pages/ChangelogPage';
+import { DOC_CHAPTERS } from '#app/pages/docsCatalog';
+import { DocsPage } from '#app/pages/DocsPage';
 import { PublicLandingPage } from '#app/pages/LandingPage';
 
 export const PUBLIC_SSR_MODULES = installedPublicSsrModules;
@@ -37,8 +39,22 @@ const changelogPublicRoute = definePublicRoute<Record<string, never>>({
   Component: () => <ChangelogPage />,
 });
 
+const docsPublicRoutes: readonly PublicRoute<unknown>[] = DOC_CHAPTERS.map((chapter) =>
+  definePublicRoute<Record<string, never>>({
+    path: chapter.path,
+    cacheSeconds: Infinity,
+    load: () => Promise.resolve({}),
+    head: () => ({
+      title: `${chapter.title} — App Guide`,
+      description: chapter.summary,
+    }),
+    Component: () => <DocsPage sectionId={chapter.id} />,
+  }),
+);
+
 export const publicRoutes: readonly PublicRoute<unknown>[] = [
   landingPublicRoute,
   changelogPublicRoute,
+  ...docsPublicRoutes,
   ...installedPublicSsrRoutes,
 ];

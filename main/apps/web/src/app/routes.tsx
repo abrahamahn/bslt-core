@@ -20,6 +20,7 @@ import type {
 import type { ElementType } from 'react';
 
 import { ChangelogPage } from '#app/pages/ChangelogPage';
+import { DocsPage } from '#app/pages/DocsPage';
 import { ForbiddenPage } from '#app/pages/ForbiddenPage';
 import { LandingPage } from '#app/pages/LandingPage';
 import { NotFoundPage } from '#app/pages/NotFoundPage';
@@ -54,6 +55,19 @@ export const appFrameRoutes: readonly FrameRouteContribution<AppRouteFlags>[] = 
     shell: 'public',
     path: 'changelog',
     element: ChangelogPage,
+  },
+  {
+    slot: 'before-modules',
+    shell: 'public',
+    path: 'docs',
+    element: DocsPage,
+  },
+  {
+    slot: 'before-modules',
+    shell: 'public',
+    path: 'docs/:section',
+    element: DocsPage,
+    unlisted: true,
   },
   {
     slot: 'before-modules',

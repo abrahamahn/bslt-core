@@ -35,20 +35,28 @@ describe('appFrame', () => {
     const navPaths = (appFrame.primaryNav ?? []).map((entry) => entry.to);
     expect(navPaths).toEqual(
       hasAdminModule
-        ? ['/', '/changelog', '/dashboard', '/settings']
-        : ['/', '/changelog', '/dashboard', '/settings', '/admin'],
+        ? ['/', '/docs', '/changelog', '/dashboard', '/settings']
+        : ['/', '/docs', '/changelog', '/dashboard', '/settings', '/admin'],
     );
     expect(navPaths).not.toContain('/clean?doc=readme');
 
     const paletteIds = (appFrame.palette ?? []).map((entry) => entry.id);
     expect(paletteIds).toEqual(
       hasAdminModule
-        ? ['nav-dashboard', 'nav-profile', 'nav-settings', 'nav-onboarding', 'action-change-theme']
+        ? [
+            'nav-dashboard',
+            'nav-profile',
+            'nav-settings',
+            'nav-onboarding',
+            'nav-docs',
+            'action-change-theme',
+          ]
         : [
             'nav-dashboard',
             'nav-profile',
             'nav-settings',
             'nav-onboarding',
+            'nav-docs',
             'nav-admin',
             'action-change-theme',
           ],

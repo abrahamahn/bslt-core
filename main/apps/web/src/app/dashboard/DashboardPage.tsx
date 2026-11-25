@@ -573,6 +573,17 @@ export const DashboardPage = (): JSX.Element => {
               </div>
               <Badge tone="info">Theme</Badge>
             </Link>
+            <Link to="/docs" className="dashboard-shortcut-row">
+              <div className="dashboard-surface-row__copy">
+                <Text as="span" size="sm" className="dashboard-surface-row__label">
+                  App Guide &amp; Docs
+                </Text>
+                <Text as="span" tone="muted" size="sm">
+                  Tour every space, module, and live route inside this app.
+                </Text>
+              </div>
+              <Badge tone="info">Guide</Badge>
+            </Link>
           </div>
         </Card>
       </div>

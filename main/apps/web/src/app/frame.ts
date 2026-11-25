@@ -25,6 +25,12 @@ export const appFrame: AppFrameConfig<AppRouteFlags, DocumentType> = Object.free
       order: 10,
     },
     {
+      to: '/docs',
+      label: 'App Guide',
+      audience: 'public',
+      order: 12,
+    },
+    {
       to: '/changelog',
       label: 'Changelog',
       audience: 'public',
@@ -95,6 +101,15 @@ export const appFrame: AppFrameConfig<AppRouteFlags, DocumentType> = Object.free
       keywords: ['onboarding', 'setup', 'getting started', 'wizard', 'workspace'],
       order: 25,
     },
+    {
+      id: 'nav-docs',
+      label: 'Open App Guide & Docs',
+      description: 'Browse every space, module, and live route in this app',
+      category: 'navigation',
+      to: '/docs',
+      keywords: ['docs', 'guide', 'help', 'tour', 'features', 'manual'],
+      order: 26,
+    },
     ...(hasAdminModule
       ? []
       : [
@@ -145,6 +160,13 @@ export const appFrame: AppFrameConfig<AppRouteFlags, DocumentType> = Object.free
       section: 'product',
       live: true,
       order: 10,
+    },
+    {
+      path: '/docs',
+      title: 'App Guide',
+      section: 'product',
+      live: true,
+      order: 15,
     },
     {
       path: '/changelog',
