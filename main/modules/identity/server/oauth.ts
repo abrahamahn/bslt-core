@@ -451,6 +451,13 @@ export async function handleOAuthCallbackInRepo(options: {
         tokens.refreshToken !== undefined ? encryptToken(tokens.refreshToken, encryptionKey) : null,
       expiresAt: tokens.expiresAt ?? null,
     });
+    if (
+      user.avatarUrl === null &&
+      userInfo.picture !== undefined &&
+      userInfo.picture.trim() !== ''
+    ) {
+      await options.repo.updateUser(linkUserId, { avatarUrl: userInfo.picture.trim() });
+    }
     return {
       ok: true,
       isLinking: true,
@@ -475,9 +482,21 @@ export async function handleOAuthCallbackInRepo(options: {
       providerEmail: userInfo.email,
       updatedAt: now,
     });
-    const existingUser = await options.repo.findUserById(existingConnection.userId);
+    let existingUser = await options.repo.findUserById(existingConnection.userId);
     if (existingUser === null || existingUser.deletedAt !== null) {
       return { ok: false, code: 'OAUTH_FAILED', message: 'User not found' };
+    }
+    if (
+      existingUser.avatarUrl === null &&
+      userInfo.picture !== undefined &&
+      userInfo.picture.trim() !== ''
+    ) {
+      const updatedUser = await options.repo.updateUser(existingUser.id, {
+        avatarUrl: userInfo.picture.trim(),
+      });
+      if (updatedUser !== null) {
+        existingUser = updatedUser;
+      }
     }
     const issued = await issueSession(options.repo, existingUser, {
       jwtSecret: options.config.jwtSecret,
@@ -525,6 +544,9 @@ export async function handleOAuthCallbackInRepo(options: {
         username,
         firstName,
         lastName,
+        ...(userInfo.picture !== undefined && userInfo.picture.trim() !== ''
+          ? { avatarUrl: userInfo.picture.trim() }
+          : {}),
         passwordHash: `oauth:${options.provider}:${randomBytes(32).toString('hex')}`,
         role: 'user',
         emailVerified: userInfo.emailVerified,

@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   AnonymousSdkViolationError,
+  applyClientHeadTags,
   buildRobotsTxt,
   buildRuntimeSitemapXml,
   createAnonymousSdk,
@@ -256,8 +257,52 @@ describe('public-route SSR seam', () => {
         { siteUrl: null, pathname: '/terms', appName: 'BSLT' },
       );
       expect(headWithoutOrigin).toContain('<title>Terms &lt;Draft&gt;</title>');
+      expect(headWithoutOrigin).toContain('property="og:site_name" content="BSLT"');
+      expect(headWithoutOrigin).toContain('name="twitter:card" content="summary"');
       expect(headWithoutOrigin).not.toContain('rel="canonical"');
       expect(headWithoutOrigin).not.toContain('og:url');
+
+      const statusHeadWithOrigin = formatHeadTags(
+        {
+          title: 'System Status · BSLT',
+          description: 'Live health summary',
+        },
+        { siteUrl: 'https://app.bslt.dev', pathname: '/status', appName: 'BSLT' },
+      );
+      expect(statusHeadWithOrigin).toContain(
+        'property="og:image" content="https://app.bslt.dev/brand/og-image.svg"',
+      );
+      expect(statusHeadWithOrigin).toContain('name="twitter:card" content="summary_large_image"');
+      expect(statusHeadWithOrigin).toContain('name="twitter:title" content="System Status · BSLT"');
+
+      applyClientHeadTags(
+        document,
+        {
+          title: 'Dashboard · BSLT',
+          description: 'Workspace overview',
+          robots: 'noindex, nofollow',
+        },
+        { appName: 'BSLT', siteUrl: 'https://app.bslt.dev', pathname: '/dashboard' },
+      );
+      expect(document.title).toBe('Dashboard · BSLT');
+      expect(document.head.querySelector('meta[name="description"]')?.getAttribute('content')).toBe(
+        'Workspace overview',
+      );
+      expect(document.head.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe(
+        'noindex, nofollow',
+      );
+      expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
+        'https://app.bslt.dev/dashboard',
+      );
+
+      // Navigating to a public page clears stale noindex robots tag
+      applyClientHeadTags(
+        document,
+        { title: 'System Status · BSLT', description: 'Live health' },
+        { appName: 'BSLT', siteUrl: 'https://app.bslt.dev', pathname: '/status' },
+      );
+      expect(document.title).toBe('System Status · BSLT');
+      expect(document.head.querySelector('meta[name="robots"]')).toBeNull();
       expect(headWithoutOrigin).not.toContain('application/ld+json');
 
       const headWithOrigin = formatHeadTags(

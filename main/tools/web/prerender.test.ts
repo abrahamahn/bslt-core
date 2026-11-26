@@ -69,4 +69,29 @@ describe('bslt web prerender', () => {
     });
     expect(written).toEqual(['_spa.html', 'index.html', 'sitemap.xml']);
   });
+
+  it('copies docs/reference/openapi.json into dist/client when present relative to webDir', async () => {
+    const repoRoot = makeTempDir();
+    const webDir = path.join(repoRoot, 'main/apps/web');
+    mkdirSync(path.join(webDir, 'dist/client'), { recursive: true });
+    mkdirSync(path.join(webDir, 'dist/server'), { recursive: true });
+    mkdirSync(path.join(repoRoot, 'docs/reference'), { recursive: true });
+    writeFileSync(path.join(webDir, 'dist/client/index.html'), '<html></html>', 'utf8');
+    writeFileSync(
+      path.join(repoRoot, 'docs/reference/openapi.json'),
+      '{"openapi":"3.1.0"}\n',
+      'utf8',
+    );
+    writeFileSync(
+      path.join(webDir, 'dist/server/serve.js'),
+      `export async function prerenderStaticPublicRoutes() {
+  return ['_spa.html', 'index.html'];
+}
+`,
+      'utf8',
+    );
+
+    const written = await runWebPrerender({ webDir, siteUrl: null, quiet: true });
+    expect(written).toEqual(['_spa.html', 'index.html', 'openapi.json']);
+  });
 });

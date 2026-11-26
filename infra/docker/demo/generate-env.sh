@@ -24,6 +24,22 @@ JWT_SECRET="$(prev JWT_SECRET)"; JWT_SECRET="${JWT_SECRET:-$(gen_secret)}"
 COOKIE_SECRET="$(prev COOKIE_SECRET)"; COOKIE_SECRET="${COOKIE_SECRET:-$(gen_secret)}"
 OAUTH_KEY="$(prev OAUTH_TOKEN_ENCRYPTION_KEY)"; OAUTH_KEY="${OAUTH_KEY:-$(gen_secret)}"
 PG_PASS="$(prev POSTGRES_PASSWORD)"; PG_PASS="${PG_PASS:-$(gen_secret)}"
+# Preserve operator-configured Auth / OAuth / SMTP settings across redeploys.
+PREV_AUTH_STRATEGIES="$(prev AUTH_STRATEGIES)"
+PREV_AUTH_AUTO_VERIFY="$(prev AUTH_AUTO_VERIFY_EMAIL)"
+PREV_EMAIL_PROVIDER="$(prev EMAIL_PROVIDER)"
+PREV_EMAIL_FROM_ADDRESS="$(prev EMAIL_FROM_ADDRESS)"
+PREV_EMAIL_FROM_NAME="$(prev EMAIL_FROM_NAME)"
+PREV_EMAIL_REPLY_TO="$(prev EMAIL_REPLY_TO)"
+PREV_SMTP_HOST="$(prev SMTP_HOST)"
+PREV_SMTP_PORT="$(prev SMTP_PORT)"
+PREV_SMTP_SECURE="$(prev SMTP_SECURE)"
+PREV_SMTP_USER="$(prev SMTP_USER)"
+PREV_SMTP_PASS="$(prev SMTP_PASS)"
+PREV_GOOGLE_CLIENT_ID="$(prev GOOGLE_CLIENT_ID)"
+PREV_GOOGLE_CLIENT_SECRET="$(prev GOOGLE_CLIENT_SECRET)"
+PREV_GITHUB_CLIENT_ID="$(prev GITHUB_CLIENT_ID)"
+PREV_GITHUB_CLIENT_SECRET="$(prev GITHUB_CLIENT_SECRET)"
 # Database role split: one independent random password per role, read back out
 # of that role's own URL on redeploys. A URL that names any other user (the old
 # single-superuser DATABASE_URL) is never reused. Hex needs no URL-encoding.
@@ -81,17 +97,28 @@ set_var DB_MAX_CONNECTIONS 10
 set_var QUEUE_PROVIDER local
 set_var CACHE_PROVIDER local
 set_var CACHE_USE_REDIS false
-# Email → console (no SMTP creds); mails are logged, not sent.
-set_var EMAIL_PROVIDER console
-set_var EMAIL_FROM_NAME BSLT
-set_var EMAIL_FROM_ADDRESS "no-reply@bslt.demo"
-# Auth + secrets.
-set_var AUTH_STRATEGIES local
+# Email: default to console when unconfigured, or preserve operator SMTP config across redeploys.
+set_var EMAIL_PROVIDER "${PREV_EMAIL_PROVIDER:-console}"
+set_var EMAIL_FROM_NAME "${PREV_EMAIL_FROM_NAME:-BSLT}"
+set_var EMAIL_FROM_ADDRESS "${PREV_EMAIL_FROM_ADDRESS:-no-reply@bslt.demo}"
+if [ -n "$PREV_EMAIL_REPLY_TO" ]; then set_var EMAIL_REPLY_TO "$PREV_EMAIL_REPLY_TO"; fi
+if [ -n "$PREV_SMTP_HOST" ]; then set_var SMTP_HOST "$PREV_SMTP_HOST"; fi
+if [ -n "$PREV_SMTP_PORT" ]; then set_var SMTP_PORT "$PREV_SMTP_PORT"; fi
+if [ -n "$PREV_SMTP_SECURE" ]; then set_var SMTP_SECURE "$PREV_SMTP_SECURE"; fi
+if [ -n "$PREV_SMTP_USER" ]; then set_var SMTP_USER "$PREV_SMTP_USER"; fi
+if [ -n "$PREV_SMTP_PASS" ]; then set_var SMTP_PASS "$PREV_SMTP_PASS"; fi
+# Auth, OAuth & secrets: preserve configured strategies and OAuth client credentials across redeploys.
+set_var AUTH_STRATEGIES "${PREV_AUTH_STRATEGIES:-local,magic}"
+set_var GOOGLE_CALLBACK_URL "${BASE_URL%/}/api/auth/oauth/google/callback"
+set_var GITHUB_CALLBACK_URL "${BASE_URL%/}/api/auth/oauth/github/callback"
+if [ -n "$PREV_GOOGLE_CLIENT_ID" ]; then set_var GOOGLE_CLIENT_ID "$PREV_GOOGLE_CLIENT_ID"; fi
+if [ -n "$PREV_GOOGLE_CLIENT_SECRET" ]; then set_var GOOGLE_CLIENT_SECRET "$PREV_GOOGLE_CLIENT_SECRET"; fi
+if [ -n "$PREV_GITHUB_CLIENT_ID" ]; then set_var GITHUB_CLIENT_ID "$PREV_GITHUB_CLIENT_ID"; fi
+if [ -n "$PREV_GITHUB_CLIENT_SECRET" ]; then set_var GITHUB_CLIENT_SECRET "$PREV_GITHUB_CLIENT_SECRET"; fi
 set_var CAPTCHA_ENABLED false
-# Demo-only: register users as already email-verified and auto sign them in,
-# since the demo has no real mailbox (EMAIL_PROVIDER=console). Never enable in
-# a real deployment.
-set_var AUTH_AUTO_VERIFY_EMAIL true
+# Demo-only default when EMAIL_PROVIDER=console: register users as already email-verified.
+# Preserves explicit operator setting (e.g. false once SMTP is active).
+set_var AUTH_AUTO_VERIFY_EMAIL "${PREV_AUTH_AUTO_VERIFY:-true}"
 set_var JWT_SECRET "$JWT_SECRET"
 set_var COOKIE_SECRET "$COOKIE_SECRET"
 set_var OAUTH_TOKEN_ENCRYPTION_KEY "$OAUTH_KEY"

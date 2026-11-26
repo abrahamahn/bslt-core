@@ -285,6 +285,7 @@ export async function createConsentedUserInRepo(
     readonly username: string;
     readonly firstName: string;
     readonly lastName: string;
+    readonly avatarUrl?: string | null | undefined;
     readonly passwordHash: string;
     readonly role: 'user';
     readonly emailVerified: boolean;
@@ -319,6 +320,7 @@ export async function createConsentedUserInRepo(
     username: values.username,
     firstName: values.firstName,
     lastName: values.lastName,
+    ...(values.avatarUrl !== undefined ? { avatarUrl: values.avatarUrl } : {}),
     passwordHash: values.passwordHash,
     role: values.role,
     emailVerified: values.emailVerified,
@@ -1580,6 +1582,7 @@ export async function verifyMagicLinkInRepo(options: {
   readonly cookieConfig: RefreshCookieConfig;
   readonly peekAgreements: SignupComplianceHooks['peekAgreements'];
   readonly recordConsents: SignupComplianceHooks['recordConsents'];
+  readonly onUserCreatedInTx?: ((tx: Tx, newUser: DbUser) => Promise<void>) | undefined;
   readonly ipAddress?: string | null | undefined;
   readonly userAgent?: string | null | undefined;
   readonly now?: Date | undefined;
@@ -1588,6 +1591,7 @@ export async function verifyMagicLinkInRepo(options: {
       readonly ok: true;
       readonly response: MagicLinkVerifyResponse;
       readonly issued: IssuedSession;
+      readonly createdUser?: DbUser | undefined;
     }
   | {
       readonly ok: false;
@@ -1644,6 +1648,7 @@ export async function verifyMagicLinkInRepo(options: {
       }
     }
 
+    const isNewUser = user === null;
     if (user === null) {
       const username = await generateUniqueUsernameInRepo(txRepo, consumed.email);
       user = await createConsentedUserInRepo(
@@ -1673,6 +1678,9 @@ export async function verifyMagicLinkInRepo(options: {
         tx,
         now,
       );
+      if (options.onUserCreatedInTx !== undefined) {
+        await options.onUserCreatedInTx(tx, user);
+      }
     } else if (!user.emailVerified) {
       const updated = await txRepo.updateUser(user.id, {
         emailVerified: true,
@@ -1694,7 +1702,7 @@ export async function verifyMagicLinkInRepo(options: {
       now,
     });
 
-    return { ok: true as const, issued };
+    return { ok: true as const, issued, ...(isNewUser ? { createdUser: user } : {}) };
   });
 
   if (!txOutcome.ok) {
@@ -1733,6 +1741,7 @@ export async function verifyMagicLinkInRepo(options: {
   return {
     ok: true,
     issued: txOutcome.issued,
+    ...(txOutcome.createdUser !== undefined ? { createdUser: txOutcome.createdUser } : {}),
     response: {
       token: txOutcome.issued.token,
       user: txOutcome.issued.user,
@@ -1880,6 +1889,7 @@ export async function verifyEmailOtpInRepo(options: {
   readonly cookieConfig: RefreshCookieConfig;
   readonly peekAgreements: SignupComplianceHooks['peekAgreements'];
   readonly recordConsents: SignupComplianceHooks['recordConsents'];
+  readonly onUserCreatedInTx?: ((tx: Tx, newUser: DbUser) => Promise<void>) | undefined;
   readonly ipAddress?: string | null | undefined;
   readonly userAgent?: string | null | undefined;
   readonly now?: Date | undefined;
@@ -1888,6 +1898,7 @@ export async function verifyEmailOtpInRepo(options: {
       readonly ok: true;
       readonly response: EmailOtpVerifyResponse;
       readonly issued: IssuedSession;
+      readonly createdUser?: DbUser | undefined;
     }
   | {
       readonly ok: false;
@@ -1985,6 +1996,9 @@ export async function verifyEmailOtpInRepo(options: {
         tx,
         now,
       );
+      if (options.onUserCreatedInTx !== undefined) {
+        await options.onUserCreatedInTx(tx, user);
+      }
     } else if (!user.emailVerified) {
       const updated = await txRepo.updateUser(user.id, {
         emailVerified: true,
@@ -2006,7 +2020,7 @@ export async function verifyEmailOtpInRepo(options: {
       now,
     });
 
-    return { ok: true as const, issued, isNewUser };
+    return { ok: true as const, issued, isNewUser, ...(isNewUser ? { createdUser: user } : {}) };
   });
 
   if (!txOutcome.ok) {
@@ -2045,6 +2059,7 @@ export async function verifyEmailOtpInRepo(options: {
   return {
     ok: true,
     issued: txOutcome.issued,
+    ...(txOutcome.createdUser !== undefined ? { createdUser: txOutcome.createdUser } : {}),
     response: {
       token: txOutcome.issued.token,
       user: txOutcome.issued.user,

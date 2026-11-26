@@ -8,8 +8,9 @@
  * background jobs, and scheduled crons.
  */
 
+import { createTransport, isApiError } from '@bslt/client-engine';
 import { Link } from '@bslt/react/router';
-import { Badge, Button, Card, Heading, Input, Text } from '@bslt/ui';
+import { Badge, Button, Card, Heading, Input, Text, TextArea } from '@bslt/ui';
 import { useCallback, useMemo, useState, type ReactElement } from 'react';
 
 import { DOC_KERNEL_PACKAGES, getPlatformStats } from './docsCatalog';
@@ -19,6 +20,8 @@ import {
   type DocsModuleRef,
   type DocsWebRouteRef,
 } from './docsReference.generated';
+
+import { clientConfig } from '#app/config';
 
 const HTTP_METHODS = ['ALL', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 const AUTH_FILTERS = ['all', 'public', 'user', 'admin'] as const;
@@ -153,6 +156,200 @@ function buildCurlExample(endpoint: DocsApiEndpointRef): string {
   }
   return lines.join(' \\\n');
 }
+
+interface TryRequestState {
+  readonly status: 'idle' | 'running' | 'done' | 'error';
+  readonly statusCode?: number | undefined;
+  readonly durationMs?: number | undefined;
+  readonly output?: string | undefined;
+}
+
+const DocsEndpointTryPanel = ({
+  endpoint,
+}: {
+  readonly endpoint: DocsApiEndpointRef;
+}): ReactElement => {
+  const [targetPath, setTargetPath] = useState(endpoint.path);
+  const [bearerToken, setBearerToken] = useState('');
+  const [requestBody, setRequestBody] = useState(endpoint.body !== null ? '{\n  \n}' : '');
+  const [result, setResult] = useState<TryRequestState>({ status: 'idle' });
+
+  const isMutating = endpoint.method !== 'GET' && endpoint.method !== 'HEAD';
+
+  const handleSend = useCallback((): void => {
+    const trimmedPath = targetPath.trim();
+    if (!trimmedPath.startsWith('/')) {
+      setResult({
+        status: 'error',
+        output: 'Request path must start with "/" (for example, /api/status).',
+      });
+      return;
+    }
+    if (trimmedPath.includes('/:')) {
+      setResult({
+        status: 'error',
+        output: 'Replace ":param" path placeholders with concrete IDs before sending.',
+      });
+      return;
+    }
+
+    let parsedBody: unknown;
+    if (isMutating && requestBody.trim().length > 0) {
+      try {
+        parsedBody = JSON.parse(requestBody);
+      } catch (err: unknown) {
+        setResult({
+          status: 'error',
+          output: `Invalid JSON body: ${err instanceof Error ? err.message : String(err)}`,
+        });
+        return;
+      }
+    }
+
+    const startedAt = Date.now();
+    setResult({ status: 'running' });
+
+    const tokenValue = bearerToken.trim();
+    const transport = createTransport({
+      baseUrl: clientConfig.apiUrl,
+      getToken: () => (tokenValue.length > 0 ? tokenValue : null),
+    });
+
+    const httpMethod = endpoint.method.toUpperCase() as
+      'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD';
+
+    void transport
+      .request(trimmedPath, {
+        method: httpMethod,
+        rawApiPath: true,
+        requiresAuth: endpoint.auth !== 'public' || tokenValue.length > 0,
+        ...(parsedBody !== undefined
+          ? {
+              body: JSON.stringify(parsedBody),
+              headers: { 'Content-Type': 'application/json' },
+            }
+          : {}),
+      })
+      .then((payload) => {
+        setResult({
+          status: 'done',
+          statusCode: 200,
+          durationMs: Math.max(1, Date.now() - startedAt),
+          output:
+            typeof payload === 'string'
+              ? payload
+              : JSON.stringify(payload ?? { ok: true }, null, 2),
+        });
+      })
+      .catch((error: unknown) => {
+        const durationMs = Math.max(1, Date.now() - startedAt);
+        if (isApiError(error)) {
+          setResult({
+            status: 'error',
+            statusCode: error.statusCode,
+            durationMs,
+            output: JSON.stringify(
+              {
+                status: error.statusCode,
+                code: error.code,
+                message: error.message,
+              },
+              null,
+              2,
+            ),
+          });
+          return;
+        }
+        setResult({
+          status: 'error',
+          durationMs,
+          output: error instanceof Error ? error.message : String(error),
+        });
+      });
+  }, [bearerToken, endpoint.auth, endpoint.method, isMutating, requestBody, targetPath]);
+
+  return (
+    <div className="docs-try-panel">
+      <div className="docs-try-panel__header">
+        <Text as="span" size="xs" className="docs-route-card__label">
+          Try Live Request
+        </Text>
+        <Text as="span" size="xs" tone="muted">
+          {endpoint.auth === 'public'
+            ? 'Public endpoint — runs directly against this origin.'
+            : 'Uses your signed-in browser session or an optional bslt_ API key / Bearer token.'}
+        </Text>
+      </div>
+      <div className="docs-try-panel__controls">
+        <div className="docs-try-panel__field">
+          <Input
+            type="text"
+            value={targetPath}
+            aria-label={`Request path for ${endpoint.method} ${endpoint.path}`}
+            placeholder={endpoint.path}
+            onChange={(event) => {
+              setTargetPath(event.target.value);
+            }}
+          />
+        </div>
+        {endpoint.auth !== 'public' ? (
+          <div className="docs-try-panel__token">
+            <Input
+              type="password"
+              value={bearerToken}
+              aria-label={`Optional bearer token for ${endpoint.method} ${endpoint.path}`}
+              placeholder="Optional Bearer / bslt_ API key"
+              onChange={(event) => {
+                setBearerToken(event.target.value);
+              }}
+            />
+          </div>
+        ) : null}
+        <Button
+          type="button"
+          size="small"
+          variant="primary"
+          disabled={result.status === 'running'}
+          onClick={handleSend}
+        >
+          {result.status === 'running' ? 'Sending…' : 'Send Request'}
+        </Button>
+      </div>
+      {isMutating ? (
+        <TextArea
+          rows={4}
+          value={requestBody}
+          aria-label={`JSON request body for ${endpoint.method} ${endpoint.path}`}
+          placeholder='{"example": true}'
+          onChange={(event) => {
+            setRequestBody(event.target.value);
+          }}
+        />
+      ) : null}
+      {result.status === 'done' || result.status === 'error' ? (
+        <div className="docs-try-panel__result">
+          <div className="docs-try-panel__result-meta">
+            <Badge tone={result.status === 'done' ? 'success' : 'danger'}>
+              {result.statusCode !== undefined
+                ? `HTTP ${String(result.statusCode)}`
+                : result.status === 'done'
+                  ? 'OK'
+                  : 'Error'}
+            </Badge>
+            {result.durationMs !== undefined ? (
+              <Text as="span" size="xs" tone="muted">
+                {`${String(result.durationMs)} ms`}
+              </Text>
+            ) : null}
+          </div>
+          <pre className="docs-code-block">
+            <code>{result.output ?? ''}</code>
+          </pre>
+        </div>
+      ) : null}
+    </div>
+  );
+};
 
 function knownModuleSet(): ReadonlySet<string> {
   return new Set(DOCS_REFERENCE.modules.map((mod) => mod.id));
@@ -311,6 +508,15 @@ export const DocsApiReferenceView = ({ lockedOwner }: DocsApiReferenceViewProps)
                 Reset filters
               </Button>
             ) : null}
+            {lockedOwner === undefined ? (
+              <a
+                href="/openapi.json"
+                download="bslt-openapi.json"
+                className="btn btn-secondary btn-small no-underline"
+              >
+                Download OpenAPI 3.1 JSON
+              </a>
+            ) : null}
           </div>
         </div>
 
@@ -453,6 +659,7 @@ export const DocsApiReferenceView = ({ lockedOwner }: DocsApiReferenceViewProps)
                     <pre className="docs-code-block">
                       <code>{buildCurlExample(endpoint)}</code>
                     </pre>
+                    <DocsEndpointTryPanel endpoint={endpoint} />
                   </div>
                 ) : null}
               </div>

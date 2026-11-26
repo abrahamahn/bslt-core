@@ -33,10 +33,30 @@ describe('DocsReferenceViews', () => {
     fireEvent.change(searchInput, { target: { value: '/api/auth/login' } });
     expect(screen.getByText('/api/auth/login')).toBeInTheDocument();
 
+    expect(screen.getByRole('link', { name: 'Download OpenAPI 3.1 JSON' })).toHaveAttribute(
+      'href',
+      '/openapi.json',
+    );
+
     const detailsButtons = screen.getAllByRole('button', { name: 'Details' });
     expect(detailsButtons.length).toBeGreaterThan(0);
     fireEvent.click(detailsButtons[0] as HTMLElement);
     expect(screen.getByText(/curl -X POST/i)).toBeInTheDocument();
+
+    // Adversarial Try Request validation: rejects invalid JSON body and bad request path
+    const bodyInput = screen.getByRole('textbox', {
+      name: 'JSON request body for POST /api/auth/login',
+    });
+    fireEvent.change(bodyInput, { target: { value: '{not-json' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send Request' }));
+    expect(screen.getByText(/Invalid JSON body/i)).toBeInTheDocument();
+
+    const pathInput = screen.getByRole('textbox', {
+      name: 'Request path for POST /api/auth/login',
+    });
+    fireEvent.change(pathInput, { target: { value: 'relative/path' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send Request' }));
+    expect(screen.getByText(/Request path must start with "\/"/i)).toBeInTheDocument();
 
     // Adversarial empty state when combining incompatible method + search
     fireEvent.click(screen.getByRole('button', { name: 'DELETE' }));

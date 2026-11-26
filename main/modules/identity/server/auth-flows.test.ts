@@ -723,6 +723,46 @@ describe('auth-flows adversarial suite', () => {
     });
     expect(rlOtp).toMatchObject({ ok: false, code: 'TOO_MANY_ATTEMPTS' });
 
+    // Positive: verifyEmailOtpInRepo creates consented user and invokes onUserCreatedInTx
+    const createdUser = makeUser({ id: 'u-otp-1', email: 'newotp@example.com' });
+    const otpSignupRepo = {
+      findActiveAuthTokenByEmail: vi.fn().mockResolvedValue({
+        id: 'tok-otp-2',
+        email: 'newotp@example.com',
+        tokenHash: hashToken('newotp@example.com:654321'),
+        expiresAt: new Date(now.getTime() + 600_000),
+        usedAt: null,
+        metadata: { attempts: 0 },
+      }),
+      findUserByEmail: vi.fn().mockResolvedValue(null),
+      findUserByUsername: vi.fn().mockResolvedValue(null),
+      consumeAuthTokenById: vi.fn().mockResolvedValue({ id: 'tok-otp-2' }),
+      createUser: vi.fn().mockResolvedValue(createdUser),
+      insertRefreshToken: vi.fn().mockResolvedValue(undefined),
+      insertUserSession: vi.fn().mockResolvedValue(undefined),
+    } as unknown as IdentityRepository;
+    const onUserCreatedInTx = vi.fn().mockResolvedValue(undefined);
+    const otpSignupRes = await verifyEmailOtpInRepo({
+      runInTx: (fn) => fn(otpSignupRepo, {} as never),
+      email: 'newotp@example.com',
+      code: '654321',
+      eligibilityAttested: true,
+      tosAccepted: true,
+      jwtSecret: JWT_SECRET,
+      accessTokenExpiry: '15m',
+      refreshExpiryDays: 7,
+      cookieConfig: { httpOnly: true, secure: false, sameSite: 'lax', path: '/' },
+      peekAgreements: async () => [{ id: 'doc-1' }],
+      recordConsents: async () => undefined,
+      onUserCreatedInTx,
+      now,
+    });
+    expect(otpSignupRes.ok).toBe(true);
+    expect(onUserCreatedInTx).toHaveBeenCalledTimes(1);
+    if (otpSignupRes.ok) {
+      expect(otpSignupRes.createdUser?.id).toBe('u-otp-1');
+    }
+
     // Positive: generateUniqueUsernameInRepo falls back to suffixed candidate on collision
     const uRepo = {
       findUserByUsername: vi.fn().mockResolvedValueOnce(makeUser()).mockResolvedValueOnce(null),

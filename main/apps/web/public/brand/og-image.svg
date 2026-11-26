@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0b0d14"/>
+      <stop offset="55%" stop-color="#111626"/>
+      <stop offset="100%" stop-color="#18203a"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(940 140) rotate(135) scale(520 380)">
+      <stop offset="0%" stop-color="#4f6ef7" stop-opacity="0.34"/>
+      <stop offset="100%" stop-color="#4f6ef7" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <rect x="48" y="48" width="1104" height="534" rx="28" stroke="#2a3350" stroke-width="2" fill="#0f1320" fill-opacity="0.72"/>
+  <g transform="translate(104, 128)">
+    <rect width="72" height="72" rx="18" fill="#4f6ef7"/>
+    <g transform="translate(16, 16) scale(1.25)">
+      <path d="m16 2 12 7v14l-12 7-12-7V9Z" fill="#ffffff"/>
+      <path d="m4 9 12 7 12-7M16 16v14" stroke="#0f1320" stroke-width="1.6"/>
+      <path d="m10 5.5 12 7" stroke="#0f1320" stroke-width="1.6"/>
+    </g>
+    <text x="96" y="48" fill="#f8fafc" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="38" font-weight="700" letter-spacing="-0.02em">BSLT</text>
+  </g>
+  <text x="104" y="292" fill="#ffffff" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="56" font-weight="700" letter-spacing="-0.03em">Clone-and-own TypeScript</text>
+  <text x="104" y="362" fill="#93a8ff" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="56" font-weight="700" letter-spacing="-0.03em">SaaS Foundation</text>
+  <text x="104" y="426" fill="#94a3b8" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="24">18 vertical modules · 256 typed API endpoints · PostgreSQL 17 forced RLS · Zero runtime deps outside React</text>
+  <g transform="translate(104, 480)">
+    <rect width="210" height="44" rx="22" fill="#1e2742" stroke="#334168"/>
+    <text x="24" y="28" fill="#cbd5e1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16">app.bslt.dev/docs</text>
+    <rect x="230" width="236" height="44" rx="22" fill="#1e2742" stroke="#334168"/>
+    <text x="254" y="28" fill="#cbd5e1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16">React 19 · Node 24</text>
+    <rect x="486" width="250" height="44" rx="22" fill="#1e2742" stroke="#334168"/>
+    <text x="510" y="28" fill="#cbd5e1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16">PostgreSQL 17 RLS</text>
+  </g>
+</svg>

@@ -8,7 +8,7 @@
  * for unmatched SPA routes) plus `robots.txt` and (given `SITE_URL`) `sitemap.xml`.
  */
 
-import { existsSync } from 'node:fs';
+import { copyFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
@@ -58,6 +58,12 @@ export async function runWebPrerender(options: RunWebPrerenderOptions = {}): Pro
     clientDir,
     siteUrl: resolvedSiteUrl,
   });
+
+  const openApiSrc = path.resolve(webDir, '../../../docs/reference/openapi.json');
+  if (existsSync(openApiSrc)) {
+    copyFileSync(openApiSrc, path.join(clientDir, 'openapi.json'));
+    written.push('openapi.json');
+  }
 
   if (options.quiet !== true) {
     if (resolvedSiteUrl === null) {

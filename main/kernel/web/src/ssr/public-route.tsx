@@ -515,6 +515,14 @@ export function formatHeadTags(
   const ogDescription = tags.ogDescription?.trim() ?? description;
   const ogType = tags.ogType ?? 'website';
   const canonical = resolveAbsoluteCanonical(tags.canonical, options.siteUrl, options.pathname);
+  const resolvedOgImage =
+    tags.ogImage !== undefined && tags.ogImage.trim() !== ''
+      ? tags.ogImage.trim()
+      : canonical !== null
+        ? `${new URL(canonical).origin}/brand/og-image.svg`
+        : '';
+  const twitterCard =
+    tags.twitterCard ?? (resolvedOgImage !== '' ? 'summary_large_image' : 'summary');
 
   const lines: string[] = [
     `<title>${escapeHtmlText(title)}</title>`,
@@ -522,16 +530,22 @@ export function formatHeadTags(
     tags.robots !== undefined && tags.robots.trim() !== ''
       ? `<meta name="robots" content=${escapeHtmlAttr(tags.robots.trim())}>`
       : '',
+    `<meta property="og:site_name" content=${escapeHtmlAttr(options.appName)}>`,
     `<meta property="og:title" content=${escapeHtmlAttr(ogTitle)}>`,
     ogDescription !== ''
       ? `<meta property="og:description" content=${escapeHtmlAttr(ogDescription)}>`
       : '',
     `<meta property="og:type" content=${escapeHtmlAttr(ogType)}>`,
-    tags.ogImage !== undefined && tags.ogImage.trim() !== ''
-      ? `<meta property="og:image" content=${escapeHtmlAttr(tags.ogImage.trim())}>`
+    resolvedOgImage !== ''
+      ? `<meta property="og:image" content=${escapeHtmlAttr(resolvedOgImage)}>`
       : '',
-    tags.twitterCard !== undefined
-      ? `<meta name="twitter:card" content=${escapeHtmlAttr(tags.twitterCard)}>`
+    `<meta name="twitter:card" content=${escapeHtmlAttr(twitterCard)}>`,
+    `<meta name="twitter:title" content=${escapeHtmlAttr(ogTitle)}>`,
+    ogDescription !== ''
+      ? `<meta name="twitter:description" content=${escapeHtmlAttr(ogDescription)}>`
+      : '',
+    resolvedOgImage !== ''
+      ? `<meta name="twitter:image" content=${escapeHtmlAttr(resolvedOgImage)}>`
       : '',
     canonical !== null ? `<link rel="canonical" href=${escapeHtmlAttr(canonical)}>` : '',
     canonical !== null ? `<meta property="og:url" content=${escapeHtmlAttr(canonical)}>` : '',
@@ -557,6 +571,86 @@ export function formatHeadTags(
   }
 
   return lines.filter((line) => line !== '').join('\n    ');
+}
+
+function upsertMetaTag(
+  doc: Document,
+  attr: 'name' | 'property',
+  key: string,
+  content: string,
+): void {
+  const selector = `meta[${attr}="${key}"]`;
+  const existing = doc.head.querySelector(selector);
+  if (content === '') {
+    existing?.remove();
+    return;
+  }
+  if (existing !== null) {
+    existing.setAttribute('content', content);
+    return;
+  }
+  const el = doc.createElement('meta');
+  el.setAttribute(attr, key);
+  el.setAttribute('content', content);
+  doc.head.appendChild(el);
+}
+
+function upsertCanonicalLink(doc: Document, href: string | null): void {
+  const existing = doc.head.querySelector('link[rel="canonical"]');
+  if (href === null) {
+    existing?.remove();
+    return;
+  }
+  if (existing !== null) {
+    existing.setAttribute('href', href);
+    return;
+  }
+  const el = doc.createElement('link');
+  el.setAttribute('rel', 'canonical');
+  el.setAttribute('href', href);
+  doc.head.appendChild(el);
+}
+
+export function applyClientHeadTags(
+  doc: Document,
+  tags: HeadTags,
+  options: {
+    readonly appName: string;
+    readonly siteUrl?: string | null | undefined;
+    readonly pathname?: string | undefined;
+  },
+): void {
+  const title = tags.title.trim() === '' ? options.appName : tags.title.trim();
+  const description = tags.description?.trim() ?? '';
+  const ogTitle = tags.ogTitle?.trim() ?? title;
+  const ogDescription = tags.ogDescription?.trim() ?? description;
+  const ogType = tags.ogType ?? 'website';
+  const siteUrl = options.siteUrl ?? null;
+  const pathname = options.pathname ?? '/';
+  const canonical = resolveAbsoluteCanonical(tags.canonical, siteUrl, pathname);
+  const resolvedOgImage =
+    tags.ogImage !== undefined && tags.ogImage.trim() !== ''
+      ? tags.ogImage.trim()
+      : canonical !== null
+        ? `${new URL(canonical).origin}/brand/og-image.svg`
+        : '';
+  const twitterCard =
+    tags.twitterCard ?? (resolvedOgImage !== '' ? 'summary_large_image' : 'summary');
+
+  doc.title = title;
+  upsertMetaTag(doc, 'name', 'description', description);
+  upsertMetaTag(doc, 'name', 'robots', tags.robots?.trim() ?? '');
+  upsertMetaTag(doc, 'property', 'og:site_name', options.appName);
+  upsertMetaTag(doc, 'property', 'og:title', ogTitle);
+  upsertMetaTag(doc, 'property', 'og:description', ogDescription);
+  upsertMetaTag(doc, 'property', 'og:type', ogType);
+  upsertMetaTag(doc, 'property', 'og:image', resolvedOgImage);
+  upsertMetaTag(doc, 'property', 'og:url', canonical ?? '');
+  upsertMetaTag(doc, 'name', 'twitter:card', twitterCard);
+  upsertMetaTag(doc, 'name', 'twitter:title', ogTitle);
+  upsertMetaTag(doc, 'name', 'twitter:description', ogDescription);
+  upsertMetaTag(doc, 'name', 'twitter:image', resolvedOgImage);
+  upsertCanonicalLink(doc, canonical);
 }
 
 function cacheControlForSeconds(cacheSeconds: number): string {
@@ -782,9 +876,11 @@ function PublicHydratedViewport<Sdk = AnonymousSdk>({
       .then((nextData) => {
         if (cancelled) return;
         const nextHead = matched.route.head(nextData);
-        if (nextHead.title.trim() !== '') {
-          document.title = nextHead.title;
-        }
+        applyClientHeadTags(document, nextHead, {
+          appName: nextHead.title.trim() !== '' ? nextHead.title : document.title,
+          siteUrl: window.location.origin,
+          pathname: currentPathname,
+        });
         setRouteState({
           pathname: currentPathname,
           data: nextData,

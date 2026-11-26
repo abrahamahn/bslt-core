@@ -637,4 +637,79 @@ describe('identity OAuth service & state security', () => {
     });
     expect(refreshSummary).toEqual({ total: 1, refreshed: 1, failed: 0 });
   });
+
+  it('persists Google OAuth profile picture as avatarUrl on signup and backfills empty avatars on login', async () => {
+    const cfg = makeConfig();
+    const state = encodeOAuthState(
+      createOAuthState({
+        provider: 'google',
+        redirectUri: 'https://app.example.com/api/auth/oauth/google/callback',
+        isLinking: false,
+        eligibilityAttested: true,
+        tosAccepted: true,
+        nowMs: NOW.getTime(),
+      }),
+      STATE_SECRET,
+    );
+
+    const createUserMock = vi
+      .fn()
+      .mockImplementation(async (data: { avatarUrl?: string | null }) =>
+        makeUser({ avatarUrl: data.avatarUrl ?? null }),
+      );
+    const signupRepo = makeRepo({ createUser: createUserMock });
+    const signupOutcome = await handleOAuthCallbackInRepo({
+      repo: signupRepo,
+      config: cfg,
+      provider: 'google',
+      query: { code: 'google-code', state },
+      clientFactory: () =>
+        makeMockClient('google', {
+          getUserInfo: vi.fn().mockResolvedValue({
+            id: 'google-pic-user',
+            email: 'pic@example.com',
+            name: 'Ada Lovelace',
+            emailVerified: true,
+            picture: 'https://lh3.googleusercontent.com/a/ada-avatar',
+          }),
+        }),
+      now: NOW,
+    });
+    expect(signupOutcome.ok).toBe(true);
+    expect(createUserMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        avatarUrl: 'https://lh3.googleusercontent.com/a/ada-avatar',
+      }),
+    );
+
+    const updateUserMock = vi
+      .fn()
+      .mockResolvedValue(makeUser({ avatarUrl: 'https://lh3.googleusercontent.com/a/ada-avatar' }));
+    const loginRepo = makeRepo({
+      findOAuthByProviderUserId: vi.fn().mockResolvedValue(makeOAuthConn()),
+      findUserById: vi.fn().mockResolvedValue(makeUser({ avatarUrl: null })),
+      updateUser: updateUserMock,
+    });
+    const loginOutcome = await handleOAuthCallbackInRepo({
+      repo: loginRepo,
+      config: cfg,
+      provider: 'google',
+      query: { code: 'google-code', state },
+      clientFactory: () =>
+        makeMockClient('google', {
+          getUserInfo: vi.fn().mockResolvedValue({
+            id: 'google-sub-1',
+            email: 'ada@example.com',
+            name: 'Ada Lovelace',
+            emailVerified: true,
+            picture: 'https://lh3.googleusercontent.com/a/ada-avatar',
+          }),
+        }),
+      now: NOW,
+    });
+    expect(loginOutcome.ok).toBe(true);
+    expect(updateUserMock).toHaveBeenCalledWith('00000000-0000-4000-8000-000000000001', {
+      avatarUrl: 'https://lh3.googleusercontent.com/a/ada-avatar',
+    });
+  });
 });

@@ -60,6 +60,7 @@ export {
 
 export {
   AnonymousSdkViolationError,
+  applyClientHeadTags,
   buildRobotsTxt,
   buildRuntimeSitemapXml,
   createAnonymousSdk,

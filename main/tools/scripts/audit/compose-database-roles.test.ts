@@ -552,6 +552,44 @@ describe('demo stack: generated env file', () => {
     expect(app.user).toBe('bslt_app');
     expect(app.password).not.toBe(oldSuperuserPassword);
   });
+
+  it('preserves operator-configured Google OAuth, SMTP, and AUTH_STRATEGIES across redeploys', () => {
+    const out = path.join(workDir ?? '', 'oauth-smtp.env');
+    writeFileSync(
+      out,
+      [
+        'AUTH_STRATEGIES=local,magic,google',
+        'AUTH_AUTO_VERIFY_EMAIL=false',
+        'EMAIL_PROVIDER=smtp',
+        'EMAIL_FROM_ADDRESS=auth@bslt.dev',
+        'EMAIL_FROM_NAME=BSLT Auth',
+        'SMTP_HOST=smtp.resend.com',
+        'SMTP_PORT=465',
+        'SMTP_SECURE=true',
+        'SMTP_USER=resend',
+        'SMTP_PASS=re_test_secret_value',
+        'GOOGLE_CLIENT_ID=12345.apps.googleusercontent.com',
+        'GOOGLE_CLIENT_SECRET=GOCSPX-test-secret',
+        '',
+      ].join('\n'),
+    );
+
+    const env = generate(out);
+
+    expect(env['AUTH_STRATEGIES']).toBe('local,magic,google');
+    expect(env['AUTH_AUTO_VERIFY_EMAIL']).toBe('false');
+    expect(env['EMAIL_PROVIDER']).toBe('smtp');
+    expect(env['EMAIL_FROM_ADDRESS']).toBe('auth@bslt.dev');
+    expect(env['SMTP_HOST']).toBe('smtp.resend.com');
+    expect(env['SMTP_PORT']).toBe('465');
+    expect(env['SMTP_USER']).toBe('resend');
+    expect(env['SMTP_PASS']).toBe('re_test_secret_value');
+    expect(env['GOOGLE_CLIENT_ID']).toBe('12345.apps.googleusercontent.com');
+    expect(env['GOOGLE_CLIENT_SECRET']).toBe('GOCSPX-test-secret');
+    expect(env['GOOGLE_CALLBACK_URL']).toBe(
+      'https://demo.example.test/api/auth/oauth/google/callback',
+    );
+  });
 });
 
 describe.runIf(dockerAvailable)('demo stack: database role split', () => {

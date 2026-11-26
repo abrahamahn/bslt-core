@@ -26,7 +26,7 @@ import { LiveRegion, QueryCacheProvider, toastStore } from '@bslt/react';
 import { HistoryProvider, useRouteFocusAnnounce } from '@bslt/react/hooks';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from '@bslt/react/router';
 import { AsyncBoundary, ErrorBoundary, SkipLink, ThemeProvider, Toaster } from '@bslt/ui';
-import { useCapabilities } from '@bslt/web-platform';
+import { applyClientHeadTags, useCapabilities } from '@bslt/web-platform';
 import {
   Suspense,
   useCallback,
@@ -47,10 +47,12 @@ import { CommandPalette } from './command-palette';
 import { NetworkStatus } from './components';
 import { isPersistableQueryKey } from './queryPersistencePolicy';
 import { deriveAppRouteFlags } from './routeFlags';
+import { resolveRouteHead } from './routeHead';
 import { createAppRoutes, createPendingAppRoutes, type AppRoute } from './routes';
 import { ShellOverlays } from './shells';
 import { setTosHandler, type TosRequiredPayload } from './tosHandler';
 
+import { clientConfig } from '#app/config';
 import { I18nProvider } from '#app/i18n';
 
 // ============================================================================
@@ -79,6 +81,21 @@ const AuthenticatedCommandPalette = (): ReactElement | null => {
 /** Announces route changes to screen readers via the LiveRegion provider */
 const RouteFocusAnnouncer = (): null => {
   useRouteFocusAnnounce();
+  return null;
+};
+
+/** Synchronizes document.title, meta description, OpenGraph, Twitter, and canonical tags on SPA route changes. */
+const RouteHeadSync = (): null => {
+  const location = useLocation();
+  useEffect(() => {
+    const head = resolveRouteHead(location.pathname, clientConfig.appName);
+    const origin = typeof window !== 'undefined' ? window.location.origin : null;
+    applyClientHeadTags(document, head, {
+      appName: clientConfig.appName,
+      siteUrl: origin,
+      pathname: location.pathname,
+    });
+  }, [location.pathname]);
   return null;
 };
 
@@ -415,6 +432,7 @@ export const App = ({ environment }: AppProps): ReactElement => {
                     <div className="h-screen flex flex-col overflow-hidden">
                       <SkipLink />
                       <RouteFocusAnnouncer />
+                      <RouteHeadSync />
                       <OptionalAnalyticsTracker canTrack={canTrackAnalytics} />
                       <div className="flex-1 min-h-0 relative">
                         <AppRoutes />

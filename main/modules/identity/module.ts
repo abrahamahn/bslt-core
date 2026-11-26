@@ -89,6 +89,9 @@ export const identityModule = defineModule({
   summary: 'User identity, authentication, sessions, and API keys.',
   status: 'stable',
   dependsOn: [],
+  csp: {
+    'img-src': ['https://lh3.googleusercontent.com', 'https://avatars.githubusercontent.com'],
+  },
   endpoints: identityEndpoints,
   events: identityEvents,
   jobs: identityJobs,

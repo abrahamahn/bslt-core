@@ -1802,6 +1802,21 @@ export const identityServer: AnyServerModule<typeof identityModule> = implementS
             cookieConfig: s.cookieConfig,
             peekAgreements,
             recordConsents,
+            onUserCreatedInTx: async (tx, newUser) => {
+              await publishUserRegistered(
+                s.events,
+                tx,
+                {
+                  userId: newUser.id,
+                  email: newUser.email,
+                  ...(newUser.username !== null && newUser.username !== ''
+                    ? { username: newUser.username }
+                    : {}),
+                  ...(newUser.firstName !== '' ? { firstName: newUser.firstName } : {}),
+                },
+                { actorUserId: newUser.id },
+              );
+            },
             ipAddress: req.ip,
             userAgent: req.userAgent,
             now: s.clock.now(),
@@ -1905,6 +1920,21 @@ export const identityServer: AnyServerModule<typeof identityModule> = implementS
             cookieConfig: s.cookieConfig,
             peekAgreements,
             recordConsents,
+            onUserCreatedInTx: async (tx, newUser) => {
+              await publishUserRegistered(
+                s.events,
+                tx,
+                {
+                  userId: newUser.id,
+                  email: newUser.email,
+                  ...(newUser.username !== null && newUser.username !== ''
+                    ? { username: newUser.username }
+                    : {}),
+                  ...(newUser.firstName !== '' ? { firstName: newUser.firstName } : {}),
+                },
+                { actorUserId: newUser.id },
+              );
+            },
             ipAddress: req.ip,
             userAgent: req.userAgent,
             now: s.clock.now(),
@@ -1917,6 +1947,48 @@ export const identityServer: AnyServerModule<typeof identityModule> = implementS
 
         metrics.recordLoginSuccess(provider);
         req.setCookie?.(REFRESH_COOKIE_NAME, res.issued.refreshToken, res.issued.cookieOptions);
+
+        const otpActions = s.kernel.actions;
+        if (otpActions !== undefined && otpActions.has('orgs.ensurePersonalOrg')) {
+          try {
+            await s.kernel.db.system((sysTx) =>
+              otpActions.invoke('orgs.ensurePersonalOrg', sysTx, {
+                userId: res.issued.user.id,
+                email: res.issued.user.email,
+                username: res.issued.user.username,
+              }),
+            );
+          } catch (err: unknown) {
+            s.log.warn({ err, userId: res.issued.user.id }, 'Failed to ensure personal tenant');
+          }
+        }
+
+        if (res.createdUser !== undefined) {
+          const created = res.createdUser;
+          void s.kernel.db
+            .system((sysTx) =>
+              publishAccountAlert(
+                s.events,
+                sysTx,
+                {
+                  alertType: 'user_signup',
+                  subjectUserId: created.id,
+                  subjectEmail: created.email,
+                  ...(created.username !== null && created.username !== ''
+                    ? { subjectUsername: created.username }
+                    : {}),
+                  ...(req.ip !== undefined && req.ip !== null && req.ip !== ''
+                    ? { ipAddress: req.ip }
+                    : {}),
+                },
+                { actorUserId: created.id },
+              ),
+            )
+            .catch((err: unknown) => {
+              s.log.warn({ err, userId: created.id }, 'Failed to publish email OTP signup alert');
+            });
+        }
+
         return res.response;
       },
 
