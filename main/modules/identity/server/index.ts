@@ -919,6 +919,7 @@ export const identityServer: AnyServerModule<typeof identityModule> = implementS
         refreshGracePeriodSeconds: k.env.REFRESH_GRACE_PERIOD_SECONDS ?? 30,
         maxConcurrentSessions: k.env.MAX_CONCURRENT_SESSIONS ?? 10,
         autoVerifyEmail: k.env.AUTH_AUTO_VERIFY_EMAIL ?? false,
+        demoMode: k.env.DEMO_MODE === true,
         lockoutConfig,
         captchaConfig,
         magicLinkExpiryMinutes: k.env.MAGIC_LINK_EXPIRY_MINUTES ?? 15,
@@ -939,13 +940,15 @@ export const identityServer: AnyServerModule<typeof identityModule> = implementS
     },
     context: async (s, viewer) => {
       const authStrategies = s.strategyList ?? ['local'];
+      const demoFlags = s.demoMode ? { flags: { 'identity.demo_mode': true } } : {};
       if (viewer === null) {
-        return { authStrategies };
+        return { authStrategies, ...demoFlags };
       }
       const cached = getLiveness(viewer.userId);
       if (cached?.emailVerified !== undefined) {
         return {
           authStrategies,
+          ...demoFlags,
           eligibility: {
             emailVerified: cached.emailVerified,
           },
@@ -965,6 +968,7 @@ export const identityServer: AnyServerModule<typeof identityModule> = implementS
       }
       return {
         authStrategies,
+        ...demoFlags,
         eligibility: {
           emailVerified: user?.emailVerified === true,
         },

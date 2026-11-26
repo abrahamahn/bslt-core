@@ -27,6 +27,7 @@ PG_PASS="$(prev POSTGRES_PASSWORD)"; PG_PASS="${PG_PASS:-$(gen_secret)}"
 # Preserve operator-configured Auth / OAuth / SMTP settings across redeploys.
 PREV_AUTH_STRATEGIES="$(prev AUTH_STRATEGIES)"
 PREV_AUTH_AUTO_VERIFY="$(prev AUTH_AUTO_VERIFY_EMAIL)"
+PREV_DEMO_MODE="$(prev DEMO_MODE)"
 PREV_EMAIL_PROVIDER="$(prev EMAIL_PROVIDER)"
 PREV_EMAIL_FROM_ADDRESS="$(prev EMAIL_FROM_ADDRESS)"
 PREV_EMAIL_FROM_NAME="$(prev EMAIL_FROM_NAME)"
@@ -119,6 +120,7 @@ set_var CAPTCHA_ENABLED false
 # Demo-only default when EMAIL_PROVIDER=console: register users as already email-verified.
 # Preserves explicit operator setting (e.g. false once SMTP is active).
 set_var AUTH_AUTO_VERIFY_EMAIL "${PREV_AUTH_AUTO_VERIFY:-true}"
+set_var DEMO_MODE "${PREV_DEMO_MODE:-false}"
 set_var JWT_SECRET "$JWT_SECRET"
 set_var COOKIE_SECRET "$COOKIE_SECRET"
 set_var OAUTH_TOKEN_ENCRYPTION_KEY "$OAUTH_KEY"

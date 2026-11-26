@@ -145,6 +145,60 @@ describe('LoginForm', () => {
       expect(screen.getByText('SMS Verification')).toBeInTheDocument();
     });
   });
+
+  it('hides DemoQuickLogin by default and enables 1-click sign-in when runtime identity.demo_mode flag is active', async () => {
+    const onLogin = vi
+      .fn()
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('Invalid credentials'));
+    const onSuccess = vi.fn();
+
+    const { unmount } = render(
+      <MemoryRouter>
+        <CapabilityProvider initialContext={EMPTY_CAPABILITY_CONTEXT}>
+          <LoginForm onLogin={onLogin} onSuccess={onSuccess} />
+        </CapabilityProvider>
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByTestId('demo-quick-login')).toBeNull();
+    unmount();
+
+    render(
+      <MemoryRouter>
+        <CapabilityProvider
+          initialContext={{
+            ...EMPTY_CAPABILITY_CONTEXT,
+            flags: { 'identity.demo_mode': true },
+          }}
+        >
+          <LoginForm onLogin={onLogin} onSuccess={onSuccess} />
+        </CapabilityProvider>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId('demo-quick-login')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Demo Member' }));
+
+    await waitFor(() => {
+      expect(onLogin).toHaveBeenCalledWith({
+        identifier: 'demo@example.com',
+        password: 'password123',
+        rememberMe: false,
+      });
+      expect(onSuccess).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Workspace Admin' }));
+    await waitFor(() => {
+      expect(onLogin).toHaveBeenCalledWith({
+        identifier: 'user@example.com',
+        password: 'password123',
+        rememberMe: false,
+      });
+      expect(onSuccess).toHaveBeenCalledTimes(1);
+    });
+  });
 });
 
 describe('RegisterForm', () => {

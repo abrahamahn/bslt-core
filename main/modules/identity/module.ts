@@ -42,6 +42,7 @@ const identityEnvSchema = object({
   REFRESH_GRACE_PERIOD_SECONDS: optional(number({ coerce: true, int: true, min: 0 })),
   MAX_CONCURRENT_SESSIONS: optional(number({ coerce: true, int: true, min: 0 })),
   AUTH_AUTO_VERIFY_EMAIL: optional(boolean({ coerce: true })),
+  DEMO_MODE: optional(boolean({ coerce: true })),
   LOCKOUT_MAX_ATTEMPTS: optional(number({ coerce: true, int: true, min: 0 })),
   LOCKOUT_DURATION_MS: optional(number({ coerce: true, int: true, min: 0 })),
   LOCKOUT_PROGRESSIVE_DELAY: optional(boolean({ coerce: true })),

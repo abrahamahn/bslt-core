@@ -99,20 +99,19 @@ export const LoginForm = ({
   const [smsChallenge, setSmsChallenge] = useState<string | null>(null);
   const [lockReason, setLockReason] = useState<string | null>(null);
   const [lockedUntil, setLockedUntil] = useState<string | null>(null);
-  const { hasAuthStrategy } = useCapabilities();
+  const { hasAuthStrategy, isFlagEnabled } = useCapabilities();
   const advancedAuthEnabled = hasAuthStrategy('magic');
+  const demoModeEnabled = isFlagEnabled('identity.demo_mode') || isDemoModeEnabled();
 
   const handleCaptchaToken = useCallback((token: string) => {
     setCaptchaToken(token);
   }, []);
 
-  const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>): Promise<void> => {
-    e.preventDefault();
+  const submitCredentials = async (
+    submittedIdentifier: string,
+    submittedPassword: string,
+  ): Promise<void> => {
     if (onLogin === undefined) return;
-
-    const formData = new FormData(e.currentTarget);
-    const submittedIdentifier = getFormStringValue(formData, 'username', identifier);
-    const submittedPassword = getFormStringValue(formData, 'password', password);
 
     setIdentifier(submittedIdentifier);
     setPassword(submittedPassword);
@@ -149,6 +148,16 @@ export const LoginForm = ({
         }
       }
     }
+  };
+
+  const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault();
+    if (onLogin === undefined) return;
+
+    const formData = new FormData(e.currentTarget);
+    const submittedIdentifier = getFormStringValue(formData, 'username', identifier);
+    const submittedPassword = getFormStringValue(formData, 'password', password);
+    await submitCredentials(submittedIdentifier, submittedPassword);
   };
 
   const handleTotpSubmit = async (e: SyntheticEvent<HTMLFormElement>): Promise<void> => {
@@ -281,11 +290,10 @@ export const LoginForm = ({
         <PasskeyLoginButton onSuccess={onSuccess} disabled={isLoading} />
 
         <DemoQuickLogin
-          enabled={isDemoModeEnabled()}
+          enabled={demoModeEnabled}
           disabled={isLoading}
           onSelect={(email, demoPassword) => {
-            setIdentifier(email);
-            setPassword(demoPassword);
+            void submitCredentials(email, demoPassword);
           }}
         />
 
