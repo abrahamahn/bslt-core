@@ -24,6 +24,7 @@ import {
   OptionalOrgSwitcher,
   useOptionalMyAvatar,
 } from '../../generated/modules';
+import { useOptionalClientEnvironment } from '../ClientEnvironment';
 import { openCommandPalette } from '../command-palette';
 
 import { useResolvedPrimaryNav } from './PrimaryNavMenu';
@@ -32,6 +33,8 @@ import './Shells.css';
 import { getAccessToken } from '#app/app/authToken';
 import { webApp } from '#app/app/webApp';
 import { clientConfig } from '#app/config';
+import { useChromeTranslation } from '#app/i18n/chromeLabels';
+import { applyLocalePreference } from '#app/i18n/persistLocale';
 import { subscribeToKey } from '#app/lib/realtime';
 
 interface ShellHeaderProps {
@@ -79,6 +82,8 @@ export const ShellHeader = ({
 }: ShellHeaderProps): ReactElement => {
   const navigate = useNavigate();
   const location = useLocation();
+  const environment = useOptionalClientEnvironment();
+  const { locale, setLocale, t, translatePrimaryNav } = useChromeTranslation();
   const { user, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth();
   const { isFlagEnabled } = useCapabilities();
   const { links: publicLinks } = useResolvedPrimaryNav();
@@ -88,6 +93,12 @@ export const ShellHeader = ({
   const showSearch = hasSearchModule;
 
   const [searchTerm, setSearchTerm] = useState('');
+
+  const handleToggleLocale = useCallback((): void => {
+    if (setLocale === undefined) return;
+    const nextLocale = locale === 'ko-KR' ? 'en-US' : 'ko-KR';
+    applyLocalePreference(nextLocale, { setLocale, environment });
+  }, [environment, locale, setLocale]);
 
   const myAvatar = useOptionalMyAvatar({
     enabled: isAuthenticated && isAuthResolved,
@@ -119,11 +130,11 @@ export const ShellHeader = ({
   const handleLogout = useCallback((): void => {
     void logout().catch((error: unknown) => {
       toastStore.getState().show({
-        title: 'Logout failed',
-        description: error instanceof Error ? error.message : 'Unable to log out',
+        title: t('header.logoutFailed'),
+        description: error instanceof Error ? error.message : t('header.logoutFailedFallback'),
       });
     });
-  }, [logout]);
+  }, [logout, t]);
 
   const tokenEmail = getEmailFromToken();
   const userIdentifier =
@@ -141,14 +152,14 @@ export const ShellHeader = ({
           variant="secondary"
           size="small"
           onClick={onToggleNavigation}
-          aria-label={navigationOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-label={navigationOpen ? t('header.closeNav') : t('header.openNav')}
           className={
             alwaysShowNavToggle
               ? 'shell-header__nav-toggle shell-header__nav-toggle--always'
               : 'shell-header__nav-toggle'
           }
         >
-          Menu
+          {t('header.menu')}
         </Button>
       ) : null}
       <Link to={isAuthenticated ? '/dashboard' : '/'} className="shell-header__brand-link">
@@ -180,20 +191,35 @@ export const ShellHeader = ({
               className="shell-header__public-link"
               aria-current={isActive ? 'page' : undefined}
             >
-              {link.label}
+              {translatePrimaryNav(link.to, link.label)}
             </Link>
           );
         })}
       </nav>
     ) : variant === 'auth' ? (
-      <nav aria-label="App guide" className="shell-header__public-nav">
+      <nav aria-label={t('nav.docs')} className="shell-header__public-nav">
         <Link to="/docs" className="shell-header__public-link">
-          App Guide
+          {t('nav.docs')}
         </Link>
         <Link to="/pricing" className="shell-header__public-link">
-          Pricing
+          {t('nav.pricing')}
         </Link>
       </nav>
+    ) : null;
+
+  const localeToggle =
+    setLocale !== undefined ? (
+      <Button
+        type="button"
+        variant="text"
+        size="small"
+        className="shell-header__locale-toggle"
+        data-testid="header-locale-toggle"
+        aria-label={t('header.switchLanguage')}
+        onClick={handleToggleLocale}
+      >
+        {locale === 'ko-KR' ? 'EN' : '한국어'}
+      </Button>
     ) : null;
 
   const rightSection = (
@@ -210,10 +236,10 @@ export const ShellHeader = ({
             variant="secondary"
             size="small"
             className="hide-mobile shell-header__cmd-trigger"
-            title="Open command palette (⌘K)"
+            title={t('header.jumpToTitle')}
             onClick={openCommandPalette}
           >
-            <span className="shell-header__cmd-label">Jump to…</span>
+            <span className="shell-header__cmd-label">{t('header.jumpTo')}</span>
             <Kbd aria-hidden="true">⌘K</Kbd>
           </Button>
           {showSearch ? (
@@ -221,23 +247,29 @@ export const ShellHeader = ({
               onSubmit={handleSearchSubmit}
               role="search"
               className="hide-mobile shell-header__search"
-              aria-label="Site search"
+              aria-label={t('header.siteSearch')}
             >
               <Input
                 type="search"
                 value={searchTerm}
-                placeholder="Search…"
-                aria-label="Search"
+                placeholder={t('header.searchPlaceholder')}
+                aria-label={t('header.search')}
                 onChange={(event) => {
                   setSearchTerm(event.target.value);
                 }}
               />
-              <Button type="submit" variant="secondary" size="small" aria-label="Submit search">
-                Search
+              <Button
+                type="submit"
+                variant="secondary"
+                size="small"
+                aria-label={t('header.submitSearch')}
+              >
+                {t('header.search')}
               </Button>
             </form>
           ) : null}
           {teamsEnabled ? <OptionalOrgSwitcher /> : null}
+          {localeToggle}
           <OptionalHeaderNotifications
             enabled={isAuthenticated}
             userId={user?.id}
@@ -246,7 +278,7 @@ export const ShellHeader = ({
             onNavigate={handleNavigate}
           />
           <Dropdown
-            triggerAriaLabel="Account menu"
+            triggerAriaLabel={t('header.accountMenu')}
             trigger={
               <Avatar
                 {...(avatarUrl !== null && avatarUrl !== ''
@@ -280,7 +312,7 @@ export const ShellHeader = ({
                     navigate('/profile');
                   }}
                 >
-                  Profile
+                  {t('header.profile')}
                 </MenuItem>
                 <MenuItem
                   className="shell-header__account-item"
@@ -289,7 +321,7 @@ export const ShellHeader = ({
                     navigate('/settings/security');
                   }}
                 >
-                  Settings
+                  {t('header.settings')}
                 </MenuItem>
                 <MenuItem
                   className="shell-header__account-item"
@@ -298,7 +330,7 @@ export const ShellHeader = ({
                     navigate('/settings/preferences');
                   }}
                 >
-                  Preferences
+                  {t('header.preferences')}
                 </MenuItem>
                 <Divider />
                 <MenuItem
@@ -308,7 +340,7 @@ export const ShellHeader = ({
                     handleLogout();
                   }}
                 >
-                  Log out
+                  {t('header.logout')}
                 </MenuItem>
               </div>
             )}
@@ -316,6 +348,7 @@ export const ShellHeader = ({
         </>
       ) : (
         <>
+          {localeToggle}
           <Button
             type="button"
             variant="text"
@@ -324,7 +357,7 @@ export const ShellHeader = ({
               openAuthModal('login');
             }}
           >
-            Login
+            {t('header.login')}
           </Button>
           <Button
             type="button"
@@ -334,7 +367,7 @@ export const ShellHeader = ({
               openAuthModal('register');
             }}
           >
-            Register
+            {t('header.register')}
           </Button>
         </>
       )}

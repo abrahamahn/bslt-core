@@ -10,6 +10,8 @@ import { Link, useLocation } from '@bslt/react/router';
 import { Heading, Text, TopbarLayout } from '@bslt/ui';
 import { DEFAULT_SITE_SECTIONS, type SiteSectionId } from '@bslt/web-platform';
 
+import { installedPublicSsrModules } from '../generated/public-modules';
+
 import type { ReactElement, ReactNode } from 'react';
 
 import { PRODUCT_TAGLINE } from '#app/app/productMeta';
@@ -22,10 +24,21 @@ interface PublicFooterLink {
   readonly section: SiteSectionId;
 }
 
+const PUBLIC_SSR_MODULE_IDS: ReadonlySet<string> = new Set(
+  installedPublicSsrModules.map((mod) => mod.id),
+);
+const HAS_GROWTH_PUBLIC = PUBLIC_SSR_MODULE_IDS.has('growth');
+
 const PUBLIC_PRIMARY_LINKS: readonly { readonly label: string; readonly to: `/${string}` }[] = [
   { label: 'Home', to: '/' },
   { label: 'App Guide', to: '/docs' },
   { label: 'Changelog', to: '/changelog' },
+  ...(HAS_GROWTH_PUBLIC
+    ? [
+        { label: 'Blog', to: '/blog' as const },
+        { label: 'Waitlist', to: '/waitlist' as const },
+      ]
+    : []),
   { label: 'Support', to: '/support' },
   { label: 'Status', to: '/status' },
 ];
@@ -34,6 +47,12 @@ const PUBLIC_FOOTER_LINKS: readonly PublicFooterLink[] = [
   { path: '/', title: 'Home', section: 'product' },
   { path: '/docs', title: 'App Guide', section: 'product' },
   { path: '/changelog', title: 'Changelog', section: 'product' },
+  ...(HAS_GROWTH_PUBLIC
+    ? [
+        { path: '/blog' as const, title: 'Blog', section: 'product' as const },
+        { path: '/waitlist' as const, title: 'Waitlist', section: 'product' as const },
+      ]
+    : []),
   { path: '/terms', title: 'Terms of Service', section: 'legal' },
   { path: '/privacy', title: 'Privacy Policy', section: 'legal' },
   { path: '/cookies', title: 'Cookie Policy', section: 'legal' },

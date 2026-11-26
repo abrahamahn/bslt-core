@@ -270,7 +270,7 @@ describe('public-route SSR seam', () => {
         { siteUrl: 'https://app.bslt.dev', pathname: '/status', appName: 'BSLT' },
       );
       expect(statusHeadWithOrigin).toContain(
-        'property="og:image" content="https://app.bslt.dev/brand/og-image.svg"',
+        'property="og:image" content="https://app.bslt.dev/brand/og-image.png"',
       );
       expect(statusHeadWithOrigin).toContain('name="twitter:card" content="summary_large_image"');
       expect(statusHeadWithOrigin).toContain('name="twitter:title" content="System Status · BSLT"');
@@ -285,6 +285,9 @@ describe('public-route SSR seam', () => {
         { appName: 'BSLT', siteUrl: 'https://app.bslt.dev', pathname: '/dashboard' },
       );
       expect(document.title).toBe('Dashboard · BSLT');
+      expect(
+        document.head.querySelector('meta[property="og:image"]')?.getAttribute('content'),
+      ).toBe('https://app.bslt.dev/brand/og-image.png');
       expect(document.head.querySelector('meta[name="description"]')?.getAttribute('content')).toBe(
         'Workspace overview',
       );

@@ -9,6 +9,8 @@ import { hasAdminModule } from '../../generated/modules';
 
 import { getAdminNavSurfaces, type AdminSurfaceId } from './adminSurface';
 
+import { useChromeTranslation } from '#app/i18n/chromeLabels';
+
 interface NavItem {
   id: AdminSurfaceId;
   label: string;
@@ -104,14 +106,18 @@ const NavButton = ({
 const AdminSidebar = ({ advancedAdminEnabled }: AdminSidebarProps): ReactElement => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t, translateAdminSurface } = useChromeTranslation();
   const navGroups = useMemo(() => {
     const navItems: NavItem[] = getAdminNavSurfaces({ advancedAdminEnabled }).map((surface) => ({
       id: surface.id,
-      label: surface.label,
+      label: translateAdminSurface(surface.id, surface.label),
       path: surface.href,
     }));
-    return groupAdminNavItems(navItems);
-  }, [advancedAdminEnabled]);
+    return groupAdminNavItems(navItems).map((group) => ({
+      ...group,
+      label: t(`admin.group.${group.id}`),
+    }));
+  }, [advancedAdminEnabled, t, translateAdminSurface]);
 
   const isNavItemActive = (item: NavItem): boolean => {
     if (
@@ -124,16 +130,16 @@ const AdminSidebar = ({ advancedAdminEnabled }: AdminSidebarProps): ReactElement
   };
 
   return (
-    <aside className="control-center-sidebar" aria-label="Admin control center">
+    <aside className="control-center-sidebar" aria-label={t('admin.aria.controlCenter')}>
       <div className="control-center-sidebar__header">
         <Heading as="h2" size="md">
-          Admin
+          {t('admin.title')}
         </Heading>
         <Text size="xs" tone="muted">
-          Control Center
+          {t('admin.subtitle')}
         </Text>
       </div>
-      <nav className="control-center-sidebar__nav" aria-label="Admin sections">
+      <nav className="control-center-sidebar__nav" aria-label={t('admin.aria.sections')}>
         {navGroups.map((group) => (
           <div key={group.id} className="control-center-sidebar__group">
             <Text as="span" size="xs" tone="muted" className="control-center-sidebar__group-label">
@@ -159,6 +165,7 @@ const AdminSidebar = ({ advancedAdminEnabled }: AdminSidebarProps): ReactElement
 };
 
 export const AdminLayout = ({ children }: AdminLayoutProps): ReactElement => {
+  const { t } = useChromeTranslation();
   const authResult = useAuth();
   const user = authResult.user as { role?: string } | null | undefined;
   const { isLoading, isAuthenticated } = authResult;
@@ -169,7 +176,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps): ReactElement => {
   if (isLoading && !isAuthenticated) {
     return (
       <main className="flex h-screen items-center justify-center">
-        <Text tone="muted">Loading admin access. Sign in may be required.</Text>
+        <Text tone="muted">{t('admin.loading')}</Text>
       </main>
     );
   }
@@ -184,10 +191,10 @@ export const AdminLayout = ({ children }: AdminLayoutProps): ReactElement => {
       <main className="flex min-h-full items-center justify-center p-6">
         <div className="max-w-md text-center">
           <Heading as="h1" size="lg" className="mb-3">
-            Access denied
+            {t('admin.accessDenied')}
           </Heading>
           <Text tone="muted" className="mb-4">
-            Forbidden. Your account is not authorized to access admin tools.
+            {t('admin.accessDeniedBody')}
           </Text>
           <Button
             type="button"
@@ -195,7 +202,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps): ReactElement => {
               window.location.href = '/dashboard';
             }}
           >
-            Back to Dashboard
+            {t('admin.backToDashboard')}
           </Button>
         </div>
       </main>

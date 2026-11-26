@@ -4,6 +4,7 @@ export {
   implementWeb,
   lazyModulePage,
   ModuleLocaleProvider,
+  useActiveModuleMessages,
   useModuleMessages,
   type LazyPageDescriptor,
   type ModuleAdminSurface,

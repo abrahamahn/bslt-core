@@ -519,7 +519,7 @@ export function formatHeadTags(
     tags.ogImage !== undefined && tags.ogImage.trim() !== ''
       ? tags.ogImage.trim()
       : canonical !== null
-        ? `${new URL(canonical).origin}/brand/og-image.svg`
+        ? `${new URL(canonical).origin}/brand/og-image.png`
         : '';
   const twitterCard =
     tags.twitterCard ?? (resolvedOgImage !== '' ? 'summary_large_image' : 'summary');
@@ -632,7 +632,7 @@ export function applyClientHeadTags(
     tags.ogImage !== undefined && tags.ogImage.trim() !== ''
       ? tags.ogImage.trim()
       : canonical !== null
-        ? `${new URL(canonical).origin}/brand/og-image.svg`
+        ? `${new URL(canonical).origin}/brand/og-image.png`
         : '';
   const twitterCard =
     tags.twitterCard ?? (resolvedOgImage !== '' ? 'summary_large_image' : 'summary');

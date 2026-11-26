@@ -1,12 +1,31 @@
 // main/apps/web/vite.config.ts
 import react from '@vitejs/plugin-react';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 
 import { defineViteConfig } from '@bslt/build-config/vite';
 
 const repoRoot = path.resolve(__dirname, '../../');
 const webRoot = path.join(repoRoot, 'apps/web');
+const openApiSpecPath = path.resolve(repoRoot, '../docs/reference/openapi.json');
+
+function serveDevOpenApiSpec(): Plugin {
+  return {
+    name: 'bslt-dev-openapi',
+    configureServer(server) {
+      server.middlewares.use('/openapi.json', (_req, res, next) => {
+        if (!existsSync(openApiSpecPath)) {
+          next();
+          return;
+        }
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.end(readFileSync(openApiSpecPath, 'utf8'));
+      });
+    },
+  };
+}
 
 // Load VITE_* env vars from the shared config/env directory (where .env.local
 // lives) rather than the app root, so client flags resolve reliably.
@@ -203,7 +222,7 @@ export default defineConfig(async ({ command, mode }) => {
   return defineViteConfig({
     cacheDir: path.join(repoRoot, 'node_modules/.cache/vite-bslt-web'),
     envDir: envConfigDir,
-    plugins: [react()],
+    plugins: [react(), serveDevOpenApiSpec()],
     publicDir: `${webRoot}/public`,
     ...(isSsrBuild ? { ssr: { noExternal: true } } : {}),
     build: {

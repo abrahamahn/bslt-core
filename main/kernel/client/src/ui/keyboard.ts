@@ -32,7 +32,9 @@ export function isMac(): boolean {
  * is typing in a form field.
  */
 export function isEditableElement(target: EventTarget | null): boolean {
-  if (target === null || !(target instanceof HTMLElement)) return false;
+  if (target === null || typeof HTMLElement === 'undefined' || !(target instanceof HTMLElement)) {
+    return false;
+  }
   return (
     target instanceof HTMLInputElement ||
     target instanceof HTMLTextAreaElement ||

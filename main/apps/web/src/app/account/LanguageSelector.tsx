@@ -2,11 +2,12 @@
 import { Select, Text } from '@bslt/ui';
 import { useCallback, type ReactElement } from 'react';
 
+import { useOptionalClientEnvironment } from '../ClientEnvironment';
+
 import type { Locale } from '#app/i18n';
 
 import { LOCALE_METADATA, SUPPORTED_LOCALES, useTranslation } from '#app/i18n';
-
-const LOCALE_STORAGE_KEY = 'abe-locale-preference';
+import { LOCALE_STORAGE_KEY, syncLocaleToProfile } from '#app/i18n/persistLocale';
 
 interface LanguageSelectorProps {
   className?: string;
@@ -14,6 +15,7 @@ interface LanguageSelectorProps {
 
 export const LanguageSelector = ({ className }: LanguageSelectorProps): ReactElement => {
   const { locale, setLocale, t } = useTranslation();
+  const environment = useOptionalClientEnvironment();
 
   const handleLocaleChange = useCallback(
     (value: string): void => {
@@ -27,8 +29,9 @@ export const LanguageSelector = ({ className }: LanguageSelectorProps): ReactEle
       localStorage.setItem(LOCALE_STORAGE_KEY, newLocale);
       document.documentElement.setAttribute('lang', newLocale);
       document.documentElement.setAttribute('dir', LOCALE_METADATA[newLocale].direction);
+      syncLocaleToProfile(newLocale, environment);
     },
-    [setLocale],
+    [environment, setLocale],
   );
 
   return (

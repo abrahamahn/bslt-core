@@ -141,6 +141,7 @@ if [ "$DEPLOY_WEB" -eq 1 ]; then
   # Feature and capability flags resolve at runtime via /api/platform/context.
   docker build -f infra/docker/Dockerfile.web -t bslt-web:local \
     --build-arg "VITE_API_URL=${VITE_API_URL}" \
+    --build-arg "SITE_URL=https://${PUBLIC_HOST}" \
     .
 fi
 

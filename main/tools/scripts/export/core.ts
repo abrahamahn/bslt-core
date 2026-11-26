@@ -164,6 +164,7 @@ const OPTIONAL_E2E_SPEC_FILES: ReadonlySet<string> = new Set<string>([
   'tests/e2e/specs/system/api-routes.e2e.ts',
   'tests/e2e/specs/system/browser-smoke-capture.e2e.ts',
   'tests/e2e/specs/system/public-pages.e2e.ts',
+  'tests/e2e/specs/system/saas-starter.e2e.ts',
 ]);
 
 function shouldIncludeTrackedFileInCore(relPath: string): boolean {

@@ -10,6 +10,8 @@ import { getActiveSettingsTab, getSettingsNavItems, type SettingsNavItem } from 
 
 import './SettingsPage.css';
 
+import { useChromeTranslation } from '#app/i18n/chromeLabels';
+
 const WORKSPACE_TAB_IDS = new Set(['billing', 'entitlements']);
 
 interface SettingsLayoutProps {
@@ -25,6 +27,7 @@ export const SettingsLayout = ({
 }: SettingsLayoutProps): ReactElement => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t, translateSettingsSection } = useChromeTranslation();
   const { isFlagEnabled } = useCapabilities();
   const billingEnabled = isFlagEnabled('flags.billing');
   const teamsEnabled = isFlagEnabled('orgs.teams');
@@ -42,7 +45,11 @@ export const SettingsLayout = ({
     () => activeSection ?? getActiveSettingsTab(location),
     [activeSection, location],
   );
-  const activeLabel = navItems.find((item) => item.id === resolvedSection)?.label ?? 'Settings';
+  const activeItem = navItems.find((item) => item.id === resolvedSection);
+  const activeLabel =
+    activeItem !== undefined
+      ? translateSettingsSection(activeItem.id, activeItem.label)
+      : t('settings.title');
 
   const handleSelect = useCallback(
     (item: SettingsNavItem): void => {
@@ -60,19 +67,19 @@ export const SettingsLayout = ({
 
   return (
     <div className="settings-layout settings-page" data-testid="settings-layout">
-      <aside className="settings-layout__sidebar" aria-label="Settings control center">
+      <aside className="settings-layout__sidebar" aria-label={t('settings.aria.controlCenter')}>
         <div className="settings-layout__sidebar-header">
           <Heading as="h2" size="md">
-            Settings
+            {t('settings.title')}
           </Heading>
           <Text size="xs" tone="muted">
-            Account & Preferences
+            {t('settings.subtitle')}
           </Text>
         </div>
-        <nav className="settings-layout__nav" aria-label="Settings sections">
+        <nav className="settings-layout__nav" aria-label={t('settings.aria.sections')}>
           <div className="settings-layout__group">
             <Text as="span" size="xs" tone="muted" className="settings-layout__group-label">
-              Personal Account
+              {t('settings.group.personal')}
             </Text>
             {personalItems.map((item) => {
               const isActive = item.id === resolvedSection;
@@ -88,7 +95,7 @@ export const SettingsLayout = ({
                     handleSelect(item);
                   }}
                 >
-                  {item.label}
+                  {translateSettingsSection(item.id, item.label)}
                 </Button>
               );
             })}
@@ -96,7 +103,7 @@ export const SettingsLayout = ({
           {workspaceItems.length > 0 || (hasOrgsModule && teamsEnabled) ? (
             <div className="settings-layout__group">
               <Text as="span" size="xs" tone="muted" className="settings-layout__group-label">
-                Workspace &amp; Plan
+                {t('settings.group.workspace')}
               </Text>
               {hasOrgsModule && teamsEnabled ? (
                 <Button
@@ -108,7 +115,7 @@ export const SettingsLayout = ({
                     navigate('/organization');
                   }}
                 >
-                  Workspace Console
+                  {t('nav.workspaceConsole')}
                 </Button>
               ) : null}
               {workspaceItems.map((item) => {
@@ -125,7 +132,7 @@ export const SettingsLayout = ({
                       handleSelect(item);
                     }}
                   >
-                    {item.label}
+                    {translateSettingsSection(item.id, item.label)}
                   </Button>
                 );
               })}

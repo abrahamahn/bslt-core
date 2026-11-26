@@ -13,6 +13,7 @@ import type { FeatureHintProps } from '#app/app/components';
 
 import { FeatureHint } from '#app/app/components';
 import { deriveAppRouteFlags } from '#app/app/routeFlags';
+import { useChromeTranslation } from '#app/i18n/chromeLabels';
 
 type HintConfig = Pick<FeatureHintProps, 'featureKey' | 'title' | 'description' | 'placement'>;
 
@@ -189,13 +190,14 @@ interface PrimaryNavMenuProps {
 
 export const PrimaryNavMenu = ({ onNavigate }: PrimaryNavMenuProps): ReactElement => {
   const location = useLocation();
+  const { t, translatePrimaryNav } = useChromeTranslation();
   const { isAuthResolving, links } = useResolvedPrimaryNav();
 
   return (
     <ScrollArea className="scroll-flex">
       <nav className="shell-primary-nav" aria-label="Primary">
         {isAuthResolving ? (
-          <div className="shell-primary-nav__loading" aria-label="Loading navigation">
+          <div className="shell-primary-nav__loading" aria-label={t('header.loadingNavigation')}>
             <Skeleton width="70%" height={18} radius={4} />
             <Skeleton width="82%" height={18} radius={4} />
             <Skeleton width="64%" height={18} radius={4} />
@@ -204,6 +206,7 @@ export const PrimaryNavMenu = ({ onNavigate }: PrimaryNavMenuProps): ReactElemen
           links.map((link) => {
             const hint = HINT_MAP[link.label];
             const isActive = isLinkActive(location.pathname, link.to);
+            const displayLabel = translatePrimaryNav(link.to, link.label);
             const menuItem = (
               <Link
                 key={link.label}
@@ -217,7 +220,7 @@ export const PrimaryNavMenu = ({ onNavigate }: PrimaryNavMenuProps): ReactElemen
                   data-selected={isActive ? 'true' : 'false'}
                 >
                   <NavGlyph to={link.to} />
-                  <Text as="span">{link.label}</Text>
+                  <Text as="span">{displayLabel}</Text>
                 </MenuItem>
               </Link>
             );
@@ -236,6 +239,7 @@ export const PrimaryNavMenu = ({ onNavigate }: PrimaryNavMenuProps): ReactElemen
 
 export const MobilePrimaryBar = (): ReactElement | null => {
   const location = useLocation();
+  const { translatePrimaryNav } = useChromeTranslation();
   const { isAuthResolving, links } = useResolvedPrimaryNav();
 
   if (isAuthResolving || links.length === 0) {
@@ -254,7 +258,7 @@ export const MobilePrimaryBar = (): ReactElement | null => {
               className="shell-mobile-nav__link"
               aria-current={isActive ? 'page' : undefined}
             >
-              {link.label}
+              {translatePrimaryNav(link.to, link.label)}
             </Link>
           );
         })}

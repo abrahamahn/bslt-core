@@ -21,18 +21,6 @@ interface OptionGroup<T extends string> {
   readonly options: ReadonlyArray<{ value: T; label: string; description: string }>;
 }
 
-const CONTRAST_OPTIONS: { value: ContrastMode; label: string; description: string }[] = [
-  { value: 'normal', label: 'Normal', description: 'Standard contrast' },
-  { value: 'high', label: 'High', description: 'Stronger contrast for readability' },
-  { value: 'system', label: 'System', description: 'Match your operating system setting' },
-];
-
-const DENSITY_OPTIONS: { value: Density; label: string; description: string }[] = [
-  { value: 'compact', label: 'Compact', description: 'Smaller text and tighter spacing' },
-  { value: 'normal', label: 'Normal', description: 'Default text size and spacing' },
-  { value: 'comfortable', label: 'Comfortable', description: 'Larger text and more spacing' },
-];
-
 function getTimezoneOptions(): { value: string; label: string }[] {
   const options: { value: string; label: string }[] = [
     {
@@ -168,6 +156,48 @@ export const PreferencesSection = ({ className }: PreferencesSectionProps): Reac
     [t],
   );
 
+  const contrastOptions = useMemo<{ value: ContrastMode; label: string; description: string }[]>(
+    () => [
+      {
+        value: 'normal',
+        label: t('settings.preferences.contrast.normal'),
+        description: t('settings.preferences.contrast.normalDescription'),
+      },
+      {
+        value: 'high',
+        label: t('settings.preferences.contrast.high'),
+        description: t('settings.preferences.contrast.highDescription'),
+      },
+      {
+        value: 'system',
+        label: t('settings.preferences.contrast.system'),
+        description: t('settings.preferences.contrast.systemDescription'),
+      },
+    ],
+    [t],
+  );
+
+  const densityOptions = useMemo<{ value: Density; label: string; description: string }[]>(
+    () => [
+      {
+        value: 'compact',
+        label: t('settings.preferences.density.compact'),
+        description: t('settings.preferences.density.compactDescription'),
+      },
+      {
+        value: 'normal',
+        label: t('settings.preferences.density.normal'),
+        description: t('settings.preferences.density.normalDescription'),
+      },
+      {
+        value: 'comfortable',
+        label: t('settings.preferences.density.comfortable'),
+        description: t('settings.preferences.density.comfortableDescription'),
+      },
+    ],
+    [t],
+  );
+
   const [selectedTimezone, setSelectedTimezone] = useState<string>(getTimezonePreference);
   const timezoneOptions = useMemo(() => getTimezoneOptions(), []);
 
@@ -199,26 +229,26 @@ export const PreferencesSection = ({ className }: PreferencesSectionProps): Reac
         </Text>
 
         <OptionGrid
-          heading="Contrast"
-          description="Increase contrast for improved legibility."
+          heading={t('settings.preferences.contrast.title')}
+          description={t('settings.preferences.contrast.description')}
           group={{
             testIdPrefix: 'contrast-option',
-            ariaLabel: 'Contrast',
+            ariaLabel: t('settings.preferences.contrast.title'),
             value: contrastMode,
             onSelect: setContrastMode,
-            options: CONTRAST_OPTIONS,
+            options: contrastOptions,
           }}
         />
 
         <OptionGrid
-          heading="Text size & density"
-          description="Adjust text size and spacing across the application."
+          heading={t('settings.preferences.density.title')}
+          description={t('settings.preferences.density.description')}
           group={{
             testIdPrefix: 'density-option',
-            ariaLabel: 'Text size and density',
+            ariaLabel: t('settings.preferences.density.ariaLabel'),
             value: density,
             onSelect: setDensity,
-            options: DENSITY_OPTIONS,
+            options: densityOptions,
           }}
         />
 

@@ -369,6 +369,14 @@ export function ModuleLocaleProvider({
   return createElement(ModuleLocaleContext.Provider, { value: messages }, children);
 }
 
+/**
+ * Returns the active-locale module message override map supplied by `ModuleLocaleProvider`.
+ * Returns an empty frozen object on the default `en-US` locale or outside the provider.
+ */
+export function useActiveModuleMessages(): Readonly<Record<string, string>> {
+  return useContext(ModuleLocaleContext);
+}
+
 type MapWebModules<T extends readonly ModuleDefinition[]> = {
   readonly [K in keyof T]: T[K] extends { readonly web: false } ? null : WebModule<T[K]>;
 };

@@ -54,8 +54,9 @@ import { ShellOverlays } from './shells';
 import { setTosHandler, type TosRequiredPayload } from './tosHandler';
 
 import { clientConfig } from '#app/config';
-import { I18nProvider } from '#app/i18n';
+import { I18nProvider, SUPPORTED_LOCALES, useTranslation, type Locale } from '#app/i18n';
 import { loadInstalledModuleLocaleMessages } from '#app/i18n/moduleLocales';
+import { LOCALE_STORAGE_KEY } from '#app/i18n/persistLocale';
 
 // ============================================================================
 // Types
@@ -83,6 +84,39 @@ const AuthenticatedCommandPalette = (): ReactElement | null => {
 /** Announces route changes to screen readers via the LiveRegion provider */
 const RouteFocusAnnouncer = (): null => {
   useRouteFocusAnnounce();
+  return null;
+};
+
+/** Hydrates saved profile language on login when this browser has no explicit localStorage override yet. */
+const LocaleProfileSync = (): null => {
+  const { user, isAuthenticated } = useAuth();
+  const { setLocale } = useTranslation();
+  const syncedUserIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!isAuthenticated || user === null) {
+      syncedUserIdRef.current = null;
+      return;
+    }
+    if (syncedUserIdRef.current === user.id) {
+      return;
+    }
+    syncedUserIdRef.current = user.id;
+    let stored: string | null = null;
+    try {
+      stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+    } catch (err: unknown) {
+      reportError(err, 'error');
+    }
+    if (stored !== null) {
+      return;
+    }
+    const profileLang = user.language;
+    if (typeof profileLang === 'string' && SUPPORTED_LOCALES.includes(profileLang as Locale)) {
+      setLocale(profileLang as Locale);
+    }
+  }, [isAuthenticated, setLocale, user]);
+
   return null;
 };
 
@@ -445,6 +479,7 @@ export const App = ({ environment }: AppProps): ReactElement => {
                       <div className="h-screen flex flex-col overflow-hidden">
                         <SkipLink />
                         <RouteFocusAnnouncer />
+                        <LocaleProfileSync />
                         <RouteHeadSync />
                         <OptionalAnalyticsTracker canTrack={canTrackAnalytics} />
                         <div className="flex-1 min-h-0 relative">

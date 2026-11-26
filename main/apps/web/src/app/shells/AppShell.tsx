@@ -18,12 +18,15 @@ import { ShellHeader } from './ShellHeader';
 import { SiteFooter } from './SiteFooter';
 import './Shells.css';
 
+import { useChromeTranslation } from '#app/i18n/chromeLabels';
+
 interface AppShellProps {
   readonly children?: ReactNode;
 }
 
 export const AppShell = ({ children }: AppShellProps): ReactElement => {
   const isMobile = useIsMobile();
+  const { t } = useChromeTranslation();
   const { isAuthenticated } = useAuth();
   const { isFlagEnabled } = useCapabilities();
   const showSidebarWorkspace = isAuthenticated && hasOrgsModule && isFlagEnabled('orgs.teams');
@@ -56,7 +59,7 @@ export const AppShell = ({ children }: AppShellProps): ReactElement => {
           {showSidebarWorkspace ? (
             <div className="shell-app__workspace-bar">
               <Text as="span" size="xs" tone="muted" className="shell-app__workspace-label">
-                Active Workspace
+                {t('header.activeWorkspace')}
               </Text>
               <OptionalOrgSwitcher />
             </div>

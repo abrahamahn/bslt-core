@@ -75,6 +75,12 @@
   font-weight: var(--ui-font-weight-medium);
 }
 
+.shell-header__locale-toggle {
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-semibold);
+  color: var(--ui-color-text-muted);
+}
+
 .shell-header__nav-toggle {
   display: none;
 }

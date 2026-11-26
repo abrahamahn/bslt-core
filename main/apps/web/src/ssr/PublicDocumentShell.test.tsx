@@ -4,6 +4,8 @@ import { ThemeProvider } from '@bslt/ui';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
+import { installedPublicSsrModules } from '../generated/public-modules';
+
 import { PublicDocumentShell } from './PublicDocumentShell';
 
 describe('PublicDocumentShell', () => {
@@ -26,5 +28,19 @@ describe('PublicDocumentShell', () => {
     expect(screen.getByRole('link', { name: 'Login' })).toHaveAttribute('href', '/login');
     expect(screen.getByRole('link', { name: 'Register' })).toHaveAttribute('href', '/register');
     expect(document.getElementById('do-not-sell')).not.toBeNull();
+
+    const publicModuleIds: ReadonlySet<string> = new Set(
+      installedPublicSsrModules.map((mod) => mod.id),
+    );
+    const hasGrowth = publicModuleIds.has('growth');
+    const blogLinks = screen.queryAllByRole('link', { name: 'Blog' });
+    const waitlistLinks = screen.queryAllByRole('link', { name: 'Waitlist' });
+    if (hasGrowth) {
+      expect(blogLinks.length).toBeGreaterThanOrEqual(2);
+      expect(waitlistLinks.length).toBeGreaterThanOrEqual(2);
+    } else {
+      expect(blogLinks).toHaveLength(0);
+      expect(waitlistLinks).toHaveLength(0);
+    }
   });
 });

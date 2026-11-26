@@ -180,3 +180,11 @@ export function useClientEnvironment(): ClientEnvironment {
   }
   return env;
 }
+
+/**
+ * Optional variant of `useClientEnvironment` for shared widgets rendered both
+ * inside full app providers and standalone unit tests.
+ */
+export function useOptionalClientEnvironment(): ClientEnvironment | undefined {
+  return useContext(ClientEnvironmentContext);
+}

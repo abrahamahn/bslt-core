@@ -13,6 +13,8 @@ import {
   renderWithProviders,
 } from '../../__tests__/utils';
 import { hasSearchModule } from '../../generated/modules';
+import { I18nProvider } from '../../i18n';
+import { LOCALE_STORAGE_KEY } from '../../i18n/persistLocale';
 
 import { ShellHeader } from './ShellHeader';
 
@@ -129,5 +131,43 @@ describe('ShellHeader', () => {
       );
     });
     showSpy.mockRestore();
+  });
+
+  it('toggles locale live via header switcher, translates shell chrome to Korean, and syncs profile preference', async () => {
+    window.localStorage.clear();
+    const request = vi.fn().mockResolvedValue(mockUser);
+    const environment = createMockEnvironment({ user: mockUser, isAuthenticated: true });
+    environment.transport = { request } as unknown as NonNullable<typeof environment.transport>;
+
+    renderWithProviders(
+      <I18nProvider initialLocale="en-US">
+        <ShellHeader variant="app" />
+      </I18nProvider>,
+      { environment },
+    );
+
+    const toggle = screen.getByTestId('header-locale-toggle');
+    expect(toggle).toHaveTextContent('한국어');
+    fireEvent.click(toggle);
+
+    expect(screen.getByTestId('header-locale-toggle')).toHaveTextContent('EN');
+    expect(screen.getByRole('button', { name: /빠른 이동/u })).toBeInTheDocument();
+    expect(window.localStorage.getItem(LOCALE_STORAGE_KEY)).toBe('ko-KR');
+
+    fireEvent.click(screen.getByRole('button', { name: '계정 메뉴' }));
+    expect(screen.getByText('프로필')).toBeInTheDocument();
+    expect(screen.getByText('환경설정')).toBeInTheDocument();
+    expect(screen.getByText('로그아웃')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        '/api/users/me/update',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ language: 'ko-KR' }),
+        }),
+      );
+    });
+    window.localStorage.clear();
   });
 });

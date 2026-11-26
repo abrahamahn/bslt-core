@@ -8,6 +8,7 @@ import {
   implementWeb,
   lazyModulePage,
   ModuleLocaleProvider,
+  useActiveModuleMessages,
   useModuleMessages,
   type LazyPageDescriptor,
   type ModuleAdminSurface,
@@ -379,10 +380,12 @@ describe('web-module', () => {
 
     function Probe(): ReactElement {
       const t = useModuleMessages(web.messages);
+      const activeOverrides = useActiveModuleMessages();
       return (
         <div>
           <span data-testid="title">{t('tasks.title')}</span>
           <span data-testid="count">{t('tasks.count', { count: 3 })}</span>
+          <span data-testid="override-keys">{Object.keys(activeOverrides).join(',')}</span>
         </div>
       );
     }
@@ -394,6 +397,7 @@ describe('web-module', () => {
     const { rerender } = render(<ModuleLocaleProvider {...props} />);
     expect(screen.getByTestId('title')).toHaveTextContent('할 일');
     expect(screen.getByTestId('count')).toHaveTextContent('3개 항목');
+    expect(screen.getByTestId('override-keys')).toHaveTextContent('tasks.title,tasks.count');
 
     rerender(
       <ModuleLocaleProvider messages={{ 'tasks.title': '   ' }}>
