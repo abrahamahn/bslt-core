@@ -247,10 +247,13 @@ describe('identityServer', () => {
       'identity.oauth_refresh',
     ]);
     expect(instance.hasPrivacy).toBe(true);
-    expect(instance.actionKeys).toEqual(['identity.suspend']);
+    expect(instance.actionKeys).toEqual(['identity.suspend', 'identity.completeSsoLogin']);
 
     // Action validation failure
     await expect(instance.invokeAction('identity.suspend', tx, {})).rejects.toThrow(/userId/i);
+    await expect(instance.invokeAction('identity.completeSsoLogin', tx, {})).rejects.toThrow(
+      /email/i,
+    );
 
     // Sudo guard failures on deactivateAccount & adminHardBanUser
     await expect(
@@ -515,5 +518,56 @@ describe('identityServer', () => {
 
     await expect(instance.invokeJob('loginCleanup', {})).resolves.toBeUndefined();
     await expect(instance.invokeJob('authTokensCleanup', {})).resolves.toBeUndefined();
+  });
+
+  it('enforces domain SSO on login, magicLinkRequest, and emailOtpRequest when orgs enforces SSO', async () => {
+    const tx = makeFakeTx();
+    const invokeAction = vi.fn().mockResolvedValue({
+      enforced: true,
+      tenantName: 'Acme Corp',
+      initiateUrl: '/api/auth/sso/oidc/acme/initiate',
+    });
+    const ssoInstance = identityServer.instantiate(
+      {
+        ...makeKernel(tx),
+        comms: { hmacSecret: 'test-jwt-secret-with-at-least-32-chars!' },
+        actions: {
+          has: (key) => key === 'orgs.checkDomainSsoEnforcement',
+          invoke: invokeAction,
+          list: () => ['orgs.checkDomainSsoEnforcement'],
+        },
+      },
+      {},
+      {
+        JWT_SECRET: 'test-jwt-secret-with-at-least-32-chars!',
+        AUTH_STRATEGIES: 'local,magic',
+      },
+    );
+
+    await expect(
+      ssoInstance.invokeHandler(
+        'login',
+        { body: { identifier: 'alice@acme.com', password: 'ValidPassword123!' } },
+        makeReq(tx),
+      ),
+    ).rejects.toMatchObject({ code: 'identity.SSO_REQUIRED' });
+
+    await expect(
+      ssoInstance.invokeHandler(
+        'magicLinkRequest',
+        { body: { email: 'alice@acme.com' } },
+        makeReq(tx),
+      ),
+    ).rejects.toMatchObject({ code: 'identity.SSO_REQUIRED' });
+
+    await expect(
+      ssoInstance.invokeHandler(
+        'emailOtpRequest',
+        { body: { email: 'alice@acme.com' } },
+        makeReq(tx),
+      ),
+    ).rejects.toMatchObject({ code: 'identity.SSO_REQUIRED' });
+
+    expect(invokeAction).toHaveBeenCalledTimes(3);
   });
 });

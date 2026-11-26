@@ -26,7 +26,7 @@ import { LiveRegion, QueryCacheProvider, toastStore } from '@bslt/react';
 import { HistoryProvider, useRouteFocusAnnounce } from '@bslt/react/hooks';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from '@bslt/react/router';
 import { AsyncBoundary, ErrorBoundary, SkipLink, ThemeProvider, Toaster } from '@bslt/ui';
-import { applyClientHeadTags, useCapabilities } from '@bslt/web-platform';
+import { applyClientHeadTags, RealtimeSubscribeContext, useCapabilities } from '@bslt/web-platform';
 import {
   Suspense,
   useCallback,
@@ -40,6 +40,7 @@ import {
 
 import { OptionalAnalyticsTracker } from '../generated/modules';
 import { reportError } from '../lib/errorReporter';
+import { subscribeToKey } from '../lib/realtime';
 
 import { getAccessToken } from './authToken';
 import { ClientEnvironmentProvider, type ClientEnvironment } from './ClientEnvironment';
@@ -427,31 +428,33 @@ export const App = ({ environment }: AppProps): ReactElement => {
           <I18nProvider>
             <BrowserRouter>
               <ClientEnvironmentProvider value={environment}>
-                <HistoryProvider>
-                  <LiveRegion>
-                    <div className="h-screen flex flex-col overflow-hidden">
-                      <SkipLink />
-                      <RouteFocusAnnouncer />
-                      <RouteHeadSync />
-                      <OptionalAnalyticsTracker canTrack={canTrackAnalytics} />
-                      <div className="flex-1 min-h-0 relative">
-                        <AppRoutes />
+                <RealtimeSubscribeContext.Provider value={subscribeToKey}>
+                  <HistoryProvider>
+                    <LiveRegion>
+                      <div className="h-screen flex flex-col overflow-hidden">
+                        <SkipLink />
+                        <RouteFocusAnnouncer />
+                        <RouteHeadSync />
+                        <OptionalAnalyticsTracker canTrack={canTrackAnalytics} />
+                        <div className="flex-1 min-h-0 relative">
+                          <AppRoutes />
+                        </div>
+                        <ShellOverlays />
+                        <AppToaster />
+                        <NetworkStatus />
+                        <AuthenticatedCommandPalette />
+                        <CookieConsentBanner />
+                        <TosAcceptanceModal
+                          open={tosState.open}
+                          documentId={tosState.documentId}
+                          requiredVersion={tosState.requiredVersion}
+                          onAccept={handleTosAccept}
+                          onDismiss={handleTosDismiss}
+                        />
                       </div>
-                      <ShellOverlays />
-                      <AppToaster />
-                      <NetworkStatus />
-                      <AuthenticatedCommandPalette />
-                      <CookieConsentBanner />
-                      <TosAcceptanceModal
-                        open={tosState.open}
-                        documentId={tosState.documentId}
-                        requiredVersion={tosState.requiredVersion}
-                        onAccept={handleTosAccept}
-                        onDismiss={handleTosDismiss}
-                      />
-                    </div>
-                  </LiveRegion>
-                </HistoryProvider>
+                    </LiveRegion>
+                  </HistoryProvider>
+                </RealtimeSubscribeContext.Provider>
               </ClientEnvironmentProvider>
             </BrowserRouter>
           </I18nProvider>

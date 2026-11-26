@@ -40,6 +40,7 @@ export const KNOWN_OPTIONAL_MODULE_IDS = [
   'moderation',
   'notifications',
   'orgs',
+  'projects',
   'search',
   'status',
   'support',

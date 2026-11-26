@@ -154,8 +154,18 @@ const publicStatusRealtimeChannel = defineChannel('public:status', {
   authorize: () => true,
 });
 
+const orgRealtimeChannel = defineChannel('org:{orgId}', {
+  auth: 'user',
+  authorize: (viewer, params) =>
+    viewer !== null &&
+    typeof viewer.orgId === 'string' &&
+    viewer.orgId !== '' &&
+    viewer.orgId === params['orgId'],
+});
+
 export const defaultChannelRegistry: ChannelRegistry = createChannelRegistry([
   userRealtimeChannel,
   notificationsRealtimeChannel,
+  orgRealtimeChannel,
   publicStatusRealtimeChannel,
 ]);

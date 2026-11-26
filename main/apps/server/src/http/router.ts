@@ -356,9 +356,9 @@ function buildModuleKernel(
       resolveNotificationKind: (kind) =>
         collectModuleNotificationKinds(moduleInstances.values()).get(kind),
       publishRealtimeInvalidation: (key, version) => {
-        if (key.startsWith('record:')) {
+        if (key.startsWith('record:') || key.startsWith('org:')) {
           try {
-            ctx.pubsub.publish(key as `record:${string}:${string}`, version);
+            ctx.pubsub.publish(key as `record:${string}:${string}` | `org:${string}`, version);
           } catch (err: unknown) {
             ctx.log.warn({ err, key }, 'Failed to publish realtime invalidation');
           }

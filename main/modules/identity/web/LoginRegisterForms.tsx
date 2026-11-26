@@ -10,6 +10,7 @@ import {
 import { useResendCooldown, type AuthMode } from '@bslt/react/hooks';
 import { Link, useNavigate } from '@bslt/react/router';
 import {
+  Alert,
   AuthFormLayout,
   Button,
   Checkbox,
@@ -99,9 +100,15 @@ export const LoginForm = ({
   const [smsChallenge, setSmsChallenge] = useState<string | null>(null);
   const [lockReason, setLockReason] = useState<string | null>(null);
   const [lockedUntil, setLockedUntil] = useState<string | null>(null);
+  const [ssoPromptUrl, setSsoPromptUrl] = useState<string | null>(null);
+  const [ssoMode, setSsoMode] = useState(false);
+  const [ssoEmail, setSsoEmail] = useState('');
+  const [ssoChecking, setSsoChecking] = useState(false);
+  const [ssoError, setSsoError] = useState<string | null>(null);
   const { hasAuthStrategy, isFlagEnabled } = useCapabilities();
   const advancedAuthEnabled = hasAuthStrategy('magic');
   const demoModeEnabled = isFlagEnabled('identity.demo_mode') || isDemoModeEnabled();
+  const enterpriseSsoEnabled = isFlagEnabled('orgs.teams');
 
   const handleCaptchaToken = useCallback((token: string) => {
     setCaptchaToken(token);
@@ -119,6 +126,7 @@ export const LoginForm = ({
 
     setLockReason(null);
     setLockedUntil(null);
+    setSsoPromptUrl(null);
 
     try {
       await onLogin({
@@ -139,14 +147,58 @@ export const LoginForm = ({
         return;
       }
       if (err !== null && typeof err === 'object') {
-        const errObj = err as { lockReason?: string; lockedUntil?: string };
+        const errObj = err as {
+          lockReason?: string;
+          lockedUntil?: string;
+          code?: string;
+          details?: { initiateUrl?: string };
+        };
         if (typeof errObj.lockReason === 'string') {
           setLockReason(errObj.lockReason);
         }
         if (typeof errObj.lockedUntil === 'string') {
           setLockedUntil(errObj.lockedUntil);
         }
+        if (
+          typeof errObj.details?.initiateUrl === 'string' &&
+          errObj.details.initiateUrl.startsWith('/api/auth/sso/')
+        ) {
+          setSsoPromptUrl(errObj.details.initiateUrl);
+        }
       }
+    }
+  };
+
+  const handleEnterpriseSsoSubmit = async (e: SyntheticEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault();
+    const trimmedEmail = ssoEmail.trim();
+    if (!trimmedEmail.includes('@')) return;
+    setSsoChecking(true);
+    setSsoError(null);
+    try {
+      const response = await fetch('/api/auth/sso/discover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: trimmedEmail }),
+      });
+      if (!response.ok) {
+        setSsoError(t('identity.login.ssoFailed'));
+        return;
+      }
+      const data = (await response.json()) as {
+        readonly ssoAvailable?: boolean;
+        readonly initiateUrl?: string;
+      };
+      if (data.ssoAvailable === true && typeof data.initiateUrl === 'string') {
+        const target = `${data.initiateUrl}?loginHint=${encodeURIComponent(trimmedEmail)}`;
+        window.location.assign(target);
+        return;
+      }
+      setSsoError(t('identity.login.ssoNotFound'));
+    } catch {
+      setSsoError(t('identity.login.ssoFailed'));
+    } finally {
+      setSsoChecking(false);
     }
   };
 
@@ -349,6 +401,25 @@ export const LoginForm = ({
             </>
           )}
 
+          {ssoPromptUrl !== null && (
+            <Alert tone="info">
+              <div className="flex flex-col gap-2">
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="small"
+                  onClick={() => {
+                    window.location.assign(
+                      `${ssoPromptUrl}${identifier.includes('@') ? `?loginHint=${encodeURIComponent(identifier.trim())}` : ''}`,
+                    );
+                  }}
+                >
+                  {t('identity.login.ssoRequiredAction')}
+                </Button>
+              </div>
+            </Alert>
+          )}
+
           <TurnstileWidget onToken={handleCaptchaToken} />
 
           <Button type="submit" className="w-full" disabled={isLoading}>
@@ -362,6 +433,56 @@ export const LoginForm = ({
             )}
           </Button>
         </form>
+
+        {enterpriseSsoEnabled && (
+          <div className="flex flex-col gap-2" data-testid="enterprise-sso-section">
+            {!ssoMode ? (
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                disabled={isLoading}
+                onClick={() => {
+                  setSsoMode(true);
+                  setSsoError(null);
+                  if (identifier.includes('@')) {
+                    setSsoEmail(identifier.trim());
+                  }
+                }}
+              >
+                {t('identity.login.ssoButton')}
+              </Button>
+            ) : (
+              <form
+                className="flex flex-col gap-2"
+                onSubmit={(e) => {
+                  void handleEnterpriseSsoSubmit(e);
+                }}
+              >
+                <Input.Field
+                  label={t('identity.login.ssoEmailLabel')}
+                  type="email"
+                  value={ssoEmail}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                    setSsoEmail(e.target.value);
+                  }}
+                  placeholder={t('identity.login.ssoEmailPlaceholder')}
+                  required
+                  disabled={ssoChecking}
+                />
+                {ssoError !== null && <AuthFormLayout.Error>{ssoError}</AuthFormLayout.Error>}
+                <Button
+                  type="submit"
+                  variant="secondary"
+                  className="w-full"
+                  disabled={ssoChecking || !ssoEmail.includes('@')}
+                >
+                  {ssoChecking ? t('identity.login.ssoChecking') : t('identity.login.ssoContinue')}
+                </Button>
+              </form>
+            )}
+          </div>
+        )}
 
         {advancedAuthEnabled && onModeChange !== undefined && (
           <Button

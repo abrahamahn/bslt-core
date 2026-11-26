@@ -50,6 +50,7 @@ const QUICKSTART_PRESETS: Readonly<Record<QuickstartPreset, readonly string[]>> 
     'billing',
     'flags',
     'tasks',
+    'projects',
     'support',
     'status',
     'search',

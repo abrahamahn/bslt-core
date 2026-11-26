@@ -22,6 +22,10 @@ describe('defineChannel and ChannelRegistry (deny-by-default)', () => {
       allowed: true,
       mode: 'user',
     });
+    expect(await defaultChannelRegistry.authorize(USER_A, 'org:org-1')).toEqual({
+      allowed: true,
+      mode: 'user',
+    });
     expect(await defaultChannelRegistry.authorize(null, 'public:status')).toEqual({
       allowed: true,
       mode: 'anonymous-read',
@@ -38,6 +42,9 @@ describe('defineChannel and ChannelRegistry (deny-by-default)', () => {
     ['undeclared users record channel', USER_A, 'record:users:user-a'],
     ['cross-user user:{userId} channel', USER_B, 'user:user-a'],
     ['cross-user notifications channel', USER_B, 'record:notifications:user-a'],
+    ['cross-org org:{orgId} channel', USER_B, 'org:org-1'],
+    ['anonymous viewer on org:{orgId} channel', null, 'org:org-1'],
+    ['viewer without orgId on org:{orgId} channel', ADMIN_VIEWER, 'org:org-1'],
     ['anonymous viewer on user:{userId}', null, 'user:user-a'],
     ['anonymous viewer on notifications channel', null, 'record:notifications:user-a'],
     ['empty channel string', USER_A, ''],

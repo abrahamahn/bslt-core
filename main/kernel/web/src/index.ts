@@ -19,7 +19,14 @@ export {
   type WebRoute,
 } from './web-module';
 
-export { AppLayoutContext, useAppRightSidebar, type AppLayoutContextValue } from './layout-context';
+export {
+  AppLayoutContext,
+  RealtimeSubscribeContext,
+  useAppRightSidebar,
+  useRealtimeChannel,
+  type AppLayoutContextValue,
+  type RealtimeSubscribeFn,
+} from './layout-context';
 
 export {
   canAccessCapability,

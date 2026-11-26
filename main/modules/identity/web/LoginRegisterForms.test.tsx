@@ -199,6 +199,43 @@ describe('LoginForm', () => {
       expect(onSuccess).toHaveBeenCalledTimes(1);
     });
   });
+
+  it('surfaces Enterprise SSO discovery when orgs.teams flag is enabled and handles missing SSO domain', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ ssoAvailable: false, enforced: false }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    render(
+      <MemoryRouter>
+        <CapabilityProvider
+          initialContext={{
+            ...EMPTY_CAPABILITY_CONTEXT,
+            flags: { 'orgs.teams': true },
+          }}
+        >
+          <LoginForm onLogin={vi.fn()} />
+        </CapabilityProvider>
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in with Enterprise SSO' }));
+    fireEvent.change(screen.getByLabelText(/Work email/i), {
+      target: { value: 'user@no-sso.example' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Continue with SSO' }));
+
+    expect(
+      await screen.findByText('No Enterprise SSO provider is configured for that email domain.'),
+    ).toBeInTheDocument();
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/auth/sso/discover',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    fetchSpy.mockRestore();
+  });
 });
 
 describe('RegisterForm', () => {

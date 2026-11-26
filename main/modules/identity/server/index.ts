@@ -1035,6 +1035,154 @@ export const identityServer: AnyServerModule<typeof identityModule> = implementS
         await revokeAllUserTokensInRepo(repo, userId, now);
         invalidateLiveness(userId);
       },
+      'identity.completeSsoLogin': async (s, tx, rawInput) => {
+        if (s.jwtSecret === undefined || s.jwtSecret.length === 0) {
+          throw new Error('JWT secret not configured for SSO login');
+        }
+        const input = (rawInput ?? {}) as {
+          readonly email?: unknown;
+          readonly name?: unknown;
+          readonly picture?: unknown;
+          readonly emailVerified?: unknown;
+          readonly ipAddress?: unknown;
+          readonly userAgent?: unknown;
+          readonly deviceId?: unknown;
+        };
+        if (typeof input.email !== 'string' || !input.email.includes('@')) {
+          throw new Error('identity.completeSsoLogin requires a valid email');
+        }
+        const rawEmail = normalizeEmail(input.email);
+        const canonical = canonicalizeEmail(rawEmail);
+        const picture =
+          typeof input.picture === 'string' && input.picture.trim() !== ''
+            ? input.picture.trim()
+            : null;
+        const displayName =
+          typeof input.name === 'string' && input.name.trim() !== '' ? input.name.trim() : null;
+        const ipAddress =
+          typeof input.ipAddress === 'string' && input.ipAddress !== ''
+            ? input.ipAddress
+            : undefined;
+        const userAgent =
+          typeof input.userAgent === 'string' && input.userAgent !== ''
+            ? input.userAgent
+            : undefined;
+        const deviceId =
+          typeof input.deviceId === 'string' && input.deviceId !== '' ? input.deviceId : undefined;
+        const now = s.clock.now();
+        const repo = identityRepository(tx);
+
+        let user = await repo.findUserByEmail(canonical);
+        let isNewUser = false;
+
+        if (user !== null) {
+          if (user.deletedAt !== null || user.deactivatedAt !== null) {
+            throw new Error('Account is inactive or deleted');
+          }
+          if (user.lockedUntil !== null && user.lockedUntil.getTime() > now.getTime()) {
+            throw new Error('Account is temporarily locked');
+          }
+          const updates: Partial<User> = {};
+          if (!user.emailVerified && input.emailVerified !== false) {
+            updates.emailVerified = true;
+            updates.emailVerifiedAt = now;
+          }
+          if (user.avatarUrl === null && picture !== null) {
+            updates.avatarUrl = picture;
+          }
+          if (Object.keys(updates).length > 0) {
+            const refreshed = await repo.updateUser(user.id, updates);
+            if (refreshed !== null) {
+              user = refreshed;
+            }
+          }
+        } else {
+          const username = await generateUniqueUsernameInRepo(repo, rawEmail);
+          const { firstName, lastName } = splitFullName(displayName);
+          const actions = s.kernel.actions;
+          const peekAgreements: SignupComplianceHooks['peekAgreements'] = async (innerTx) => {
+            if (actions === undefined || !actions.has('compliance.peekSignupAgreements')) {
+              return [];
+            }
+            return actions.invoke<ReadonlyArray<{ readonly id: string }>>(
+              'compliance.peekSignupAgreements',
+              innerTx,
+              {},
+            );
+          };
+          const recordConsents: SignupComplianceHooks['recordConsents'] = async (
+            innerTx,
+            consentData,
+          ) => {
+            if (actions === undefined || !actions.has('compliance.recordSignupConsents')) {
+              return;
+            }
+            await actions.invoke('compliance.recordSignupConsents', innerTx, consentData);
+          };
+
+          const created = await createConsentedUserInRepo(
+            repo,
+            {
+              email: rawEmail,
+              canonicalEmail: canonical,
+              username,
+              firstName,
+              lastName,
+              passwordHash: '',
+              role: 'user',
+              emailVerified: true,
+              emailVerifiedAt: now,
+              ...(picture !== null ? { avatarUrl: picture } : {}),
+            },
+            {
+              agreed: true,
+              attested: true,
+              ...(ipAddress !== undefined ? { ipAddress } : {}),
+              ...(userAgent !== undefined ? { userAgent } : {}),
+            },
+            {
+              peekAgreements,
+              recordConsents,
+            },
+            tx,
+            now,
+          );
+          await publishUserRegistered(
+            s.events,
+            tx,
+            {
+              userId: created.id,
+              email: created.email,
+              ...(created.username !== null && created.username !== ''
+                ? { username: created.username }
+                : {}),
+              ...(created.firstName !== '' ? { firstName: created.firstName } : {}),
+            },
+            { actorUserId: created.id },
+          );
+          user = created;
+          isNewUser = true;
+        }
+
+        const issued = await issueSession(repo, user, {
+          jwtSecret: s.jwtSecret,
+          accessTokenExpiry: s.accessTokenExpiry,
+          refreshExpiryDays: s.refreshExpiryDays,
+          cookie: s.cookieConfig,
+          ipAddress,
+          userAgent,
+          deviceId,
+          now,
+        });
+
+        return {
+          token: issued.token,
+          user: issued.user,
+          refreshToken: issued.refreshToken,
+          cookieOptions: issued.cookieOptions,
+          isNewUser,
+        };
+      },
     },
     jobs: {
       sessionCleanup: async (_payload, s) => {
@@ -1229,6 +1377,38 @@ export const identityServer: AnyServerModule<typeof identityModule> = implementS
         }
         if (s.jwtSecret === undefined || s.jwtSecret.length === 0) {
           return req.fail('INVALID_CREDENTIALS', 'JWT secret not configured');
+        }
+        if (
+          input.body.identifier.includes('@') &&
+          s.kernel.actions?.has('orgs.checkDomainSsoEnforcement') === true
+        ) {
+          const ssoAction = s.kernel.actions;
+          const ssoCheck = await s.kernel.db.system((sysTx) =>
+            ssoAction.invoke<{
+              readonly enforced: boolean;
+              readonly orgSlug?: string;
+              readonly providerName?: string;
+            }>('orgs.checkDomainSsoEnforcement', sysTx, { email: input.body.identifier }),
+          );
+          if (ssoCheck.enforced) {
+            return req.fail(
+              'SSO_REQUIRED',
+              ssoCheck.providerName !== undefined
+                ? `Your organization requires Single Sign-On (${ssoCheck.providerName}).`
+                : 'Your organization requires Single Sign-On.',
+              {
+                ...(ssoCheck.orgSlug !== undefined ? { orgSlug: ssoCheck.orgSlug } : {}),
+                ...(ssoCheck.providerName !== undefined
+                  ? { providerName: ssoCheck.providerName }
+                  : {}),
+                ...(ssoCheck.orgSlug !== undefined
+                  ? {
+                      initiateUrl: `/api/auth/sso/oidc/${encodeURIComponent(ssoCheck.orgSlug)}/initiate`,
+                    }
+                  : {}),
+              },
+            );
+          }
         }
         const jwtSecret = s.jwtSecret;
         const metrics = getMetricsCollector();
@@ -1736,6 +1916,35 @@ export const identityServer: AnyServerModule<typeof identityModule> = implementS
         if (s.enabledStrategies !== null && !s.enabledStrategies.has('magic')) {
           return req.fail('MAGIC_LINK_DISABLED', 'Magic link authentication is not enabled');
         }
+        if (s.kernel.actions?.has('orgs.checkDomainSsoEnforcement') === true) {
+          const ssoAction = s.kernel.actions;
+          const ssoCheck = await s.kernel.db.system((sysTx) =>
+            ssoAction.invoke<{
+              readonly enforced: boolean;
+              readonly orgSlug?: string;
+              readonly providerName?: string;
+            }>('orgs.checkDomainSsoEnforcement', sysTx, { email: input.body.email }),
+          );
+          if (ssoCheck.enforced) {
+            return req.fail(
+              'SSO_REQUIRED',
+              ssoCheck.providerName !== undefined
+                ? `Your organization requires Single Sign-On (${ssoCheck.providerName}).`
+                : 'Your organization requires Single Sign-On.',
+              {
+                ...(ssoCheck.orgSlug !== undefined ? { orgSlug: ssoCheck.orgSlug } : {}),
+                ...(ssoCheck.providerName !== undefined
+                  ? { providerName: ssoCheck.providerName }
+                  : {}),
+                ...(ssoCheck.orgSlug !== undefined
+                  ? {
+                      initiateUrl: `/api/auth/sso/oidc/${encodeURIComponent(ssoCheck.orgSlug)}/initiate`,
+                    }
+                  : {}),
+              },
+            );
+          }
+        }
         const res = await s.kernel.db.system((sysTx) =>
           requestMagicLinkInRepo({
             repo: identityRepository(sysTx),
@@ -1855,6 +2064,35 @@ export const identityServer: AnyServerModule<typeof identityModule> = implementS
       emailOtpRequest: async (input, req, s) => {
         if (s.enabledStrategies !== null && !s.enabledStrategies.has('magic')) {
           return req.fail('MAGIC_LINK_DISABLED', 'Email code authentication is not enabled');
+        }
+        if (s.kernel.actions?.has('orgs.checkDomainSsoEnforcement') === true) {
+          const ssoAction = s.kernel.actions;
+          const ssoCheck = await s.kernel.db.system((sysTx) =>
+            ssoAction.invoke<{
+              readonly enforced: boolean;
+              readonly orgSlug?: string;
+              readonly providerName?: string;
+            }>('orgs.checkDomainSsoEnforcement', sysTx, { email: input.body.email }),
+          );
+          if (ssoCheck.enforced) {
+            return req.fail(
+              'SSO_REQUIRED',
+              ssoCheck.providerName !== undefined
+                ? `Your organization requires Single Sign-On (${ssoCheck.providerName}).`
+                : 'Your organization requires Single Sign-On.',
+              {
+                ...(ssoCheck.orgSlug !== undefined ? { orgSlug: ssoCheck.orgSlug } : {}),
+                ...(ssoCheck.providerName !== undefined
+                  ? { providerName: ssoCheck.providerName }
+                  : {}),
+                ...(ssoCheck.orgSlug !== undefined
+                  ? {
+                      initiateUrl: `/api/auth/sso/oidc/${encodeURIComponent(ssoCheck.orgSlug)}/initiate`,
+                    }
+                  : {}),
+              },
+            );
+          }
         }
         const res = await s.kernel.db.system((sysTx) =>
           requestEmailOtpInRepo({

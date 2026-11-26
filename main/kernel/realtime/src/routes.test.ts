@@ -126,11 +126,14 @@ describe('Realtime Routes', () => {
 
     test('issues single-use WS ticket and grants only for authorized channels', async () => {
       const ctx = createMockContext();
-      const req = createMockRequest({
-        userId: 'user-123',
-        email: 'test@example.com',
-        role: 'user',
-      });
+      const req = Object.assign(
+        createMockRequest({
+          userId: 'user-123',
+          email: 'test@example.com',
+          role: 'user',
+        }),
+        { actingOrg: { orgId: 'org-1', permissions: 1n } },
+      );
       const reply = createMockReply();
 
       const res = (await ticketRoute?.handler(
@@ -140,6 +143,8 @@ describe('Realtime Routes', () => {
             'user:user-123',
             'user:other-user',
             'record:notifications:user-123',
+            'org:org-1',
+            'org:org-2',
             'undeclared:channel',
           ],
         },
@@ -154,6 +159,7 @@ describe('Realtime Routes', () => {
       expect(typeof res.ticket).toBe('string');
       expect(res.anonymous).toBe(false);
       expect(Object.keys(res.grants).sort()).toEqual([
+        'org:org-1',
         'record:notifications:user-123',
         'user:user-123',
       ]);

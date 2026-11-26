@@ -211,6 +211,31 @@ async function connect(): Promise<void> {
  * @returns Unsubscribe function
  * @complexity O(1)
  */
+async function grantAndSubscribe(key: SubscriptionKey): Promise<void> {
+  if (channelGrants.has(key)) {
+    sendSubscribe(key);
+    return;
+  }
+  const accessToken = getAccessToken();
+  if (typeof accessToken !== 'string' || !isJwtLike(accessToken)) {
+    return;
+  }
+  try {
+    const issued = await requestRealtimeTicket({
+      baseUrl: clientConfig.apiUrl,
+      getToken: () => accessToken,
+      channels: [key],
+    });
+    const grant = issued.grants[key];
+    if (grant !== undefined && channels.has(key)) {
+      channelGrants.set(key, grant);
+      sendSubscribe(key);
+    }
+  } catch (err: unknown) {
+    reportError(err, 'error');
+  }
+}
+
 export function subscribeToKey(key: SubscriptionKey, handler: InvalidationHandler): () => void {
   const existing = channels.get(key);
   const channel = existing ?? { handlers: new Set<InvalidationHandler>() };
@@ -218,7 +243,9 @@ export function subscribeToKey(key: SubscriptionKey, handler: InvalidationHandle
 
   if (existing === undefined) {
     channels.set(key, channel);
-    sendSubscribe(key);
+    if (socket !== null && socket.readyState === WebSocket.OPEN) {
+      void grantAndSubscribe(key);
+    }
   }
   void connect();
 

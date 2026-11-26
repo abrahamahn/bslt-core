@@ -9,8 +9,13 @@ import {
   createAppleProvider,
   createGitHubProvider,
   createGoogleProvider,
+  createOidcClient,
+  discoverOidcProvider,
   extractAppleUserFromIdToken,
+  generatePkcePair,
   refreshOAuthProviderToken,
+  validateOidcIssuerUrl,
+  type OidcClient,
 } from './oauth';
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -482,5 +487,244 @@ describe('@bslt/protocols/oauth', () => {
     expect(refreshed?.accessToken).toBe('new-access');
     expect(refreshed?.refreshToken).toBe('new-refresh');
     expect(refreshed?.expiresAt).toBeInstanceOf(Date);
+  });
+});
+
+describe('Generic Enterprise OIDC protocol (@bslt/protocols/oauth)', () => {
+  const ISSUER = 'https://acme.okta.com/oauth2/default';
+  const CLIENT_ID = 'oidc-client-123';
+  const CLIENT_SECRET = 'oidc-secret-xyz';
+
+  function buildOidcDiscovery() {
+    return {
+      issuer: ISSUER,
+      authorization_endpoint: `${ISSUER}/v1/authorize`,
+      token_endpoint: `${ISSUER}/v1/token`,
+      jwks_uri: `${ISSUER}/v1/keys`,
+      userinfo_endpoint: `${ISSUER}/v1/userinfo`,
+    };
+  }
+
+  function signOidcRsaToken(
+    payload: Record<string, unknown>,
+    header: Record<string, unknown> = { alg: 'RS256', kid: 'oidc-rsa-1', typ: 'JWT' },
+  ): string {
+    const h = base64urlJson(header);
+    const p = base64urlJson(payload);
+    const signer = createSign('RSA-SHA256');
+    signer.update(`${h}.${p}`);
+    const sig = signer
+      .sign(rsaKeys.privateKey)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+    return `${h}.${p}.${sig}`;
+  }
+
+  function buildOidcRsaJwk(kid: string) {
+    const jwk = rsaKeys.publicKey.export({ format: 'jwk' });
+    return { ...jwk, kid, use: 'sig', alg: 'RS256' };
+  }
+
+  function buildOidcEcJwk(kid: string) {
+    const jwk = ecKeys.publicKey.export({ format: 'jwk' });
+    return { ...jwk, kid, use: 'sig', alg: 'ES256' };
+  }
+
+  it('rejects non-HTTPS, private/loopback, credentialed, and query-bearing issuer URLs', () => {
+    for (const bad of [
+      '',
+      'not-a-url',
+      'http://acme.okta.com',
+      'https://localhost/oauth2',
+      'https://127.0.0.1/oauth2',
+      'https://169.254.169.254/latest',
+      'https://10.0.0.5/oauth2',
+      'https://user:pass@acme.okta.com',
+      'https://acme.okta.com?foo=bar',
+      'https://idp.internal/oauth2',
+    ]) {
+      expect(() => validateOidcIssuerUrl(bad)).toThrow(OAuthProtocolError);
+    }
+    expect(validateOidcIssuerUrl('https://acme.okta.com/oauth2/default/')).toBe(ISSUER);
+  });
+
+  it('generates RFC 7636 S256 PKCE verifier/challenge pairs and rejects tampered or mismatched ID tokens', async () => {
+    const pkce = generatePkcePair();
+    expect(pkce.codeVerifier.length).toBeGreaterThanOrEqual(43);
+    expect(pkce.codeChallenge.length).toBeGreaterThanOrEqual(43);
+    expect(pkce.codeChallenge).not.toBe(pkce.codeVerifier);
+
+    const now = 1_800_000_000;
+    const basePayload = {
+      iss: ISSUER,
+      sub: 'okta-sub-1',
+      aud: CLIENT_ID,
+      exp: now + 600,
+      iat: now,
+      nonce: 'nonce-abc',
+      email: 'alice@acme.com',
+      email_verified: true,
+      name: 'Alice Admin',
+    };
+
+    const fetchFn = vi.fn<typeof fetch>((input) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (url.endsWith('/.well-known/openid-configuration')) {
+        return Promise.resolve(jsonResponse(buildOidcDiscovery()));
+      }
+      if (url.endsWith('/v1/keys')) {
+        return Promise.resolve(
+          jsonResponse({ keys: [buildOidcRsaJwk('oidc-rsa-1'), buildOidcEcJwk('oidc-ec-1')] }),
+        );
+      }
+      return Promise.resolve(textResponse('not found', 404));
+    });
+
+    const client: OidcClient = createOidcClient(
+      { issuerUrl: ISSUER, clientId: CLIENT_ID, clientSecret: CLIENT_SECRET },
+      fetchFn,
+    );
+
+    // Unsupported alg (none / HS256) rejected
+    const noneToken = `${base64urlJson({ alg: 'none', kid: 'oidc-rsa-1' })}.${base64urlJson(basePayload)}.`;
+    await expect(client.verifyIdToken({ idToken: noneToken, nowSeconds: now })).rejects.toThrow(
+      /Unsupported OIDC id_token algorithm/u,
+    );
+
+    // Tampered signature rejected
+    const validToken = signOidcRsaToken(basePayload);
+    const tampered = `${validToken.slice(0, -4)}AAAA`;
+    await expect(client.verifyIdToken({ idToken: tampered, nowSeconds: now })).rejects.toThrow(
+      /Invalid OIDC id_token signature/u,
+    );
+
+    // Wrong issuer rejected
+    await expect(
+      client.verifyIdToken({
+        idToken: signOidcRsaToken({ ...basePayload, iss: 'https://evil.example' }),
+        nowSeconds: now,
+      }),
+    ).rejects.toThrow(/issuer mismatch/u);
+
+    // Wrong audience rejected
+    await expect(
+      client.verifyIdToken({
+        idToken: signOidcRsaToken({ ...basePayload, aud: 'wrong-client' }),
+        nowSeconds: now,
+      }),
+    ).rejects.toThrow(/audience mismatch/u);
+
+    // Expired token rejected
+    await expect(
+      client.verifyIdToken({
+        idToken: signOidcRsaToken({ ...basePayload, exp: now - 10 }),
+        nowSeconds: now,
+      }),
+    ).rejects.toThrow(/expired/u);
+
+    // Nonce mismatch rejected
+    await expect(
+      client.verifyIdToken({
+        idToken: validToken,
+        expectedNonce: 'different-nonce',
+        nowSeconds: now,
+      }),
+    ).rejects.toThrow(/nonce mismatch/u);
+
+    // Valid token succeeds
+    const verified = await client.verifyIdToken({
+      idToken: validToken,
+      expectedNonce: 'nonce-abc',
+      nowSeconds: now,
+    });
+    expect(verified).toEqual({
+      sub: 'okta-sub-1',
+      email: 'alice@acme.com',
+      emailVerified: true,
+      name: 'Alice Admin',
+    });
+  });
+
+  it('discovers OIDC metadata, builds PKCE authorize URL, exchanges code, and falls back to userinfo when email omitted', async () => {
+    const now = 1_800_000_000;
+    const idTokenWithoutEmail = signOidcRsaToken({
+      iss: ISSUER,
+      sub: 'entra-sub-7',
+      aud: [CLIENT_ID, 'other-aud'],
+      exp: now + 600,
+      iat: now,
+      nonce: 'n-77',
+    });
+
+    let capturedTokenBody = '';
+    const fetchFn = vi.fn<typeof fetch>((input, init) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (url.endsWith('/.well-known/openid-configuration')) {
+        return Promise.resolve(jsonResponse(buildOidcDiscovery()));
+      }
+      if (url.endsWith('/v1/token')) {
+        capturedTokenBody = typeof init?.body === 'string' ? init.body : '';
+        return Promise.resolve(
+          jsonResponse({
+            access_token: 'oidc-access-1',
+            token_type: 'Bearer',
+            expires_in: 3600,
+            id_token: idTokenWithoutEmail,
+          }),
+        );
+      }
+      if (url.endsWith('/v1/keys')) {
+        return Promise.resolve(jsonResponse({ keys: [buildOidcRsaJwk('oidc-rsa-1')] }));
+      }
+      if (url.endsWith('/v1/userinfo')) {
+        return Promise.resolve(
+          jsonResponse({
+            email: 'bob@acme.com',
+            email_verified: true,
+            name: 'Bob Enterprise',
+            picture: 'https://cdn.acme.com/bob.png',
+          }),
+        );
+      }
+      return Promise.resolve(textResponse('not found', 404));
+    });
+
+    const doc = await discoverOidcProvider(ISSUER, fetchFn);
+    expect(doc.authorizationEndpoint).toBe(`${ISSUER}/v1/authorize`);
+
+    const client: OidcClient = createOidcClient(
+      { issuerUrl: ISSUER, clientId: CLIENT_ID, clientSecret: CLIENT_SECRET },
+      fetchFn,
+    );
+    const pkce = generatePkcePair();
+    const authUrl = await client.getAuthorizationUrl({
+      state: 'sealed-state',
+      nonce: 'n-77',
+      redirectUri: 'https://app.bslt.dev/api/auth/sso/oidc/callback',
+      codeChallenge: pkce.codeChallenge,
+      loginHint: 'bob@acme.com',
+    });
+    const parsedUrl = new URL(authUrl);
+    expect(parsedUrl.searchParams.get('code_challenge_method')).toBe('S256');
+    expect(parsedUrl.searchParams.get('code_challenge')).toBe(pkce.codeChallenge);
+    expect(parsedUrl.searchParams.get('login_hint')).toBe('bob@acme.com');
+
+    const result = await client.authenticateCode({
+      code: 'auth-code-9',
+      redirectUri: 'https://app.bslt.dev/api/auth/sso/oidc/callback',
+      codeVerifier: pkce.codeVerifier,
+      expectedNonce: 'n-77',
+      nowSeconds: now,
+    });
+    expect(new URLSearchParams(capturedTokenBody).get('code_verifier')).toBe(pkce.codeVerifier);
+    expect(result.user).toEqual({
+      sub: 'entra-sub-7',
+      email: 'bob@acme.com',
+      emailVerified: true,
+      name: 'Bob Enterprise',
+      picture: 'https://cdn.acme.com/bob.png',
+    });
   });
 });

@@ -245,7 +245,8 @@ export interface CursorPaginatedResult<T> {
 
 type RecordKey = `record:${string}:${string}`;
 type ListKey = `list:${string}:${string}`;
-export type SubscriptionKey = RecordKey | ListKey;
+type OrgKey = `org:${string}`;
+export type SubscriptionKey = RecordKey | ListKey | OrgKey;
 
 export type ServerMessage =
   | { type: 'update'; key: SubscriptionKey; version: number; timestamp?: number }
@@ -257,4 +258,5 @@ export type ServerMessage =
 export const SubKeys = {
   record: (table: string, id: string): RecordKey => `record:${table}:${id}`,
   list: (userId: string, listType: string): ListKey => `list:${userId}:${listType}`,
+  org: (orgId: string): OrgKey => `org:${orgId}`,
 } as const;

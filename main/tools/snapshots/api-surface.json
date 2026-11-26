@@ -925,6 +925,7 @@
           "200": "loginResponseSchema",
           "400": "errorResponseSchema",
           "401": "errorResponseSchema",
+          "403": "errorResponseSchema",
           "404": "errorResponseSchema",
           "429": "errorResponseSchema"
         }
@@ -994,6 +995,7 @@
         "responses": {
           "200": "magicLinkRequestResponseSchema",
           "400": "errorResponseSchema",
+          "403": "errorResponseSchema",
           "404": "errorResponseSchema",
           "429": "errorResponseSchema"
         }
@@ -1422,6 +1424,7 @@
         "responses": {
           "200": "emailOtpRequestResponseSchema",
           "400": "errorResponseSchema",
+          "403": "errorResponseSchema",
           "404": "errorResponseSchema",
           "429": "errorResponseSchema"
         }

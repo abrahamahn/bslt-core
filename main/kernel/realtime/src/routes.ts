@@ -60,12 +60,19 @@ async function handleIssueRealtimeTicket(
   const channelRegistry = ctx.channelRegistry ?? defaultChannelRegistry;
 
   const user = req.user;
+  const actingOrgCandidate = (
+    req as RealtimeRequest & { readonly actingOrg?: { readonly orgId?: unknown } }
+  ).actingOrg;
+  const verifiedOrgId =
+    typeof actingOrgCandidate?.orgId === 'string' && actingOrgCandidate.orgId !== ''
+      ? actingOrgCandidate.orgId
+      : null;
   const viewer: ChannelViewer | null =
     user?.userId !== undefined && user.userId !== ''
       ? {
           userId: user.userId,
           role: typeof user.role === 'string' && user.role !== '' ? user.role : 'user',
-          orgId: null,
+          orgId: verifiedOrgId,
         }
       : null;
 

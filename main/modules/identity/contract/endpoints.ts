@@ -147,6 +147,7 @@ export const identityEndpoints = {
       identityErrors.TOO_MANY_ATTEMPTS,
       identityErrors.INVALID_CREDENTIALS,
       identityErrors.EMAIL_NOT_VERIFIED,
+      identityErrors.SSO_REQUIRED,
     ],
   }),
 
@@ -244,7 +245,11 @@ export const identityEndpoints = {
     summary: 'Request a magic link for passwordless login',
     body: magicLinkRequestSchema,
     response: magicLinkRequestResponseSchema,
-    errors: [identityErrors.MAGIC_LINK_DISABLED, identityErrors.TOO_MANY_ATTEMPTS],
+    errors: [
+      identityErrors.MAGIC_LINK_DISABLED,
+      identityErrors.TOO_MANY_ATTEMPTS,
+      identityErrors.SSO_REQUIRED,
+    ],
   }),
 
   magicLinkVerify: endpoint({
@@ -270,7 +275,11 @@ export const identityEndpoints = {
     summary: 'Request a 6-digit security code for passwordless login',
     body: emailOtpRequestSchema,
     response: emailOtpRequestResponseSchema,
-    errors: [identityErrors.MAGIC_LINK_DISABLED, identityErrors.TOO_MANY_ATTEMPTS],
+    errors: [
+      identityErrors.MAGIC_LINK_DISABLED,
+      identityErrors.TOO_MANY_ATTEMPTS,
+      identityErrors.SSO_REQUIRED,
+    ],
   }),
 
   emailOtpVerify: endpoint({

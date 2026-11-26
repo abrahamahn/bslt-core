@@ -228,4 +228,30 @@ describe('realtime transport', () => {
     expect(vi.mocked(requestRealtimeTicket)).toHaveBeenCalledTimes(1);
     expect(FakeSocket.instances).toHaveLength(1);
   });
+
+  it('requests a signed grant before subscribing to a new org channel on an already-open socket', async () => {
+    const ORG_KEY = 'org:org-99' as SubscriptionKey;
+    subscribeToKey(KEY, vi.fn());
+    await flush();
+    const socket = lastSocket();
+    socket.emit('open');
+    socket.sent.length = 0;
+
+    vi.mocked(requestRealtimeTicket).mockResolvedValueOnce({
+      ticket: 'ticket-456.sig',
+      grants: { [ORG_KEY]: 'grant-org-99' },
+      expiresAt: Date.now() + 30_000,
+      anonymous: false,
+    });
+
+    subscribeToKey(ORG_KEY, vi.fn());
+    await flush();
+
+    expect(vi.mocked(requestRealtimeTicket)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ channels: [ORG_KEY] }),
+    );
+    expect(socket.sent.map((s) => JSON.parse(s) as unknown)).toEqual([
+      { type: 'subscribe', key: ORG_KEY, grant: 'grant-org-99' },
+    ]);
+  });
 });

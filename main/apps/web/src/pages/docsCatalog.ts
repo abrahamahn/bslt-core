@@ -331,6 +331,7 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
       'dag',
       'dependencies',
       'packages',
+      'projects',
       'tasks',
       'files',
       'search',

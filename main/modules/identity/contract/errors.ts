@@ -65,4 +65,5 @@ export const identityErrors = defineErrors('identity', {
   OAUTH_LINKED_TO_OTHER: 409,
   OAUTH_CONNECTION_NOT_FOUND: 404,
   CANNOT_UNLINK_ONLY_AUTH: 409,
+  SSO_REQUIRED: 403,
 });
