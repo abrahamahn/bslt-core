@@ -1296,6 +1296,24 @@ export const identityServer: AnyServerModule<typeof identityModule> = implementS
         };
 
         const now = s.clock.now();
+        const waitlistActions = s.kernel.actions;
+        if (waitlistActions !== undefined && waitlistActions.has('growth.checkWaitlistGate')) {
+          const inviteHeader = req.headers?.['x-waitlist-invite'];
+          const inviteCode = typeof inviteHeader === 'string' ? inviteHeader : undefined;
+          const gate = await s.kernel.db.system((sysTx) =>
+            waitlistActions.invoke<{ readonly allowed: boolean }>(
+              'growth.checkWaitlistGate',
+              sysTx,
+              { email: input.body.email, inviteCode },
+            ),
+          );
+          if (!gate.allowed) {
+            return req.fail(
+              'WAITLIST_REQUIRED',
+              'Early access is currently invite-only. Please join the waitlist to receive an invite.',
+            );
+          }
+        }
         const res = await s.kernel.db.system((sysTx) =>
           registerUserInRepo({
             repo: identityRepository(sysTx),
@@ -1328,6 +1346,15 @@ export const identityServer: AnyServerModule<typeof identityModule> = implementS
                 },
                 { actorUserId: newUser.id },
               );
+              if (
+                waitlistActions !== undefined &&
+                waitlistActions.has('growth.markWaitlistConverted')
+              ) {
+                await waitlistActions.invoke('growth.markWaitlistConverted', tx, {
+                  email: newUser.email,
+                  userId: newUser.id,
+                });
+              }
             },
             onWarn: (context, msg) => {
               s.log.warn(context, msg);

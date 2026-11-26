@@ -815,6 +815,7 @@ function emitWebGeneratedModules(workspace: ParsedModulesWorkspace): string {
     installedSet.has('analytics') && workspace.modules.get('analytics')?.web === true;
   const hasBilling = installedSet.has('billing') && workspace.modules.get('billing')?.web === true;
   const hasFiles = installedSet.has('files') && workspace.modules.get('files')?.web === true;
+  const hasGrowth = installedSet.has('growth') && workspace.modules.get('growth')?.web === true;
   const hasNotifications =
     installedSet.has('notifications') && workspace.modules.get('notifications')?.web === true;
   const hasOrgs = installedSet.has('orgs') && workspace.modules.get('orgs')?.web === true;
@@ -862,6 +863,8 @@ function emitWebGeneratedModules(workspace: ParsedModulesWorkspace): string {
           'AvatarUpload as OptionalAvatarUpload',
           'useMyAvatar as useOptionalMyAvatar',
         );
+      } else if (id === 'growth' && hasGrowth) {
+        extraSpecifiers.push('AnnouncementBanner as OptionalAnnouncementBanner');
       } else if (id === 'notifications' && hasNotifications) {
         extraSpecifiers.push(
           'NotificationBell',
@@ -1132,6 +1135,17 @@ function emitWebGeneratedModules(workspace: ParsedModulesWorkspace): string {
       '    error: null,',
       '    refetch: () => {},',
       '  };',
+      '}',
+      '',
+    );
+  }
+
+  if (hasGrowth) {
+    optionalLines.push('export { OptionalAnnouncementBanner };', '');
+  } else {
+    optionalLines.push(
+      'export function OptionalAnnouncementBanner(): null {',
+      '  return null;',
       '}',
       '',
     );

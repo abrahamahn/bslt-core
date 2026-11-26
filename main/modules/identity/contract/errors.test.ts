@@ -72,6 +72,7 @@ describe('identityErrors', () => {
       OAUTH_CONNECTION_NOT_FOUND: 404,
       CANNOT_UNLINK_ONLY_AUTH: 409,
       SSO_REQUIRED: 403,
+      WAITLIST_REQUIRED: 403,
     };
 
     for (const [name, status] of Object.entries(expected)) {

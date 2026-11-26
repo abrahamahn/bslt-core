@@ -304,6 +304,7 @@ describe('bslt snapshot web-routes', () => {
     const adminNavIds = starter.admin
       .filter((entry) => entry.inNavigation)
       .map((entry) => entry.id);
+    const hasGrowth = existsSync(repoPath('main/modules/growth/module.ts'));
     const hasSupport = existsSync(repoPath('main/modules/support/module.ts'));
     const hasModeration = existsSync(repoPath('main/modules/moderation/module.ts'));
     const hasFlags = existsSync(repoPath('main/modules/flags/module.ts'));
@@ -313,6 +314,7 @@ describe('bslt snapshot web-routes', () => {
     const expectedAdminNavIds = [
       ...(hasAdmin ? ['health', 'users'] : ['dashboard']),
       'security',
+      ...(hasGrowth ? ['growth'] : []),
       'audit',
       ...(hasSupport ? ['support'] : []),
       ...(hasModeration ? ['moderation'] : []),

@@ -32,11 +32,13 @@ export const CORE_MODULE_IDS: ReadonlySet<string> = new Set<string>([
 
 export const KNOWN_OPTIONAL_MODULE_IDS = [
   'admin',
+  'ai',
   'analytics',
   'billing',
   'entitlements',
   'files',
   'flags',
+  'growth',
   'moderation',
   'notifications',
   'orgs',

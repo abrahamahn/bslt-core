@@ -1,5 +1,6 @@
 // main/kernel/server/src/module/host.ts
 import { existsSync, readFileSync } from 'node:fs';
+import { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 
 import {
@@ -562,7 +563,14 @@ export function buildModuleRouteMap(
 
         const out = await instantiated.invokeHandler(endpointName, parsedInput, reqCtx);
 
-        if (options.validateResponses) {
+        const isReadableWire =
+          typeof out === 'object' &&
+          out !== null &&
+          'wire' in out &&
+          typeof (out as Record<string, unknown>)['status'] === 'number' &&
+          (out as Record<string, unknown>)['wire'] instanceof Readable;
+
+        if (options.validateResponses && !isReadableWire) {
           try {
             ep.response.parse(out);
           } catch (err) {

@@ -5,7 +5,7 @@
  * `webApp` imports so the public bundle stays small and hydrates node-for-node.
  */
 
-import { DoNotSellControl } from '@bslt/compliance/web';
+import { AnonymousDoNotSellControl } from '@bslt/compliance/web';
 import { Link, useLocation } from '@bslt/react/router';
 import { Heading, Text, TopbarLayout } from '@bslt/ui';
 import { DEFAULT_SITE_SECTIONS, type SiteSectionId } from '@bslt/web-platform';
@@ -134,7 +134,7 @@ export const PublicDocumentShell = ({ children }: PublicDocumentShellProps): Rea
               );
             })}
           </nav>
-          <DoNotSellControl compact anonymous />
+          <AnonymousDoNotSellControl compact />
           <Text size="xs" tone="muted">
             {`© ${COPYRIGHT_YEAR} ${clientConfig.appName} · ${PRODUCT_TAGLINE}`}
           </Text>

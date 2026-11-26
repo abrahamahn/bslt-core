@@ -533,4 +533,48 @@ describe('createTransport', () => {
     });
     await expect(plainTransport.request('/settings')).resolves.toEqual({});
   });
+
+  it('streams SSE responses via transport.stream with CSRF retry, auth retry, and HTTP error mapping', async () => {
+    const sseBody = 'event: delta\ndata: {"text":"hi"}\n\n';
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(mockResponse(403, { code: 'CSRF_MISSING', message: 'Missing CSRF' }))
+      .mockResolvedValueOnce(mockResponse(200, { token: 'csrf-stream-tok' }))
+      .mockResolvedValueOnce(
+        new Response(sseBody, {
+          status: 200,
+          headers: { 'content-type': 'text/event-stream; charset=utf-8' },
+        }),
+      )
+      .mockResolvedValueOnce(
+        mockResponse(403, { code: 'ai.TOKEN_LIMIT_REACHED', message: 'Monthly limit reached' }),
+      );
+
+    const transport = createTransport({
+      baseUrl: 'https://stream.example.com',
+      getToken: () => 'jwt-abc',
+      getTenantId: () => 'org-1',
+      fetchImpl,
+    });
+
+    const streamRes = await transport.stream?.('/api/ai/conversations/1/stream', {
+      method: 'POST',
+      rawApiPath: true,
+      body: JSON.stringify({ content: 'hello' }),
+    });
+    expect(streamRes?.ok).toBe(true);
+    expect(await streamRes?.text()).toBe(sseBody);
+    const secondStreamHeaders = (fetchImpl.mock.calls[2]?.[1] as RequestInit).headers as Headers;
+    expect(secondStreamHeaders.get('Authorization')).toBe('Bearer jwt-abc');
+    expect(secondStreamHeaders.get('x-tenant-id')).toBe('org-1');
+    expect(secondStreamHeaders.get('x-csrf-token')).toBe('csrf-stream-tok');
+
+    await expect(
+      transport.stream?.('/api/ai/conversations/1/stream', {
+        method: 'POST',
+        rawApiPath: true,
+        body: JSON.stringify({ content: 'over quota' }),
+      }),
+    ).rejects.toThrow(/Monthly limit reached/iu);
+  });
 });

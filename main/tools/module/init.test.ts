@@ -430,6 +430,7 @@ describe('bslt init / pnpm quickstart', () => {
 
   it('parses valid --preset flags, rejects unknown presets, and writes smart dev defaults in .env.local', async () => {
     expect(parseQuickstartArgs(['--preset', 'b2b-saas', '--yes']).preset).toBe('b2b-saas');
+    expect(parseQuickstartArgs(['--preset', 'ai-saas', '--yes']).preset).toBe('ai-saas');
     expect(parseQuickstartArgs(['--preset=core']).preset).toBe('core');
     expect(() => parseQuickstartArgs(['--preset', 'invalid-preset'])).toThrow(/unknown preset/iu);
 

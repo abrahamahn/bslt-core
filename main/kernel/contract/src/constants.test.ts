@@ -34,6 +34,7 @@ describe('contract platform and time constants', () => {
     expect(CSRF_EXEMPT_PATHS.has('/api/auth/login')).toBe(true);
     expect(CSRF_EXEMPT_PATHS.has('/api/auth/refresh')).toBe(true);
     expect(CSRF_EXEMPT_PATHS.has('/api/auth/sso/discover')).toBe(true);
+    expect(CSRF_EXEMPT_PATHS.has('/api/growth/waitlist/join')).toBe(true);
     expect(CSRF_EXEMPT_PATHS.has('/api/users/me')).toBe(false);
     expect(CSRF_EXEMPT_PATHS.has('/api/auth/logout-all')).toBe(false);
   });

@@ -66,6 +66,7 @@ export interface TransportRequestOptions<T = unknown> extends RequestInit {
 
 export interface Transport {
   request<T = unknown>(path: string, options?: TransportRequestOptions<T>): Promise<T>;
+  stream?(path: string, options?: TransportRequestOptions): Promise<Response>;
 }
 
 const SAFE_METHODS: ReadonlySet<string> = new Set(['GET', 'HEAD', 'OPTIONS']);
@@ -376,9 +377,95 @@ export function createTransport(config: TransportConfig): Transport {
     return rawData as T;
   };
 
+  const executeStream = async (
+    path: string,
+    options: TransportRequestOptions | undefined,
+    csrfRetried: boolean,
+    authRetried: boolean,
+  ): Promise<Response> => {
+    const method = options?.method ?? 'POST';
+    const requiresAuth = options?.requiresAuth ?? true;
+    const requiresCsrf = !SAFE_METHODS.has(method.toUpperCase());
+
+    const headers = new Headers(options?.headers);
+    if (!headers.has('Content-Type') && !isFormDataBody(options?.body)) {
+      headers.set('Content-Type', 'application/json');
+    }
+    if (!headers.has('Accept')) {
+      headers.set('Accept', 'text/event-stream');
+    }
+
+    if (requiresAuth) {
+      const token = config.getToken?.();
+      if (token !== null && token !== undefined && token.length > 0) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+    }
+
+    const tenantGetter = config.getTenantId ?? defaultTenantIdGetter;
+    const tenantId = tenantGetter?.();
+    if (tenantId !== null && tenantId !== undefined && tenantId.length > 0) {
+      headers.set('x-tenant-id', tenantId);
+    }
+
+    const csrfToken = csrfTokenCache.get(baseUrl) ?? null;
+    if (requiresCsrf && csrfToken !== null && csrfToken.length > 0) {
+      headers.set('x-csrf-token', csrfToken);
+    }
+
+    const url =
+      options?.rawApiPath === true ? `${baseUrl}${path}` : `${baseUrl}${API_PREFIX}${path}`;
+
+    const {
+      requiresAuth: _requiresAuth,
+      responseSchema: _responseSchema,
+      rawApiPath: _rawApiPath,
+      ...fetchInit
+    } = options ?? {};
+
+    let response: Response;
+    try {
+      response = await fetcher(url, {
+        ...fetchInit,
+        method,
+        headers,
+        credentials: 'include',
+      });
+    } catch (error: unknown) {
+      const cause = error instanceof Error ? error : new Error(String(error));
+      throw makeNetworkError(`Failed to stream ${method} ${path}`, cause);
+    }
+
+    if (!response.ok) {
+      const rawData = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+      if (requiresCsrf && !csrfRetried && isCsrfFailure(response.status, rawData)) {
+        await fetchCsrfToken(baseUrl, fetcher, makeHttpError);
+        return executeStream(path, options, true, authRetried);
+      }
+
+      const onUnauthorized = config.onUnauthorized ?? defaultOnUnauthorized;
+      if (
+        requiresAuth &&
+        response.status === HTTP_STATUS.UNAUTHORIZED &&
+        !authRetried &&
+        onUnauthorized !== undefined &&
+        (await onUnauthorized())
+      ) {
+        return executeStream(path, options, csrfRetried, true);
+      }
+
+      throw makeHttpError(response.status, toErrorBody(rawData));
+    }
+
+    return response;
+  };
+
   return {
     request<T = unknown>(path: string, options?: TransportRequestOptions<T>): Promise<T> {
       return execute<T>(path, options, false, false, false);
+    },
+    stream(path: string, options?: TransportRequestOptions): Promise<Response> {
+      return executeStream(path, options, false, false);
     },
   };
 }

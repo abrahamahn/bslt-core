@@ -570,4 +570,42 @@ describe('identityServer', () => {
 
     expect(invokeAction).toHaveBeenCalledTimes(3);
   });
+
+  it('blocks registration with WAITLIST_REQUIRED when growth waitlist gate denies signup', async () => {
+    const tx = makeFakeTx();
+    const invokeAction = vi.fn().mockResolvedValue({ allowed: false });
+    const gatedInstance = identityServer.instantiate(
+      {
+        ...makeKernel(tx),
+        actions: {
+          has: (key) => key === 'growth.checkWaitlistGate',
+          invoke: invokeAction,
+          list: () => ['growth.checkWaitlistGate'],
+        },
+      },
+      {},
+      {
+        JWT_SECRET: 'test-jwt-secret-with-at-least-32-chars!',
+        AUTH_STRATEGIES: 'local',
+      },
+    );
+
+    await expect(
+      gatedInstance.invokeHandler(
+        'register',
+        {
+          body: {
+            email: 'blocked@acme.com',
+            username: 'blocked_user',
+            firstName: 'Block',
+            lastName: 'User',
+            password: 'ValidPassword123!',
+            tosAccepted: true,
+            eligibilityAttested: true,
+          },
+        },
+        makeReq(tx),
+      ),
+    ).rejects.toMatchObject({ code: 'identity.WAITLIST_REQUIRED' });
+  });
 });

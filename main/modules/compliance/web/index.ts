@@ -4,6 +4,7 @@ import { implementWeb, lazyModulePage } from '@bslt/web-platform';
 import enUsMessages from '../i18n/en-US.json';
 import { complianceModule } from '../module';
 
+export { AnonymousDoNotSellControl } from './AnonymousDoNotSellControl';
 export {
   ConsentPreferences,
   CookieConsentBanner,

@@ -130,6 +130,7 @@ export const identityEndpoints = {
       identityErrors.RESERVED_EMAIL_DOMAIN,
       identityErrors.USERNAME_TAKEN,
       identityErrors.WEAK_PASSWORD,
+      identityErrors.WAITLIST_REQUIRED,
     ],
   }),
 

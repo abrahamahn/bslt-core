@@ -14,7 +14,7 @@ import { ChangelogPage } from '#app/pages/ChangelogPage';
 import { DOC_CHAPTERS } from '#app/pages/docsCatalog';
 import { DocsPage } from '#app/pages/DocsPage';
 import { DOCS_REFERENCE } from '#app/pages/docsReference.generated';
-import { PublicLandingPage } from '#app/pages/LandingPage';
+import { PublicLandingPage } from '#app/pages/PublicLandingPage';
 
 export const PUBLIC_SSR_MODULES = installedPublicSsrModules;
 

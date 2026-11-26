@@ -96,7 +96,17 @@ const RouteHeadSync = (): null => {
       siteUrl: origin,
       pathname: location.pathname,
     });
-  }, [location.pathname]);
+    if (typeof window !== 'undefined' && location.search.length > 0) {
+      const refCode = new URLSearchParams(location.search).get('ref')?.trim();
+      if (refCode !== undefined && refCode.length >= 3 && refCode.length <= 32) {
+        try {
+          window.localStorage.setItem('bslt:pending_referral_code', refCode);
+        } catch (err: unknown) {
+          reportError(err, 'error');
+        }
+      }
+    }
+  }, [location.pathname, location.search]);
   return null;
 };
 

@@ -8,6 +8,7 @@ import { useCallback, useState, type ReactElement, type ReactNode } from 'react'
 
 import {
   hasOrgsModule,
+  OptionalAnnouncementBanner,
   OptionalImpersonationBanner,
   OptionalOrgSwitcher,
 } from '../../generated/modules';
@@ -43,6 +44,7 @@ export const AppShell = ({ children }: AppShellProps): ReactElement => {
         navigationOpen={mobileNavOpen}
         onToggleNavigation={toggleMobileNav}
       />
+      <OptionalAnnouncementBanner />
       <NewDeviceBanner />
       <OptionalImpersonationBanner />
       <div className="shell-app__body">

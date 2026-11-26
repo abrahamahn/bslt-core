@@ -207,6 +207,10 @@ export function useOptionalMyAvatar(_options?: { readonly enabled?: boolean }): 
   };
 }
 
+export function OptionalAnnouncementBanner(): null {
+  return null;
+}
+
 export function OptionalOrgSwitcher(): null {
   return null;
 }

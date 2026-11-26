@@ -36,6 +36,7 @@ export const CSRF_EXEMPT_PATHS = new Set([
   '/api/auth/refresh',
   '/api/auth/resend-verification',
   '/api/auth/sso/discover',
+  '/api/growth/waitlist/join',
 ]);
 
 export const AUTH_STRATEGIES = ['local', 'magic', 'webauthn', 'google', 'github', 'apple'] as const;

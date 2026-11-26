@@ -350,7 +350,7 @@ function findNonOwnerTablesInSql(sqlPath: string): Set<string> {
   const nonOwner = new Set<string>();
   if (!existsSync(sqlPath)) return nonOwner;
   const sql = readFileSync(sqlPath, 'utf8');
-  const regex = /sys_apply_rls\(\s*'([^']+)'\s*,\s*'([^']+)'/gu;
+  const regex = /sys_apply_rls\(\s*'([^']+)'(?:::regclass)?\s*,\s*'([^']+)'/gu;
   for (const match of sql.matchAll(regex)) {
     const table = match[1];
     const rlsClass = match[2];

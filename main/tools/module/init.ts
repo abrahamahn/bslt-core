@@ -30,7 +30,7 @@ import { addModules, listModules } from './manage';
 const DOMAIN_PATTERN =
   /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/u;
 
-type QuickstartPreset = 'core' | 'solo-saas' | 'b2b-saas';
+type QuickstartPreset = 'core' | 'solo-saas' | 'b2b-saas' | 'ai-saas';
 
 const QUICKSTART_PRESETS: Readonly<Record<QuickstartPreset, readonly string[]>> = Object.freeze({
   core: [],
@@ -51,6 +51,7 @@ const QUICKSTART_PRESETS: Readonly<Record<QuickstartPreset, readonly string[]>> 
     'flags',
     'tasks',
     'projects',
+    'growth',
     'support',
     'status',
     'search',
@@ -61,15 +62,36 @@ const QUICKSTART_PRESETS: Readonly<Record<QuickstartPreset, readonly string[]>> 
     'webhooks',
     'admin',
   ],
+  'ai-saas': [
+    'orgs',
+    'entitlements',
+    'billing',
+    'flags',
+    'projects',
+    'ai',
+    'growth',
+    'support',
+    'status',
+    'analytics',
+    'notifications',
+    'files',
+    'webhooks',
+    'admin',
+  ],
 });
 
 function parsePreset(value: string): QuickstartPreset {
   const normalized = value.trim().toLowerCase();
-  if (normalized === 'core' || normalized === 'solo-saas' || normalized === 'b2b-saas') {
+  if (
+    normalized === 'core' ||
+    normalized === 'solo-saas' ||
+    normalized === 'b2b-saas' ||
+    normalized === 'ai-saas'
+  ) {
     return normalized;
   }
   throw new Error(
-    `bslt init: unknown preset "${value}". Expected one of: core, solo-saas, b2b-saas.`,
+    `bslt init: unknown preset "${value}". Expected one of: core, solo-saas, b2b-saas, ai-saas.`,
   );
 }
 
@@ -77,7 +99,7 @@ export const QUICKSTART_USAGE = [
   'Usage:',
   '  pnpm quickstart',
   '  pnpm bslt init [--name <name>] [--slug <slug>] [--domain <domain>] [--scope <@scope>]',
-  '                 [--preset <core|solo-saas|b2b-saas>] [--modules <id1,id2|none|all>]',
+  '                 [--preset <core|solo-saas|b2b-saas|ai-saas>] [--modules <id1,id2|none|all>]',
   '                 [--catalog <dir|file|url>] [--with-postgres] [--force-env] [--skip-env]',
   '                 [--no-install] [--dry-run] [--yes]',
 ].join('\n');

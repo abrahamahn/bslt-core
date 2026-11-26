@@ -1809,6 +1809,75 @@ describe('server module host', () => {
     );
   });
 
+  it('passes through Readable SSE wire streams without response-schema failure', async () => {
+    const { Readable } = await import('node:stream');
+    const sseMod = defineModule({
+      id: 'ssetest',
+      summary: 'SSE wire stream test',
+      status: 'stable',
+      dependsOn: [],
+      endpoints: {
+        stream: endpoint({
+          method: 'POST',
+          path: '/api/ssetest/stream',
+          auth: 'user',
+          body: object({ prompt: string({ min: 1 }) }),
+          response: object({
+            status: literal(200),
+            wire: string(),
+            headers: record(string(), string()),
+          }),
+          summary: 'Stream SSE',
+        }),
+      },
+      events: {},
+      jobs: {},
+      tables: [],
+      web: false,
+    });
+
+    const sseStream = Readable.from(['event: delta\ndata: {"text":"ok"}\n\n']);
+    const sseSrv = implementServer(sseMod, {
+      create: () => ({}),
+      handlers: {
+        stream: () =>
+          Promise.resolve({
+            status: 200 as const,
+            wire: sseStream as unknown as string,
+            headers: { 'content-type': 'text/event-stream; charset=utf-8' },
+          }),
+      },
+    });
+
+    const fakeDb = makeFakeDb();
+    const fakeSrv = makeFakeServer();
+    registerServerModules(fakeSrv.server, {}, [sseSrv], {
+      validateResponses: true,
+      resolveDb: () => fakeDb.db,
+      kernel: makeKernel(fakeDb.db),
+      routerOptions: {
+        prefix: '/api',
+        jwtSecret: 's',
+        authGuardFactory: () => async () => {},
+      },
+    });
+
+    const route = fakeSrv.routes.get('POST /api/ssetest/stream')!;
+    await route.handler(
+      {
+        user: { userId: 'u-1', email: 'u@test', role: 'user' },
+        params: {},
+        query: {},
+        body: { prompt: 'hi' },
+        headers: {},
+      },
+      fakeSrv.reply,
+    );
+    expect(fakeSrv.sent?.status).toBe(200);
+    expect(fakeSrv.sent?.payload).toBe(sseStream);
+    expect(fakeSrv.headers['content-type']).toBe('text/event-stream; charset=utf-8');
+  });
+
   it('enforces the verifiers slot on auth: { webhook, rawBody: true } endpoints before body schema parsing', async () => {
     const fakeDb = makeFakeDb();
     const webhookMod = defineModule({
