@@ -33,6 +33,7 @@ describe('contract platform and time constants', () => {
   it('keeps CSRF_EXEMPT_PATHS strictly scoped to pre-session auth endpoints and excludes mutating account paths', () => {
     expect(CSRF_EXEMPT_PATHS.has('/api/auth/login')).toBe(true);
     expect(CSRF_EXEMPT_PATHS.has('/api/auth/refresh')).toBe(true);
+    expect(CSRF_EXEMPT_PATHS.has('/api/auth/sso/discover')).toBe(true);
     expect(CSRF_EXEMPT_PATHS.has('/api/users/me')).toBe(false);
     expect(CSRF_EXEMPT_PATHS.has('/api/auth/logout-all')).toBe(false);
   });
