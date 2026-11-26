@@ -4,7 +4,15 @@
  * (`lazyModulePage`), and module-scoped `en-US` message lookup (`useModuleMessages`).
  */
 
-import { useCallback, type ComponentType } from 'react';
+import {
+  createContext,
+  createElement,
+  useCallback,
+  useContext,
+  type ComponentType,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 
 import type { Auth, BsltConfig, ModuleDefinition, Requirement } from '@bslt/contract';
 
@@ -126,6 +134,10 @@ export interface ModuleNotificationRouteRule {
   readonly to: `/${string}`;
 }
 
+export type ModuleLocaleLoader = () => Promise<{
+  readonly default: Readonly<Record<string, string>>;
+}>;
+
 export interface WebModule<M extends ModuleDefinition = ModuleDefinition> {
   readonly module: M;
   readonly routes: readonly WebRoute[];
@@ -136,6 +148,7 @@ export interface WebModule<M extends ModuleDefinition = ModuleDefinition> {
   readonly notificationRoutes?: Readonly<Record<string, NotificationRouteResolver>>;
   readonly notificationRules?: readonly ModuleNotificationRouteRule[];
   readonly messages: Readonly<Record<string, string>>;
+  readonly locales?: Readonly<Record<string, ModuleLocaleLoader>>;
 }
 
 function assertNamespacedMessageKey(
@@ -330,7 +343,30 @@ export function implementWeb<M extends ModuleDefinition>(
         }
       : {}),
     messages: Object.freeze({ ...impl.messages }),
+    ...(impl.locales !== undefined ? { locales: Object.freeze({ ...impl.locales }) } : {}),
   });
+}
+
+const EMPTY_MODULE_LOCALE_OVERRIDES: Readonly<Record<string, string>> = Object.freeze({});
+
+const ModuleLocaleContext = createContext<Readonly<Record<string, string>>>(
+  EMPTY_MODULE_LOCALE_OVERRIDES,
+);
+
+export interface ModuleLocaleProviderProps {
+  readonly messages: Readonly<Record<string, string>>;
+  readonly children: ReactNode;
+}
+
+/**
+ * Provides active-locale message overrides for every module calling `useModuleMessages`.
+ * Default `en-US` renders with an empty override map (zero overhead).
+ */
+export function ModuleLocaleProvider({
+  messages,
+  children,
+}: ModuleLocaleProviderProps): ReactElement {
+  return createElement(ModuleLocaleContext.Provider, { value: messages }, children);
 }
 
 type MapWebModules<T extends readonly ModuleDefinition[]> = {
@@ -350,17 +386,21 @@ export type WebImpls<T extends BsltConfig | readonly ModuleDefinition[]> = MapWe
 >;
 
 /**
- * Module-scoped `t(key)` lookup backed by the module's `en-US.json` bundle.
+ * Module-scoped `t(key)` lookup backed by the module's `en-US.json` bundle and
+ * live active-locale overrides from `ModuleLocaleProvider`.
  */
 export function useModuleMessages<Messages extends Readonly<Record<string, string>>>(
   messages: Messages,
 ): (key: keyof Messages & string, params?: Readonly<Record<string, string | number>>) => string {
+  const activeOverrides = useContext(ModuleLocaleContext);
   return useCallback(
     (key: keyof Messages & string, params?: Readonly<Record<string, string | number>>): string => {
       if (!Object.hasOwn(messages, key)) {
         throw new Error(`Missing message key "${key}"`);
       }
-      const value = messages[key];
+      const override = activeOverrides[key];
+      const value =
+        typeof override === 'string' && override.trim().length > 0 ? override : messages[key];
       if (typeof value !== 'string') {
         throw new Error(`Missing message key "${key}"`);
       }
@@ -374,6 +414,6 @@ export function useModuleMessages<Messages extends Readonly<Record<string, strin
         return String(params[name]);
       });
     },
-    [messages],
+    [activeOverrides, messages],
   );
 }

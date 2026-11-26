@@ -128,6 +128,16 @@ describe('main', () => {
     for (const gate of GATES) expect(lines.join('\n')).toContain(gate.id);
   });
 
+  it('dispatches bslt create --help and rejects missing target-dir', async () => {
+    const restore = quiet();
+    try {
+      expect(await main(['create', '--help'])).toBe(0);
+      expect(await main(['create'])).toBe(1);
+    } finally {
+      restore();
+    }
+  });
+
   it('dispatches bslt module new --dry-run and rejects invalid module invocations and removed bslt feature', async () => {
     const restore = quiet();
     try {

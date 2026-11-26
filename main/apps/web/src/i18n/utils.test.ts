@@ -161,8 +161,19 @@ describe('detectLocale', () => {
     expect(detectLocale()).toBe('en-US');
   });
 
-  it('should fall back to en-US for non-en-US browser locales (es, fr, ko, ar-EG, th)', () => {
-    for (const browserLang of ['es', 'es-MX', 'fr', 'ko', 'pt-PT', 'zh', 'ar-EG', 'th']) {
+  it('should match ko and ko-KR browser locales to ko-KR', () => {
+    for (const browserLang of ['ko', 'ko-KR']) {
+      Object.defineProperty(globalThis, 'navigator', {
+        value: { language: browserLang, languages: [browserLang] },
+        writable: true,
+        configurable: true,
+      });
+      expect(detectLocale()).toBe('ko-KR');
+    }
+  });
+
+  it('should fall back to en-US for unsupported browser locales (es, fr, ar-EG, th)', () => {
+    for (const browserLang of ['es', 'es-MX', 'fr', 'pt-PT', 'zh', 'ar-EG', 'th']) {
       Object.defineProperty(globalThis, 'navigator', {
         value: { language: browserLang, languages: [browserLang] },
         writable: true,

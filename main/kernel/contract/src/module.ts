@@ -271,7 +271,7 @@ export interface BsltConfig<Ms extends readonly ModuleDefinition[] = readonly Mo
   readonly name: string;
   readonly installedModules: Ms;
   readonly devOnly: readonly ModuleDefinition[];
-  readonly locales: readonly ['en-US'];
+  readonly locales: readonly ['en-US', ...string[]];
   readonly brand: {
     readonly accent: string;
     readonly logo: string;

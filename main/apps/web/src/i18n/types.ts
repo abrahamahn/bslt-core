@@ -86,4 +86,5 @@ interface LocaleMetadata {
  */
 export const LOCALE_METADATA: Record<Locale, LocaleMetadata> = {
   'en-US': { code: 'en-US', name: 'English', nativeName: 'English', direction: 'ltr' },
+  'ko-KR': { code: 'ko-KR', name: 'Korean', nativeName: '한국어', direction: 'ltr' },
 };

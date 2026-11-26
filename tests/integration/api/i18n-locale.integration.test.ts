@@ -79,7 +79,7 @@ describe('Sprint 6.7 — Accept-Language header → locale resolved on request',
     app.get('/locale-echo', async (req) => ({ locale: req.locale }));
     await app.ready();
 
-    expect(SUPPORTED_LOCALES).toEqual(['en-US']);
+    expect(SUPPORTED_LOCALES).toEqual(['en-US', 'ko-KR']);
     for (const locale of SUPPORTED_LOCALES) {
       const response = await app.inject({
         method: 'GET',

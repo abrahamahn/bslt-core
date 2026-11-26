@@ -9,7 +9,7 @@ export default defineConfig({
   name: 'BSLT',
   installedModules: [identityModule, complianceModule, auditModule] as const,
   devOnly: [devtoolsModule],
-  locales: ['en-US'],
+  locales: ['en-US', 'ko-KR'],
   brand: {
     accent: 'oklch(0.62 0.19 264)',
     logo: '/brand/logo.svg',

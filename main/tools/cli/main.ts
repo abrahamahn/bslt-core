@@ -50,6 +50,7 @@ export const USAGE = [
   '                                    from bslt.config.ts and module csp manifests',
   '  bslt sync docs [--check]          Reference docs (docs/reference/*.md) and DIRECTION.md status block',
   '  bslt sync permissions [--check]   Append-only org permission bit allocation in bslt.lock.json',
+  '  bslt create <dir> [options]       Scaffold a new personalized project directory (create-bslt)',
   '  bslt init [options]               One-click developer quickstart wizard (pnpm quickstart)',
   '  bslt module <subcommand>          list, add <id...>, remove <id...>, release [--out <dir>],',
   '                                    new <id> [--dry-run]',
@@ -412,6 +413,7 @@ async function prePushCommand(argv: readonly string[]): Promise<number> {
 const COMMANDS: Readonly<Record<string, (argv: readonly string[]) => Promise<number>>> = {
   ...Object.fromEntries(Object.entries(SCRIPT_COMMANDS).map(([name, { run }]) => [name, run])),
   db: dbCommand,
+  create: async (argv) => (await import('../module/create-bslt')).runCreateBsltCli(argv),
   init: async (argv) => (await import('../module/init')).runQuickstartCli(argv),
   module: async (argv) => (await import('../module/manage')).runModuleCli(argv),
   web: async (argv) => (await import('../web/prerender')).runWebCli(argv),

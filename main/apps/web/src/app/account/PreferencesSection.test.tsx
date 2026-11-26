@@ -13,6 +13,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { I18nProvider } from '../../i18n';
 import { TIMEZONE_STORAGE_KEY } from '../../i18n/format';
 
 import { PreferencesSection } from './PreferencesSection';
@@ -252,6 +253,18 @@ describe('PreferencesSection', () => {
       fireEvent.click(screen.getByTestId('timezone-select'));
       fireEvent.click(screen.getByRole('option', { name: /Asia\/Tokyo/ }));
       expect(window.localStorage.getItem(TIMEZONE_STORAGE_KEY)).toBe('Asia/Tokyo');
+    });
+
+    it('renders Korean preference labels when I18nProvider is set to ko-KR', () => {
+      render(
+        <I18nProvider initialLocale="ko-KR">
+          <PreferencesSection />
+        </I18nProvider>,
+      );
+      expect(screen.getByText('테마')).toBeInTheDocument();
+      expect(screen.getByText('시간대')).toBeInTheDocument();
+      expect(screen.getByText('언어')).toBeInTheDocument();
+      expect(screen.getByTestId('current-theme')).toHaveTextContent('시스템');
     });
   });
 });

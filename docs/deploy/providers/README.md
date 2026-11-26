@@ -6,6 +6,9 @@ Provider-specific deployment guides live here so the default deployment docs sta
 | ------------ | -------------------------------------------------------- |
 | DigitalOcean | [Droplet deployment](./digitalocean.md)                  |
 | DigitalOcean | [Push-to-deploy workflow](./digitalocean-auto-deploy.md) |
+| Fly.io       | [Fly.io deployment](./fly.md)                            |
+| Railway      | [Railway deployment](./railway.md)                       |
+| Render       | [Render Blueprint deployment](./render.md)               |
 | Google Cloud | [Compute Engine deployment](./gcp.md)                    |
 | Cloudflare   | [Web SPA deployment](./cloudflare.md)                    |
 

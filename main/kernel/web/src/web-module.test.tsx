@@ -7,9 +7,12 @@ import {
   eagerModulePage,
   implementWeb,
   lazyModulePage,
+  ModuleLocaleProvider,
   useModuleMessages,
   type LazyPageDescriptor,
   type ModuleAdminSurface,
+  type ModuleLocaleLoader,
+  type ModuleLocaleProviderProps,
   type ModuleSettingsSection,
   type ModuleSitePage,
   type NavSlot,
@@ -361,5 +364,43 @@ describe('web-module', () => {
       messages: {},
     });
     expect(Object.isFrozen(valid.notificationRules)).toBe(true);
+  });
+
+  it('resolves active-locale overrides via ModuleLocaleProvider and falls back to en-US', async () => {
+    const loader: ModuleLocaleLoader = () =>
+      Promise.resolve({ default: { 'tasks.title': '할 일' } });
+    const web = implementWeb(tasksManifest, {
+      routes: [],
+      messages: { 'tasks.title': 'Tasks', 'tasks.count': '{count} items' },
+      locales: { 'ko-KR': loader },
+    });
+    expect(Object.isFrozen(web.locales)).toBe(true);
+    expect((await web.locales?.['ko-KR']?.())?.default['tasks.title']).toBe('할 일');
+
+    function Probe(): ReactElement {
+      const t = useModuleMessages(web.messages);
+      return (
+        <div>
+          <span data-testid="title">{t('tasks.title')}</span>
+          <span data-testid="count">{t('tasks.count', { count: 3 })}</span>
+        </div>
+      );
+    }
+
+    const props: ModuleLocaleProviderProps = {
+      messages: { 'tasks.title': '할 일', 'tasks.count': '{count}개 항목' },
+      children: <Probe />,
+    };
+    const { rerender } = render(<ModuleLocaleProvider {...props} />);
+    expect(screen.getByTestId('title')).toHaveTextContent('할 일');
+    expect(screen.getByTestId('count')).toHaveTextContent('3개 항목');
+
+    rerender(
+      <ModuleLocaleProvider messages={{ 'tasks.title': '   ' }}>
+        <Probe />
+      </ModuleLocaleProvider>,
+    );
+    expect(screen.getByTestId('title')).toHaveTextContent('Tasks');
+    expect(screen.getByTestId('count')).toHaveTextContent('3 items');
   });
 });

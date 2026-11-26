@@ -82,4 +82,7 @@ export const auditWeb = implementWeb(auditModule, {
     },
   ],
   messages: enUsMessages,
+  locales: {
+    'ko-KR': () => import('../i18n/ko-KR.json'),
+  },
 });

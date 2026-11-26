@@ -42,6 +42,14 @@ const LocaleDisplay = (): ReactElement => {
       >
         Set English
       </button>
+      <button
+        data-testid="switch-ko"
+        onClick={() => {
+          setLocale('ko-KR');
+        }}
+      >
+        Set Korean
+      </button>
     </div>
   );
 };
@@ -118,7 +126,7 @@ describe('I18nProvider', () => {
     expect(screen.getByTestId('current-locale')).toHaveTextContent('en-US');
   });
 
-  it('keeps en-US and dir="ltr" when setLocale("en-US") is invoked', async () => {
+  it('switches live between en-US and ko-KR and updates html lang and dir attributes', async () => {
     const user = userEvent.setup();
     render(
       <I18nProvider initialLocale="en-US">
@@ -126,9 +134,16 @@ describe('I18nProvider', () => {
       </I18nProvider>,
     );
 
+    expect(screen.getByTestId('translated-save')).toHaveTextContent('Save');
+    await user.click(screen.getByTestId('switch-ko'));
+    expect(screen.getByTestId('current-locale')).toHaveTextContent('ko-KR');
+    expect(screen.getByTestId('translated-save')).toHaveTextContent('저장');
+    expect(document.documentElement.getAttribute('lang')).toBe('ko-KR');
+    expect(document.documentElement.getAttribute('dir')).toBe('ltr');
+
     await user.click(screen.getByTestId('switch-en'));
     expect(screen.getByTestId('current-locale')).toHaveTextContent('en-US');
-    expect(document.documentElement.getAttribute('dir')).toBe('ltr');
+    expect(screen.getByTestId('translated-save')).toHaveTextContent('Save');
     expect(document.documentElement.getAttribute('lang')).toBe('en-US');
   });
 });

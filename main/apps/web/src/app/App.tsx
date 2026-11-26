@@ -55,6 +55,7 @@ import { setTosHandler, type TosRequiredPayload } from './tosHandler';
 
 import { clientConfig } from '#app/config';
 import { I18nProvider } from '#app/i18n';
+import { loadInstalledModuleLocaleMessages } from '#app/i18n/moduleLocales';
 
 // ============================================================================
 // Types
@@ -435,7 +436,7 @@ export const App = ({ environment }: AppProps): ReactElement => {
         {/* Single source of truth for appearance — same storage keys the
             Settings → Theme controls write, so the choice applies app-wide. */}
         <ThemeProvider>
-          <I18nProvider>
+          <I18nProvider loadModuleMessages={loadInstalledModuleLocaleMessages}>
             <BrowserRouter>
               <ClientEnvironmentProvider value={environment}>
                 <RealtimeSubscribeContext.Provider value={subscribeToKey}>

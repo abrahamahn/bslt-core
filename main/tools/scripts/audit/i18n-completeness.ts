@@ -1,13 +1,17 @@
 // main/tools/scripts/audit/i18n-completeness.ts
 /**
- * en-US translation completeness & key-usage audit (plan section 12.7).
+ * Multi-locale translation completeness, parity & key-usage audit.
  *
  * Enforces:
- * 1. Only `en-US` is advertised in `LOCALES` and present under `main/apps/web/src/i18n/locales/`.
- * 2. Every entry in `en-US.ts` and `main/modules/<id>/i18n/en-US.json` is non-empty,
- *    and module message keys carry their `<id>.` prefix.
+ * 1. `LOCALES` includes `'en-US'` as the canonical default with no duplicates,
+ *    and `main/apps/web/src/i18n/locales/` contains `<locale>.ts` for each
+ *    supported locale (and no undeclared locale files).
+ * 2. Every entry in `en-US.ts`, secondary locale app maps (`ko-KR.ts`, ...), and
+ *    `main/modules/<id>/i18n/<locale>.json` is non-empty, carries its `<id>.`
+ *    prefix in module bundles, and preserves 100% key and `{placeholder}` parity
+ *    across all supported locales.
  * 3. Every literal `t('...')` call in production `.ts`/`.tsx` files under
- *    `main/apps/web/src` and `main/modules/<id>/web` resolves to a defined `en-US` key.
+ *    `main/apps/web/src` and `main/modules/<id>/web` resolves to a defined key.
  */
 
 import fs from 'node:fs';
@@ -17,6 +21,7 @@ import { SUPPORTED_LOCALES as LOCALES } from '@bslt/contract';
 import ts from 'typescript';
 
 import { enUS } from '../../../apps/web/src/i18n/locales/en-US';
+import { koKR } from '../../../apps/web/src/i18n/locales/ko-KR';
 import { fail, pass, type CheckResult } from '../../gates/types';
 import { REPO_ROOT } from '../../lib/paths';
 
@@ -26,12 +31,20 @@ export interface AuditWorkspaceI18nOptions {
   readonly root: string;
   readonly locales: readonly string[];
   readonly enUsTranslations: TranslationMap;
+  readonly localeTranslations?: Readonly<Record<string, TranslationMap>>;
 }
 
 function isProductionSourceFile(fileName: string): boolean {
   if (!fileName.endsWith('.ts') && !fileName.endsWith('.tsx')) return false;
   if (fileName.endsWith('.d.ts')) return false;
   return !fileName.includes('.test.') && !fileName.includes('.spec.');
+}
+
+function extractPlaceholders(template: string): string {
+  return [...template.matchAll(/\{([a-zA-Z0-9_]+)\}/gu)]
+    .map((m) => m[1] ?? '')
+    .sort()
+    .join(',');
 }
 
 function walkProductionSourceFiles(dir: string): string[] {
@@ -82,8 +95,39 @@ function extractLiteralTranslationKeys(filePath: string): Array<{ key: string; l
   return found;
 }
 
+function auditSecondaryMap(
+  label: string,
+  base: Readonly<Record<string, string>>,
+  target: Readonly<Record<string, unknown>>,
+  problems: string[],
+): void {
+  for (const [key, baseVal] of Object.entries(base)) {
+    if (!Object.hasOwn(target, key)) {
+      problems.push(`${label}: missing key "${key}"`);
+      continue;
+    }
+    const val = target[key];
+    if (typeof val !== 'string' || val.trim() === '') {
+      problems.push(`${label}: empty value for "${key}"`);
+      continue;
+    }
+    const baseTokens = extractPlaceholders(baseVal);
+    const targetTokens = extractPlaceholders(val);
+    if (baseTokens !== targetTokens) {
+      problems.push(
+        `${label}: placeholder mismatch for "${key}" (expected {${baseTokens}}, got {${targetTokens}})`,
+      );
+    }
+  }
+  for (const key of Object.keys(target)) {
+    if (!Object.hasOwn(base, key)) {
+      problems.push(`${label}: extra key "${key}" not present in en-US`);
+    }
+  }
+}
+
 export function auditWorkspaceI18n(options: AuditWorkspaceI18nOptions): CheckResult {
-  const { root, locales, enUsTranslations } = options;
+  const { root, locales, enUsTranslations, localeTranslations } = options;
   const enUsKeys = Object.keys(enUsTranslations);
 
   if (enUsKeys.length === 0) {
@@ -92,15 +136,27 @@ export function auditWorkspaceI18n(options: AuditWorkspaceI18nOptions): CheckRes
 
   const problems: string[] = [];
 
-  if (locales.length !== 1 || locales[0] !== 'en-US') {
-    problems.push(`LOCALES must equal ["en-US"], got [${locales.join(', ')}]`);
+  if (locales.length === 0 || locales[0] !== 'en-US') {
+    problems.push(`LOCALES must start with "en-US", got [${locales.join(', ')}]`);
+  }
+  if (new Set(locales).size !== locales.length) {
+    problems.push(`LOCALES contains duplicate entries: [${locales.join(', ')}]`);
   }
 
+  const expectedLocaleFiles = new Set(locales.map((loc) => `${loc}.ts`));
   const localesDir = path.join(root, 'main/apps/web/src/i18n/locales');
   if (fs.existsSync(localesDir)) {
+    const presentFiles = new Set<string>();
     for (const entry of fs.readdirSync(localesDir)) {
-      if (entry !== 'en-US.ts') {
-        problems.push(`unexpected non-en-US locale file main/apps/web/src/i18n/locales/${entry}`);
+      if (entry.endsWith('.test.ts') || entry.endsWith('.spec.ts')) continue;
+      presentFiles.add(entry);
+      if (!expectedLocaleFiles.has(entry)) {
+        problems.push(`unexpected locale file main/apps/web/src/i18n/locales/${entry}`);
+      }
+    }
+    for (const expected of expectedLocaleFiles) {
+      if (!presentFiles.has(expected)) {
+        problems.push(`missing locale file main/apps/web/src/i18n/locales/${expected}`);
       }
     }
   }
@@ -108,6 +164,16 @@ export function auditWorkspaceI18n(options: AuditWorkspaceI18nOptions): CheckRes
   for (const key of enUsKeys) {
     if ((enUsTranslations[key] ?? '').trim() === '') {
       problems.push(`en-US: empty value for "${key}"`);
+    }
+  }
+
+  const secondaryLocales = locales.filter((loc) => loc !== 'en-US');
+  for (const loc of secondaryLocales) {
+    const secondaryMap = localeTranslations?.[loc];
+    if (secondaryMap === undefined) {
+      problems.push(`missing app translation map for advertised locale "${loc}"`);
+    } else {
+      auditSecondaryMap(`app/${loc}`, enUsTranslations, secondaryMap, problems);
     }
   }
 
@@ -130,12 +196,12 @@ export function auditWorkspaceI18n(options: AuditWorkspaceI18nOptions): CheckRes
       if (!entry.isDirectory()) continue;
       const moduleId = entry.name;
       const jsonPath = path.join(modulesRoot, moduleId, 'i18n/en-US.json');
-      let moduleMessages: Record<string, unknown> = {};
+      const moduleMessages: Record<string, string> = {};
       if (fs.existsSync(jsonPath)) {
         moduleCount++;
-        moduleMessages = JSON.parse(fs.readFileSync(jsonPath, 'utf8')) as Record<string, unknown>;
+        const rawEn = JSON.parse(fs.readFileSync(jsonPath, 'utf8')) as Record<string, unknown>;
         const expectedPrefix = `${moduleId}.`;
-        for (const [key, value] of Object.entries(moduleMessages)) {
+        for (const [key, value] of Object.entries(rawEn)) {
           if (!key.startsWith(expectedPrefix)) {
             problems.push(
               `main/modules/${moduleId}/i18n/en-US.json: key "${key}" must start with "${expectedPrefix}"`,
@@ -143,7 +209,26 @@ export function auditWorkspaceI18n(options: AuditWorkspaceI18nOptions): CheckRes
           }
           if (typeof value !== 'string' || value.trim() === '') {
             problems.push(`main/modules/${moduleId}/i18n/en-US.json: empty value for "${key}"`);
+          } else {
+            moduleMessages[key] = value;
           }
+        }
+
+        for (const loc of secondaryLocales) {
+          const locPath = path.join(modulesRoot, moduleId, `i18n/${loc}.json`);
+          if (!fs.existsSync(locPath)) {
+            problems.push(
+              `main/modules/${moduleId}/i18n/${loc}.json: missing translation bundle for locale "${loc}"`,
+            );
+            continue;
+          }
+          const rawLoc = JSON.parse(fs.readFileSync(locPath, 'utf8')) as Record<string, unknown>;
+          auditSecondaryMap(
+            `main/modules/${moduleId}/i18n/${loc}.json`,
+            moduleMessages,
+            rawLoc,
+            problems,
+          );
         }
       }
 
@@ -170,7 +255,7 @@ export function auditWorkspaceI18n(options: AuditWorkspaceI18nOptions): CheckRes
   }
 
   return pass(
-    `en-US only: ${String(enUsKeys.length)} app keys, ${String(moduleCount)} module bundles, ${String(checkedCalls)} t() call sites verified`,
+    `${locales.join(', ')}: ${String(enUsKeys.length)} app keys, ${String(moduleCount)} module bundles, ${String(checkedCalls)} t() call sites verified`,
   );
 }
 
@@ -180,6 +265,10 @@ export function run(): Promise<CheckResult> {
       root: REPO_ROOT,
       locales: LOCALES,
       enUsTranslations: enUS,
+      localeTranslations: {
+        'en-US': enUS,
+        'ko-KR': koKR,
+      },
     }),
   );
 }

@@ -16,9 +16,11 @@
  * @module i18n-provider
  */
 
+import { ModuleLocaleProvider } from '@bslt/web-platform';
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { enUS } from './locales/en-US';
+import { koKR } from './locales/ko-KR';
 import { DEFAULT_LOCALE, LOCALE_METADATA, SUPPORTED_LOCALES } from './types';
 import { detectLocale, interpolate } from './utils';
 
@@ -34,7 +36,10 @@ import type { ReactElement, ReactNode } from 'react';
  */
 const translationRegistry: Record<Locale, FlatTranslationMap> = {
   'en-US': enUS,
+  'ko-KR': koKR,
 };
+
+const EMPTY_MODULE_OVERRIDES: Readonly<Record<string, string>> = Object.freeze({});
 
 const LOCALE_STORAGE_KEY = 'abe-locale-preference';
 
@@ -81,6 +86,8 @@ interface I18nProviderProps {
   children: ReactNode;
   /** Initial locale override (defaults to browser-detected locale) */
   initialLocale?: Locale;
+  /** Optional lazy loader returning merged module message overrides for non-default locales */
+  loadModuleMessages?: (locale: Locale) => Promise<Readonly<Record<string, string>>>;
 }
 
 /**
@@ -111,14 +118,43 @@ interface I18nProviderProps {
  *
  * @complexity O(1) for t() lookups (hash map access)
  */
-export const I18nProvider = ({ children, initialLocale }: I18nProviderProps): ReactElement => {
+export const I18nProvider = ({
+  children,
+  initialLocale,
+  loadModuleMessages,
+}: I18nProviderProps): ReactElement => {
   const [locale, setLocale] = useState<Locale>(() => resolveInitialLocale(initialLocale));
+  const [moduleOverrides, setModuleOverrides] =
+    useState<Readonly<Record<string, string>>>(EMPTY_MODULE_OVERRIDES);
 
   useEffect(() => {
     const root = document.documentElement;
     root.setAttribute('lang', locale);
     root.setAttribute('dir', LOCALE_METADATA[locale].direction);
   }, [locale]);
+
+  useEffect(() => {
+    if (locale === DEFAULT_LOCALE || loadModuleMessages === undefined) {
+      setModuleOverrides(EMPTY_MODULE_OVERRIDES);
+      return;
+    }
+    let cancelled = false;
+    void loadModuleMessages(locale).then(
+      (messages) => {
+        if (!cancelled) {
+          setModuleOverrides(messages);
+        }
+      },
+      () => {
+        if (!cancelled) {
+          setModuleOverrides(EMPTY_MODULE_OVERRIDES);
+        }
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [locale, loadModuleMessages]);
 
   /**
    * Translate a key with optional parameter interpolation.
@@ -142,5 +178,9 @@ export const I18nProvider = ({ children, initialLocale }: I18nProviderProps): Re
 
   const value = useMemo<I18nContextValue>(() => ({ locale, setLocale, t }), [locale, t]);
 
-  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+  return (
+    <I18nContext.Provider value={value}>
+      <ModuleLocaleProvider messages={moduleOverrides}>{children}</ModuleLocaleProvider>
+    </I18nContext.Provider>
+  );
 };

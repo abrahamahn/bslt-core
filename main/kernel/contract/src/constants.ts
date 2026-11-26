@@ -55,7 +55,7 @@ export const S3_DEFAULTS = {
   PRESIGN_EXPIRES_SECONDS: 3600,
 } as const;
 
-const LOCALES = ['en-US'] as const;
+const LOCALES = ['en-US', 'ko-KR'] as const;
 export type Locale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE = 'en-US' satisfies Locale;
 export const SUPPORTED_LOCALES = LOCALES;

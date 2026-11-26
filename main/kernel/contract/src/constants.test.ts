@@ -47,9 +47,9 @@ describe('contract platform and time constants', () => {
     expect(SAFE_METHODS.has('DELETE')).toBe(false);
   });
 
-  it('ships only en-US in SUPPORTED_LOCALES for the foundation', () => {
+  it('ships en-US and ko-KR in SUPPORTED_LOCALES with en-US as default', () => {
     expect(DEFAULT_LOCALE).toBe('en-US');
-    expect(SUPPORTED_LOCALES).toEqual(['en-US']);
+    expect(SUPPORTED_LOCALES).toEqual(['en-US', 'ko-KR']);
   });
 
   it('maintains consistent time, cookie, pagination, and strategy constants', () => {

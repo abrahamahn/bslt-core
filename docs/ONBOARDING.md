@@ -28,18 +28,26 @@ PostgreSQL 17 runs via Docker — no local Postgres installation required.
 ## 5-Minute Quick Start
 
 ```bash
-# 1. Install dependencies
+# Option A: Scaffold a brand-new personalized project directory (create-bslt)
+pnpm bslt create ../my-saas --name "Acme Cloud" --domain acme.com --scope @acme --preset ai-saas --yes
+cd ../my-saas && pnpm install && pnpm dev
+
+# Option B: Initialize this checkout in place
 pnpm install --frozen-lockfile
-
-# 2. One-click quickstart wizard (app name, @scope, optional modules, .env.local secrets)
-pnpm quickstart
-
-# 3. Or run non-interactively with Docker Postgres + migrations
-pnpm quickstart -- --name "Acme Cloud" --domain acme.com --scope @acme --with-postgres --yes
-
-# 4. Run web + API + sync watchers
+pnpm quickstart -- --preset b2b-saas --name "Acme Cloud" --domain acme.com --scope @acme --with-postgres --yes
 pnpm dev
 ```
+
+Available presets: `core` (identity + compliance + audit), `solo-saas` (billing + notifications + files), `b2b-saas` (multi-tenant orgs + projects + growth + enterprise SSO), and `ai-saas` (adds zero-dep `@bslt/ai` SSE streaming + token metering).
+
+### Deploy in Under 5 Minutes
+
+Ready-made production templates ship in `infra/deploy/` alongside DigitalOcean and GCP:
+
+- **Fly.io:** `infra/deploy/fly/fly.toml` + `fly.web.toml` — see [`deploy/providers/fly.md`](./deploy/providers/fly.md)
+- **Railway:** `infra/deploy/railway/railway.json` + `railway.web.json` — see [`deploy/providers/railway.md`](./deploy/providers/railway.md)
+- **Render Blueprint:** `infra/deploy/render/render.yaml` — see [`deploy/providers/render.md`](./deploy/providers/render.md)
+- **DigitalOcean Droplet / GCP / Cloudflare:** see [`deploy/providers/README.md`](./deploy/providers/README.md)
 
 For manual step-by-step setup (`pnpm bslt rename` + `pnpm bootstrap`), see [`dev/rename.md`](./dev/rename.md) and [`config/env/README.md`](../config/env/README.md). To install, remove, package, or export optional vertical modules (`bslt-core` distribution):
 

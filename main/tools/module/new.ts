@@ -2067,6 +2067,39 @@ describe('${id}Server HTTP handlers', () => {
   );
 
   files.set(
+    `${base}/i18n/ko-KR.json`,
+    JSON.stringify(
+      {
+        [`${id}.title`]: Pascal,
+        [`${id}.nav`]: Pascal,
+        [`${id}.navHint`]: `${Pascal} 항목 관리`,
+        [`${id}.paletteLabel`]: `${Pascal}로 이동`,
+        [`${id}.paletteDescription`]: `${Pascal} 화면 열기`,
+        [`${id}.dashboardDescription`]: `대시보드에서 ${Pascal} 워크플로를 관리하세요.`,
+        [`${id}.dashboardAction`]: `${Pascal} 열기`,
+        [`${id}.eyebrow`]: '워크스페이스 모듈',
+        [`${id}.subtitle`]: `${Pascal} 항목을 기록하고 추적합니다.`,
+        [`${id}.summaryAria`]: `${Pascal} 요약`,
+        [`${id}.open`]: '진행 중',
+        [`${id}.done`]: '완료',
+        [`${id}.inputLabel`]: `${Pascal} 제목`,
+        [`${id}.inputPlaceholder`]: `${Pascal} 추가`,
+        [`${id}.adding`]: '추가 중...',
+        [`${id}.add`]: `${Pascal} 추가`,
+        [`${id}.listAria`]: `${Pascal} 목록`,
+        [`${id}.loading`]: `${Pascal} 불러오는 중...`,
+        [`${id}.emptyTitle`]: `아직 ${Pascal} 항목이 없습니다`,
+        [`${id}.emptyDescription`]: `첫 번째 항목을 추가하여 ${Pascal} 사용을 시작하세요.`,
+        [`${id}.complete`]: '완료',
+        [`${id}.reopen`]: '다시 열기',
+        [`${id}.delete`]: '삭제',
+      },
+      null,
+      2,
+    ),
+  );
+
+  files.set(
     `${base}/web/hooks.ts`,
     `// ${base}/web/hooks.ts
 import { useMemo } from 'react';
@@ -2953,6 +2986,9 @@ export const ${id}Web = implementWeb(${id}Module, {
     },
   ],
   messages: enUsMessages,
+  locales: {
+    'ko-KR': () => import('../i18n/ko-KR.json'),
+  },
 });
 `,
   );

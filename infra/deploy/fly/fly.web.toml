@@ -1,0 +1,40 @@
+# infra/deploy/fly/fly.web.toml
+# Fly.io configuration for the BSLT Web SSR + SPA frontend (`infra/docker/Dockerfile.web`).
+# Usage from repository root:
+#   fly launch --config infra/deploy/fly/fly.web.toml --no-deploy
+#   fly deploy --config infra/deploy/fly/fly.web.toml \
+#     --build-arg SITE_URL=https://app.example.com \
+#     --build-arg VITE_API_URL=https://api.example.com \
+#     --build-arg VITE_APP_NAME="Your App"
+
+app = "bslt-web"
+primary_region = "iad"
+
+[build]
+  dockerfile = "../../docker/Dockerfile.web"
+
+[env]
+  NODE_ENV = "production"
+  PROCESS_ROLE = "web"
+  HOST = "0.0.0.0"
+  PORT = "8080"
+  WEB_CLIENT_DIR = "/app/dist/client"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "3s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

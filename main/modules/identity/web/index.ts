@@ -319,4 +319,7 @@ export const identityWeb = implementWeb(identityModule, {
     { field: 'notificationType', match: 'security_alert', to: '/settings?tab=security' },
   ],
   messages: enUsMessages,
+  locales: {
+    'ko-KR': () => import('../i18n/ko-KR.json'),
+  },
 });

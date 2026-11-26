@@ -215,4 +215,7 @@ export const complianceWeb = implementWeb(complianceModule, {
     },
   ],
   messages: enUsMessages,
+  locales: {
+    'ko-KR': () => import('../i18n/ko-KR.json'),
+  },
 });

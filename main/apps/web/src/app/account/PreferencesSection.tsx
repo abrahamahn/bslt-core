@@ -1,11 +1,12 @@
 // main/apps/web/src/app/account/PreferencesSection.tsx
 import { Button, Heading, Select, Text, useTheme } from '@bslt/ui';
-import { useCallback, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useContext, useMemo, useState, type ReactElement } from 'react';
 
 import { LanguageSelector } from './LanguageSelector';
 
 import type { ContrastMode, Density, ThemeMode } from '@bslt/react/hooks';
 
+import { enUS, I18nContext } from '#app/i18n';
 import { AUTO_TIMEZONE, getTimezonePreference, TIMEZONE_STORAGE_KEY } from '#app/i18n/format';
 
 interface PreferencesSectionProps {
@@ -19,12 +20,6 @@ interface OptionGroup<T extends string> {
   readonly onSelect: (value: T) => void;
   readonly options: ReadonlyArray<{ value: T; label: string; description: string }>;
 }
-
-const THEME_OPTIONS: { value: ThemeMode; label: string; description: string }[] = [
-  { value: 'light', label: 'Light', description: 'Always use light theme' },
-  { value: 'dark', label: 'Dark', description: 'Always use dark theme' },
-  { value: 'system', label: 'System', description: 'Match your operating system setting' },
-];
 
 const CONTRAST_OPTIONS: { value: ContrastMode; label: string; description: string }[] = [
   { value: 'normal', label: 'Normal', description: 'Standard contrast' },
@@ -137,6 +132,12 @@ function OptionGrid<T extends string>({
 }
 
 export const PreferencesSection = ({ className }: PreferencesSectionProps): ReactElement => {
+  const i18n = useContext(I18nContext);
+  const t = useCallback(
+    (key: string): string => (i18n !== undefined ? i18n.t(key) : (enUS[key] ?? key)),
+    [i18n],
+  );
+
   const {
     mode: theme,
     setMode: setTheme,
@@ -145,6 +146,27 @@ export const PreferencesSection = ({ className }: PreferencesSectionProps): Reac
     density,
     setDensity,
   } = useTheme();
+
+  const themeOptions = useMemo<{ value: ThemeMode; label: string; description: string }[]>(
+    () => [
+      {
+        value: 'light',
+        label: t('settings.preferences.theme.light'),
+        description: t('settings.preferences.theme.lightDescription'),
+      },
+      {
+        value: 'dark',
+        label: t('settings.preferences.theme.dark'),
+        description: t('settings.preferences.theme.darkDescription'),
+      },
+      {
+        value: 'system',
+        label: t('settings.preferences.theme.system'),
+        description: t('settings.preferences.theme.systemDescription'),
+      },
+    ],
+    [t],
+  );
 
   const [selectedTimezone, setSelectedTimezone] = useState<string>(getTimezonePreference);
   const timezoneOptions = useMemo(() => getTimezoneOptions(), []);
@@ -158,20 +180,21 @@ export const PreferencesSection = ({ className }: PreferencesSectionProps): Reac
     <div className={className}>
       <div className="settings-preferences">
         <OptionGrid
-          heading="Theme"
-          description="Choose how the application looks, or let it follow your system settings."
+          heading={t('settings.preferences.theme.title')}
+          description={t('settings.preferences.theme.description')}
           group={{
             testIdPrefix: 'theme-option',
-            ariaLabel: 'Theme',
+            ariaLabel: t('settings.preferences.theme.title'),
             value: theme,
             onSelect: setTheme,
-            options: THEME_OPTIONS,
+            options: themeOptions,
           }}
         />
         <Text size="sm" tone="muted" className="mt-2">
-          Current selection:{' '}
+          {t('settings.preferences.theme.currentSelection')}{' '}
           <Text as="span" size="sm" className="font-medium" data-testid="current-theme">
-            {THEME_OPTIONS.find((o) => o.value === theme)?.label ?? 'System'}
+            {themeOptions.find((o) => o.value === theme)?.label ??
+              t('settings.preferences.theme.system')}
           </Text>
         </Text>
 
@@ -201,10 +224,10 @@ export const PreferencesSection = ({ className }: PreferencesSectionProps): Reac
 
         <div className="settings-preferences__group">
           <Heading as="h4" size="sm" className="mb-2">
-            Timezone
+            {t('settings.preferences.timezone.title')}
           </Heading>
           <Text size="sm" tone="muted" className="mb-4">
-            Set your preferred timezone for displaying dates and times.
+            {t('settings.preferences.timezone.description')}
           </Text>
 
           <Select
@@ -225,10 +248,10 @@ export const PreferencesSection = ({ className }: PreferencesSectionProps): Reac
 
         <div className="settings-preferences__group">
           <Heading as="h4" size="sm" className="mb-2">
-            Language
+            {t('settings.preferences.language.title')}
           </Heading>
           <Text size="sm" tone="muted" className="mb-4">
-            Choose your preferred language for the application interface.
+            {t('settings.preferences.language.description')}
           </Text>
 
           <LanguageSelector />

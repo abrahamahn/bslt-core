@@ -181,4 +181,7 @@ export const devtoolsWeb = implementWeb(devtoolsModule, {
     },
   ],
   messages: enUsMessages,
+  locales: {
+    'ko-KR': () => import('../i18n/ko-KR.json'),
+  },
 });

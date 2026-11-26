@@ -114,8 +114,13 @@ describe('resolveLocale', () => {
     expect(resolveLocale([{ locale: 'en-GB', quality: 1 }])).toBe('en-US');
   });
 
+  test('should resolve ko-KR for exact tag and "ko" prefix', () => {
+    expect(resolveLocale([{ locale: 'ko-KR', quality: 1 }])).toBe('ko-KR');
+    expect(resolveLocale([{ locale: 'ko', quality: 1 }])).toBe('ko-KR');
+  });
+
   test('should fall back to DEFAULT_LOCALE for unsupported locales', () => {
-    for (const locale of ['es', 'es-MX', 'fr-FR', 'de', 'ja', 'ko', 'zh-CN', 'pt-BR', 'ar', 'th']) {
+    for (const locale of ['es', 'es-MX', 'fr-FR', 'de', 'ja', 'zh-CN', 'pt-BR', 'ar', 'th']) {
       expect(resolveLocale([{ locale, quality: 1 }])).toBe(DEFAULT_LOCALE);
     }
   });
@@ -139,8 +144,8 @@ describe('constants', () => {
     expect(DEFAULT_LOCALE).toBe('en-US');
   });
 
-  test('SUPPORTED_LOCALES should contain only en-US in foundation', () => {
-    expect(SUPPORTED_LOCALES).toEqual(['en-US']);
+  test('SUPPORTED_LOCALES should contain en-US and ko-KR', () => {
+    expect(SUPPORTED_LOCALES).toEqual(['en-US', 'ko-KR']);
   });
 });
 
@@ -177,13 +182,12 @@ describe('registerLocaleHook', () => {
     expect(body.locale).toBe('en-US');
   });
 
-  test('should fall back to en-US for non-en-US Accept-Language headers', async () => {
+  test('should fall back to en-US for unsupported Accept-Language headers', async () => {
     for (const header of [
       'es',
       'fr-FR,fr;q=0.9,en;q=0.8',
       'th-TH',
       'th-TH,th;q=0.9,fr;q=0.8,en-US;q=0.7',
-      'ko-KR,ko;q=0.9',
       'ja',
       'zh-CN,zh;q=0.9',
       'pt-BR,pt;q=0.9',
@@ -200,6 +204,18 @@ describe('registerLocaleHook', () => {
       const body = JSON.parse(response.body) as { locale: string };
       expect(body.locale).toBe('en-US');
     }
+  });
+
+  test('should resolve ko-KR from Accept-Language: ko-KR,ko;q=0.9', async () => {
+    const response = await server.inject({
+      method: 'GET',
+      url: '/test',
+      headers: { 'accept-language': 'ko-KR,ko;q=0.9' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    const body = JSON.parse(response.body) as { locale: string };
+    expect(body.locale).toBe('ko-KR');
   });
 
   test('should resolve en-US from Accept-Language: en-US,en;q=0.9', async () => {
