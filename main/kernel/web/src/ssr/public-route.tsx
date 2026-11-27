@@ -157,6 +157,7 @@ interface HydratePublicOptions<Sdk = AnonymousSdk> {
   readonly modules?: readonly Pick<ModuleDefinition, 'id' | 'endpoints'>[] | undefined;
   readonly sdk?: Sdk | undefined;
   readonly apiBaseUrl?: string | undefined;
+  readonly appName?: string | undefined;
   readonly fetchImpl?: typeof fetch | undefined;
   readonly Shell?: ComponentType<{ readonly children?: ReactNode }> | undefined;
   readonly onUnhandledNavigate?: ((href: string) => void) | undefined;
@@ -831,6 +832,7 @@ function PublicHydratedViewport<Sdk = AnonymousSdk>({
   initialData,
   hasInitialData,
   sdk,
+  appName,
   Shell,
   onUnhandledNavigate,
 }: {
@@ -839,6 +841,7 @@ function PublicHydratedViewport<Sdk = AnonymousSdk>({
   readonly initialData: unknown;
   readonly hasInitialData: boolean;
   readonly sdk: Sdk;
+  readonly appName: string;
   readonly Shell: ComponentType<{ readonly children?: ReactNode }>;
   readonly onUnhandledNavigate: (href: string) => void;
 }): ReactElement | null {
@@ -877,7 +880,7 @@ function PublicHydratedViewport<Sdk = AnonymousSdk>({
         if (cancelled) return;
         const nextHead = matched.route.head(nextData);
         applyClientHeadTags(document, nextHead, {
-          appName: nextHead.title.trim() !== '' ? nextHead.title : document.title,
+          appName,
           siteUrl: window.location.origin,
           pathname: currentPathname,
         });
@@ -892,6 +895,7 @@ function PublicHydratedViewport<Sdk = AnonymousSdk>({
       cancelled = true;
     };
   }, [
+    appName,
     currentPathname,
     location.hash,
     location.pathname,
@@ -1034,6 +1038,10 @@ export function hydratePublic<Sdk = AnonymousSdk>(
     }) as unknown as Sdk);
 
   const Shell = options.Shell ?? DefaultPublicFrame;
+  const resolvedAppName =
+    options.appName ??
+    ownerDocument.head.querySelector('meta[property="og:site_name"]')?.getAttribute('content') ??
+    'BSLT';
   const initialPathname = dehydrated?.urlPathname ?? normalizePathname(window.location.pathname);
   const handleUnhandledNavigate =
     options.onUnhandledNavigate ??
@@ -1059,6 +1067,7 @@ export function hydratePublic<Sdk = AnonymousSdk>(
                 initialData={dehydrated?.data}
                 hasInitialData={dehydrated !== null}
                 sdk={sdk}
+                appName={resolvedAppName}
                 Shell={Shell}
                 onUnhandledNavigate={handleUnhandledNavigate}
               />

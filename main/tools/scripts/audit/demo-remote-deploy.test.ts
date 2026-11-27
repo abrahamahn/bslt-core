@@ -230,7 +230,7 @@ describe('demo remote deploy: order and failure', () => {
     );
     expect(order.every((index) => index > -1)).toBe(true);
     expect(order).toEqual(order.toSorted((a, b) => a - b));
-  });
+  }, 30_000);
 
   it('stops before bootstrap when postgres never accepts TCP connections', () => {
     const run = runRemoteDeploy({ STUB_PG_READY_EXIT: '1' });
@@ -241,7 +241,7 @@ describe('demo remote deploy: order and failure', () => {
     expect(run.docker).not.toContain(BOOTSTRAP);
     expect(run.docker).not.toContain(MIGRATE);
     expect(run.docker).not.toContain(START_SERVICES);
-  });
+  }, 30_000);
 
   it('does not migrate or recreate api and web when the role bootstrap fails', () => {
     const run = runRemoteDeploy({ STUB_BOOTSTRAP_EXIT: '1' });

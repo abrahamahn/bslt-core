@@ -28,6 +28,14 @@ const STATIC_PUBLIC_HEADS: Readonly<Record<string, StaticHeadEntry>> = {
     title: 'Changelog',
     description: `Release history and milestones for ${PRODUCT_TAGLINE}.`,
   },
+  '/blog': {
+    title: 'Engineering & Product Blog',
+    description: 'Architecture deep dives, release notes, and product engineering guides.',
+  },
+  '/waitlist': {
+    title: 'Request Early Access',
+    description: 'Join the early-access waitlist and reserve your workspace spot.',
+  },
   '/pricing': {
     title: 'Pricing & Plans',
     description: 'Compare Free, Pro, and Team plans with instant workspace upgrades.',
@@ -129,6 +137,11 @@ const STATIC_PRIVATE_HEADS: Readonly<Record<string, StaticHeadEntry>> = {
     description: 'Completing passwordless sign-in.',
     robots: 'noindex, nofollow',
   },
+  '/auth/sso/callback': {
+    title: 'Enterprise SSO Sign-In',
+    description: 'Completing workspace single sign-on.',
+    robots: 'noindex, nofollow',
+  },
   '/reactivate': {
     title: 'Reactivate Account',
     description: 'Restore your deactivated account.',
@@ -189,6 +202,21 @@ const STATIC_PRIVATE_HEADS: Readonly<Record<string, StaticHeadEntry>> = {
     description: 'Track and manage your tasks.',
     robots: 'noindex, nofollow',
   },
+  '/projects': {
+    title: 'Projects',
+    description: 'Collaborative multi-tenant workspaces and Kanban boards.',
+    robots: 'noindex, nofollow',
+  },
+  '/ai': {
+    title: 'AI Assistant',
+    description: 'Streaming AI conversations with org-scoped history and token metering.',
+    robots: 'noindex, nofollow',
+  },
+  '/referrals': {
+    title: 'Referrals',
+    description: 'Share your personal referral link and track signups.',
+    robots: 'noindex, nofollow',
+  },
   '/files': {
     title: 'Files & Media',
     description: 'Upload, organize, and share workspace files and media assets.',
@@ -239,6 +267,11 @@ const STATIC_PRIVATE_HEADS: Readonly<Record<string, StaticHeadEntry>> = {
     description: 'Interactive catalog of owned @bslt/ui components.',
     robots: 'noindex, nofollow',
   },
+  '/side-peek-ui-library': {
+    title: 'Side-Peek UI Library',
+    description: 'Side-peek interactive preview of owned @bslt/ui components.',
+    robots: 'noindex, nofollow',
+  },
   '/clean': {
     title: 'Dev Workspace Docs',
     description: 'Local developer documentation viewer.',
@@ -276,6 +309,8 @@ const ADMIN_SECTION_LABELS: Readonly<Record<string, string>> = {
   users: 'User Management',
   tenants: 'Tenant Directory',
   'feature-flags': 'Feature Flags',
+  growth: 'Growth & Launch',
+  search: 'Workspace Search',
   billing: 'Admin Billing Plans',
   entitlements: 'Admin Entitlements',
   compliance: 'Compliance & Holds',
@@ -361,6 +396,28 @@ export function resolveRouteHead(pathname: string, appName: string): HeadTags {
     return {
       title: formatTitle(`${label} — Admin`, appName),
       description: 'Platform administration and governance console.',
+      robots: 'noindex, nofollow',
+    };
+  }
+
+  if (clean.startsWith('/blog/')) {
+    const slug = clean.slice('/blog/'.length).split('/')[0] ?? '';
+    const readableSlug = slug
+      .split('-')
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+    return {
+      title: formatTitle(readableSlug !== '' ? `${readableSlug} — Blog` : 'Blog', appName),
+      description: 'Architecture deep dives, release notes, and product engineering guides.',
+      ogType: 'article',
+    };
+  }
+
+  if (clean.startsWith('/projects/')) {
+    return {
+      title: formatTitle('Project Board', appName),
+      description: 'Collaborative multi-tenant Kanban board and project cards.',
       robots: 'noindex, nofollow',
     };
   }

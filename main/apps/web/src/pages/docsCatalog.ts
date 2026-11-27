@@ -241,21 +241,21 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
         heading: 'How the App Is Organized (Four Clear Spaces)',
         body: 'Every screen in the application belongs to one of four explicit shells, matching how modern SaaS teams operate:',
         bullets: [
-          'Public Surface (/, /docs, /pricing, /changelog, /status, /support, legal pages): fast SSR-prerendered pages anyone can read before signing in.',
-          'Personal Account (/profile, /settings/*): strictly personal identity — profile, password, passkeys, 2FA, active sessions, notifications, preferences, personal API keys, and GDPR data controls.',
-          'Workspace Control Center (/workspace, /workspace/*): team-owned multi-tenant space — workspace members, invitations, custom roles, billing & invoices, plan entitlements, self-service webhooks, and activity.',
-          'Platform Admin Console (/admin/*): cross-tenant operator console for platform administrators — health, users, tenants, feature flags, plan catalog, moderation, compliance holds, audit logs, and job queues.',
+          'Public Surface (/, /docs, /docs/api, /pricing, /blog, /waitlist, /changelog, /status, /support, legal pages): fast SSR-prerendered pages anyone can read before signing in.',
+          'Personal Account (/profile, /settings/*, /referrals): strictly personal identity — profile, password, passkeys, 2FA, active sessions, notifications, en-US / ko-KR preferences, personal API keys, personal referral link, and GDPR data controls.',
+          'Workspace Control Center & Collaboration (/projects, /ai, /workspace, /workspace/*): team-owned multi-tenant spaces — Kanban project boards, streaming AI Assistant with token metering, workspace members, Enterprise OIDC SSO, billing & invoices, entitlements, webhooks, and activity.',
+          'Platform Admin Console (/admin/*): cross-tenant operator console for platform administrators — health, users, tenants, growth & waitlist waves, feature flags, plan catalog, moderation, compliance holds, audit logs, and job queues.',
         ],
       },
       {
         heading: '60-Second Guided Walkthrough',
         body: 'Want to experience the live app end-to-end? Follow these five steps in order:',
         bullets: [
-          '1. Visit /register to create an account (or /login if you already have one).',
+          '1. Visit /register to create an account (or /login with Demo Quick Sign-In when DEMO_MODE=true).',
           '2. Run /onboarding to set your name, configure your default workspace, and optionally send team invites.',
-          '3. Open /dashboard to inspect your active workspace badge, current plan tier, KPI cards, and setup checklist.',
-          '4. Press ⌘K (or click Jump to…) from any signed-in screen to navigate across Tasks, Files, Workspace Search, Settings, and Workspace Controls.',
-          '5. Open /workspace to manage members, view /workspace/billing and /workspace/entitlements, or register self-service /workspace/webhooks.',
+          '3. Open /dashboard to inspect your active workspace badge, current plan tier, KPI cards, and setup checklist — and toggle en-US ↔ ko-KR right in the header.',
+          '4. Explore /projects (collaborative Kanban boards), /ai (zero-dep SSE AI Assistant), /referrals (invite link), or press ⌘K to jump anywhere.',
+          '5. Open /workspace to manage members, Enterprise OIDC SSO, /workspace/billing, /workspace/entitlements, or self-service /workspace/webhooks — and try live endpoints in /docs/api.',
         ],
       },
     ],
@@ -510,9 +510,28 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
       'webhooks',
       'audit',
       'seats',
+      'projects',
+      'kanban',
+      'ai',
+      'sso',
+      'oidc',
     ],
-    relatedModules: ['orgs', 'webhooks', 'audit', 'files', 'tasks', 'search'],
+    relatedModules: ['orgs', 'projects', 'ai', 'webhooks', 'audit', 'files', 'tasks', 'search'],
     routes: [
+      {
+        path: '/projects',
+        label: 'Collaborative Projects & Boards',
+        access: 'Workspace',
+        description:
+          'Create org-scoped project boards, add Kanban cards, move columns, and sync updates live over WebSockets.',
+      },
+      {
+        path: '/ai',
+        label: 'Zero-Dep AI Assistant',
+        access: 'Workspace',
+        description:
+          'Stream OpenAI, Anthropic, Gemini, or Mock completions over native SSE with persisted history and token metering.',
+      },
       {
         path: '/workspace',
         label: 'Workspace Control Center',
@@ -554,6 +573,7 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
         body: 'Switching your active workspace in the sidebar or top header updates the x-org-id context across every workspace-scoped API call:',
         bullets: [
           'PostgreSQL Row-Level Security policies enforce tenant isolation directly in the database via sys_current_org_id().',
+          'Enterprise OIDC SSO supports verified email domains, PKCE authorization flows, JIT user provisioning, and optional domain-wide SSO enforcement.',
           'Seat quotas (org.metadata.maxSeats) are enforced server-side on both direct member additions and pending invitations.',
           'Custom roles use append-only permission bitmasks locked in bslt.lock.json so permissions never silently drift across deploys.',
         ],
@@ -662,9 +682,27 @@ export const DOC_CHAPTERS: readonly DocGuideChapter[] = [
       'jobs',
       'impersonation',
       'webhooks',
+      'growth',
+      'waitlist',
     ],
-    relatedModules: ['admin', 'flags', 'moderation', 'compliance', 'audit', 'support', 'webhooks'],
+    relatedModules: [
+      'admin',
+      'growth',
+      'flags',
+      'moderation',
+      'compliance',
+      'audit',
+      'support',
+      'webhooks',
+    ],
     routes: [
+      {
+        path: '/admin/growth',
+        label: 'Growth, Waitlist & Announcements',
+        access: 'Platform Admin',
+        description:
+          'Approve waitlist invite waves, trigger branded invite emails, and publish site-wide announcement banners.',
+      },
       {
         path: '/admin/health',
         label: 'System Health & Metrics',

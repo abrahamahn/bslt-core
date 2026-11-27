@@ -62,4 +62,41 @@ describe('entry-public', () => {
       handle?.unmount();
     });
   });
+
+  it('dynamically loads docsPublicRoutes when hydrating a /docs SSR page', async () => {
+    const rendered = await renderPublic(new URL('https://app.bslt.dev/docs'), publicRoutes, {
+      apiInternalUrl: 'http://api.internal:8080',
+      siteUrl: 'https://app.bslt.dev',
+      modules: PUBLIC_SSR_MODULES,
+      Shell: PublicDocumentShell,
+      template: TEMPLATE,
+    });
+
+    const parsed = new DOMParser().parseFromString(rendered?.html ?? '', 'text/html');
+    document.head.innerHTML = parsed.head.innerHTML;
+    document.body.innerHTML = parsed.body.innerHTML;
+    window.history.replaceState({}, '', '/docs');
+
+    const root = document.getElementById('root');
+    if (root === null) throw new Error('missing #root');
+    const serverHeading = root.querySelector('#docs-chapter-title');
+    expect(serverHeading).not.toBeNull();
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    let handle: ReturnType<typeof bootstrapPublicClient> = null;
+    await act(async () => {
+      handle = bootstrapPublicClient(root);
+      await new Promise((resolve) => {
+        setTimeout(resolve, 25);
+      });
+    });
+
+    expect(handle).not.toBeNull();
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(root.querySelector('#docs-chapter-title')).toBe(serverHeading);
+
+    act(() => {
+      handle?.unmount();
+    });
+  });
 });

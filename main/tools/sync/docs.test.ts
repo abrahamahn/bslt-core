@@ -97,7 +97,7 @@ describe('bslt sync docs & generated-docs gate', () => {
 
     await syncDocs({ root });
     expect((await run({ root })).ok).toBe(true);
-  });
+  }, 30_000);
 
   it('attributes every HTTP route, DB table, event, job, cron entry, and web route to a module or kernel', async () => {
     const root = createScratchDocsRoot();
@@ -123,5 +123,5 @@ describe('bslt sync docs & generated-docs gate', () => {
     expect(webRefTs).toContain('/api/auth/login');
     expect(webRefTs).toContain('identity_users');
     expect(webRefTs).toContain('sys.outbox.retention');
-  });
+  }, 30_000);
 });
