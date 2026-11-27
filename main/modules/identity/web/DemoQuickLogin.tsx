@@ -6,8 +6,13 @@ import { useModuleMessages } from '@bslt/web-platform';
 
 import enUsMessages from '../i18n/en-US.json';
 
+type DemoPersonaLabelKey =
+  | 'identity.demoQuickLogin.personaAdmin'
+  | 'identity.demoQuickLogin.personaWorkspaceAdmin'
+  | 'identity.demoQuickLogin.personaMember';
+
 interface DemoPersona {
-  readonly label: string;
+  readonly labelKey: DemoPersonaLabelKey;
   readonly role: string;
   readonly email: string;
   readonly password: string;
@@ -15,19 +20,19 @@ interface DemoPersona {
 
 const DEMO_PERSONAS: readonly DemoPersona[] = [
   {
-    label: 'Platform Admin',
+    labelKey: 'identity.demoQuickLogin.personaAdmin',
     role: 'admin',
     email: 'admin@example.com',
     password: 'password123',
   },
   {
-    label: 'Workspace Admin',
+    labelKey: 'identity.demoQuickLogin.personaWorkspaceAdmin',
     role: 'user',
     email: 'user@example.com',
     password: 'password123',
   },
   {
-    label: 'Demo Member',
+    labelKey: 'identity.demoQuickLogin.personaMember',
     role: 'user',
     email: 'demo@example.com',
     password: 'password123',
@@ -80,7 +85,7 @@ export function DemoQuickLogin({
               onSelect(persona.email, persona.password);
             }}
           >
-            {persona.label}
+            {t(persona.labelKey)}
           </Button>
         ))}
       </div>

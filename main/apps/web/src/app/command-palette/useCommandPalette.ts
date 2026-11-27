@@ -18,6 +18,8 @@ import { createCommands, filterCommands } from './commands';
 
 import type { Command } from './commands';
 
+import { useChromeTranslation } from '#app/i18n/chromeLabels';
+
 const openListeners = new Set<() => void>();
 
 /** Imperatively opens any mounted CommandPalette instance (e.g. from the header trigger). */
@@ -70,6 +72,7 @@ export function useCommandPalette(): UseCommandPaletteResult {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const navigate = useNavigate();
+  const { translatePaletteEntry } = useChromeTranslation();
   // App-wide theme state from ThemeProvider — a standalone useThemeMode() here
   // would read/write the wrong storage key and desync the rest of the app.
   const { cycleMode } = useTheme();
@@ -79,24 +82,32 @@ export function useCommandPalette(): UseCommandPaletteResult {
   const billingEnabled = isFlagEnabled('flags.billing');
   const teamsEnabled = isFlagEnabled('orgs.teams');
 
-  // Build commands with injected dependencies
-  const commands = useMemo(
-    () =>
-      signedOut
-        ? []
-        : createCommands(
-            {
-              navigate,
-              cycleTheme: cycleMode,
-            },
-            {
-              adminEnabled: user !== null && isAdmin(user.role),
-              billingEnabled,
-              teamsEnabled,
-            },
-          ),
-    [signedOut, navigate, cycleMode, user, billingEnabled, teamsEnabled],
-  );
+  // Build commands with injected dependencies and active locale labels
+  const commands = useMemo(() => {
+    if (signedOut) return [];
+    return createCommands(
+      {
+        navigate,
+        cycleTheme: cycleMode,
+      },
+      {
+        adminEnabled: user !== null && isAdmin(user.role),
+        billingEnabled,
+        teamsEnabled,
+      },
+    ).map((command): Command => {
+      const translated = translatePaletteEntry(command.id, command.label, command.description);
+      if (translated.label === command.label && translated.description === command.description) {
+        return command;
+      }
+      return {
+        ...command,
+        label: translated.label,
+        description: translated.description,
+        keywords: [...command.keywords, command.label, command.description],
+      };
+    });
+  }, [signedOut, navigate, cycleMode, user, billingEnabled, teamsEnabled, translatePaletteEntry]);
 
   // Filter commands based on query
   const filteredCommands = useMemo(() => filterCommands(commands, query), [commands, query]);

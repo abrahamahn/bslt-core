@@ -19,6 +19,11 @@ describe('useChromeTranslation', () => {
     );
     expect(result.current.translateAdminSurface('unknown', 'Fallback')).toBe('Fallback');
     expect(result.current.translateSiteSection('unknown', 'Custom Section')).toBe('Custom Section');
+    expect(result.current.t('dashboard.welcome', { name: 'Abe' })).toBe('Welcome back, Abe.');
+    expect(result.current.translateDashboardAction('/profile', 'Profile')).toBe('Profile');
+    expect(
+      result.current.translatePaletteEntry('nav-dashboard', 'Go to Dashboard', 'Desc'),
+    ).toEqual({ label: 'Go to Dashboard', description: 'Navigate to the main dashboard' });
   });
 
   it('translates app frame and module chrome labels when ko-KR and module overrides are active', async () => {
@@ -29,6 +34,11 @@ describe('useChromeTranslation', () => {
           'audit.activitiesNav': '활동 내역',
           'audit.auditLogAdminNav': '감사 로그',
           'status.siteTitle': '시스템 상태',
+          'tasks.nav': '작업',
+          'tasks.dashboardDescription': '개인 작업 관리',
+          'tasks.dashboardAction': '작업 열기',
+          'tasks.paletteLabel': '작업으로 이동',
+          'tasks.paletteDescription': '작업 목록 열기',
         })}
       >
         {children}
@@ -42,7 +52,28 @@ describe('useChromeTranslation', () => {
 
     expect(result.current.locale).toBe('ko-KR');
     expect(result.current.t('header.logout')).toBe('로그아웃');
+    expect(result.current.t('dashboard.welcome', { name: '아베' })).toBe(
+      '다시 오신 것을 환영해요, 아베님.',
+    );
     expect(result.current.translatePrimaryNav('/dashboard', 'Dashboard')).toBe('대시보드');
+    expect(result.current.translateDashboardAction('/profile', 'Profile')).toBe('프로필');
+    expect(
+      result.current.translateDashboardTile({
+        id: 'unknown-module',
+        label: 'Custom',
+        value: 'Ready',
+        description: 'Desc',
+        actionLabel: 'Open',
+      }),
+    ).toEqual({
+      label: 'Custom',
+      value: '준비됨',
+      description: 'Desc',
+      actionLabel: 'Open',
+    });
+    expect(
+      result.current.translatePaletteEntry('nav-dashboard', 'Go to Dashboard', 'Desc'),
+    ).toEqual({ label: '대시보드로 이동', description: '메인 대시보드로 이동합니다' });
     expect(result.current.translateAdminSurface('audit', 'Audit')).toBe('감사 로그');
     expect(result.current.translateSettingsSection('preferences', 'Preferences')).toBe('환경설정');
     expect(result.current.translateSiteSection('legal', 'Legal')).toBe('법적 고지');

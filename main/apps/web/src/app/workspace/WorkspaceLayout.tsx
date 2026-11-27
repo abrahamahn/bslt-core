@@ -8,6 +8,8 @@ import { hasBillingModule, installedModules, OptionalOrgSwitcher } from '../../g
 
 import '../account/SettingsPage.css';
 
+import { useChromeTranslation } from '#app/i18n/chromeLabels';
+
 interface WorkspaceNavItem {
   readonly id: string;
   readonly label: string;
@@ -20,10 +22,10 @@ const hasAuditModule = installedIds.has('audit');
 const hasEntitlementsModule = installedIds.has('entitlements');
 const hasWebhooksModule = installedIds.has('webhooks');
 
-const GROUP_LABELS: Readonly<Record<WorkspaceNavItem['group'], string>> = {
-  team: 'Team & Access',
-  plan: 'Plan & Usage',
-  developers: 'Developers',
+const GROUP_LABEL_KEYS: Readonly<Record<WorkspaceNavItem['group'], string>> = {
+  team: 'workspace.group.team',
+  plan: 'workspace.group.plan',
+  developers: 'workspace.group.developers',
 };
 
 const GROUP_ORDER: readonly WorkspaceNavItem['group'][] = ['team', 'plan', 'developers'];
@@ -39,17 +41,18 @@ function resolveActiveWorkspaceId(pathname: string): string {
 export const WorkspaceLayout = (): ReactElement => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useChromeTranslation();
   const { isFlagEnabled } = useCapabilities();
   const billingEnabled = isFlagEnabled('flags.billing');
 
   const navItems = useMemo((): readonly WorkspaceNavItem[] => {
     const items: WorkspaceNavItem[] = [
-      { id: 'general', label: 'Team & Settings', to: '/organization', group: 'team' },
+      { id: 'general', label: t('workspace.nav.general'), to: '/organization', group: 'team' },
     ];
     if (hasBillingModule && billingEnabled) {
       items.push({
         id: 'billing',
-        label: 'Billing & Invoices',
+        label: t('workspace.nav.billing'),
         to: '/workspace/billing',
         group: 'plan',
       });
@@ -57,7 +60,7 @@ export const WorkspaceLayout = (): ReactElement => {
     if (hasEntitlementsModule) {
       items.push({
         id: 'entitlements',
-        label: 'Plan & Entitlements',
+        label: t('workspace.nav.entitlements'),
         to: '/workspace/entitlements',
         group: 'plan',
       });
@@ -65,7 +68,7 @@ export const WorkspaceLayout = (): ReactElement => {
     if (hasWebhooksModule) {
       items.push({
         id: 'webhooks',
-        label: 'Webhooks',
+        label: t('workspace.nav.webhooks'),
         to: '/workspace/webhooks',
         group: 'developers',
       });
@@ -73,16 +76,16 @@ export const WorkspaceLayout = (): ReactElement => {
     if (hasAuditModule) {
       items.push({
         id: 'audit',
-        label: 'Audit & Activity',
+        label: t('workspace.nav.audit'),
         to: '/workspace/audit',
         group: 'developers',
       });
     }
     return items;
-  }, [billingEnabled]);
+  }, [billingEnabled, t]);
 
   const activeId = resolveActiveWorkspaceId(location.pathname);
-  const activeLabel = navItems.find((item) => item.id === activeId)?.label ?? 'Workspace';
+  const activeLabel = navItems.find((item) => item.id === activeId)?.label ?? t('workspace.title');
 
   const handleSelect = useCallback(
     (to: string): void => {
@@ -93,26 +96,26 @@ export const WorkspaceLayout = (): ReactElement => {
 
   return (
     <div className="settings-layout settings-page" data-testid="workspace-layout">
-      <aside className="settings-layout__sidebar" aria-label="Workspace control center">
+      <aside className="settings-layout__sidebar" aria-label={t('workspace.aria.controlCenter')}>
         <div className="settings-layout__sidebar-header">
           <Heading as="h2" size="md">
-            Workspace
+            {t('workspace.title')}
           </Heading>
           <Text size="xs" tone="muted">
-            Team, Plan & Developers
+            {t('workspace.subtitle')}
           </Text>
           <div className="settings-layout__switcher">
             <OptionalOrgSwitcher />
           </div>
         </div>
-        <nav className="settings-layout__nav" aria-label="Workspace sections">
+        <nav className="settings-layout__nav" aria-label={t('workspace.aria.sections')}>
           {GROUP_ORDER.map((group) => {
             const groupItems = navItems.filter((item) => item.group === group);
             if (groupItems.length === 0) return null;
             return (
               <div key={group} className="settings-layout__group">
                 <Text as="span" size="xs" tone="muted" className="settings-layout__group-label">
-                  {GROUP_LABELS[group]}
+                  {t(GROUP_LABEL_KEYS[group])}
                 </Text>
                 {groupItems.map((item) => {
                   const isActive = item.id === activeId;
@@ -142,7 +145,7 @@ export const WorkspaceLayout = (): ReactElement => {
           id={`workspace-panel-${activeId}`}
           role="region"
           data-active-tab={activeId}
-          aria-label={`${activeLabel} workspace panel`}
+          aria-label={t('workspace.aria.panel', { label: activeLabel })}
         >
           <Outlet />
         </div>

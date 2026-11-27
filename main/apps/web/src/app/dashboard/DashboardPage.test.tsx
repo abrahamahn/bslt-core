@@ -288,4 +288,25 @@ describe('DashboardPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
     expect(screen.queryByRole('heading', { name: 'Workspace Setup Checklist' })).toBeNull();
   });
+
+  it('renders localized Korean headings, metrics, and shortcuts under ko-KR', () => {
+    const environment = createMockEnvironment({ user: mockUser, isAuthenticated: true });
+    renderWithProviders(
+      <I18nProvider initialLocale="ko-KR">
+        <DashboardPage />
+      </I18nProvider>,
+      { environment },
+    );
+
+    expect(screen.getByRole('heading', { name: '대시보드', level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '계정' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '보안 및 바로가기' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '세션 관리' })).toHaveAttribute(
+      'href',
+      '/settings/sessions',
+    );
+    expect(
+      screen.getByRole('heading', { name: '워크스페이스 설정 체크리스트' }),
+    ).toBeInTheDocument();
+  });
 });

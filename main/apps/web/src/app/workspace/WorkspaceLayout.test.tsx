@@ -4,6 +4,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { hasBillingModule, installedModules } from '../../generated/modules';
+import { I18nProvider } from '../../i18n';
 
 import { WorkspaceLayout } from './WorkspaceLayout';
 
@@ -77,5 +78,27 @@ describe('WorkspaceLayout', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/workspace/audit');
     fireEvent.click(screen.getByRole('button', { name: 'Team & Settings' }));
     expect(mockNavigate).toHaveBeenCalledWith('/organization');
+  });
+
+  it('renders Korean workspace console chrome under ko-KR', () => {
+    render(
+      <CapabilityProvider
+        initialContext={{
+          ...EMPTY_CAPABILITY_CONTEXT,
+          flags: { 'flags.billing': true, 'orgs.teams': true },
+        }}
+      >
+        <I18nProvider initialLocale="ko-KR">
+          <WorkspaceLayout />
+        </I18nProvider>
+      </CapabilityProvider>,
+    );
+
+    expect(screen.getByRole('heading', { name: '워크스페이스' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '팀 및 설정' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '감사 및 활동' })).toBeInTheDocument();
+    if (hasBillingModule) {
+      expect(screen.getByRole('button', { name: '결제 및 청구서' })).toBeInTheDocument();
+    }
   });
 });

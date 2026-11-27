@@ -23,6 +23,8 @@ import type { Command } from './commands';
 
 import './CommandPalette.css';
 
+import { useChromeTranslation } from '#app/i18n/chromeLabels';
+
 // ============================================================================
 // Sub-components
 // ============================================================================
@@ -91,6 +93,7 @@ function CategoryHeader({ label }: { label: string }): ReactElement {
 // ============================================================================
 
 export function CommandPalette(): ReactElement {
+  const { t } = useChromeTranslation();
   const {
     isOpen,
     close,
@@ -161,18 +164,18 @@ export function CommandPalette(): ReactElement {
         if (!open) close();
       }}
     >
-      <Dialog.Content title="Command Palette" className="command-palette-content">
+      <Dialog.Content title={t('palette.title')} className="command-palette-content">
         <div className="command-palette-search">
           <Input
             ref={inputRef}
             type="text"
-            placeholder="Type a command..."
+            placeholder={t('palette.placeholder')}
             value={query}
             onChange={(e: ChangeEvent<HTMLInputElement>) => {
               setQuery(e.target.value);
             }}
             onKeyDown={handleKeyDown}
-            aria-label="Search commands"
+            aria-label={t('palette.searchAria')}
             aria-activedescendant={
               filteredCommands[selectedIndex] !== undefined
                 ? `command-${filteredCommands[selectedIndex].id}`
@@ -188,20 +191,20 @@ export function CommandPalette(): ReactElement {
         <div
           id="command-palette-listbox"
           role="listbox"
-          aria-label="Commands"
+          aria-label={t('palette.listAria')}
           className="command-palette-listbox"
         >
           {filteredCommands.length === 0 ? (
             <div className="command-palette-empty">
               <Text tone="muted" size="sm">
-                No commands found
+                {t('palette.empty')}
               </Text>
             </div>
           ) : (
             <>
               {navigationCommands.length > 0 && (
                 <div>
-                  <CategoryHeader label="Navigation" />
+                  <CategoryHeader label={t('palette.category.navigation')} />
                   {navigationCommands.map((command) => {
                     const entry = flatList.find((f) => f.command.id === command.id);
                     const globalIdx = entry?.globalIndex ?? 0;
@@ -225,7 +228,7 @@ export function CommandPalette(): ReactElement {
 
               {actionCommands.length > 0 && (
                 <div>
-                  <CategoryHeader label="Actions" />
+                  <CategoryHeader label={t('palette.category.actions')} />
                   {actionCommands.map((command) => {
                     const entry = flatList.find((f) => f.command.id === command.id);
                     const globalIdx = entry?.globalIndex ?? 0;
@@ -252,13 +255,13 @@ export function CommandPalette(): ReactElement {
 
         <div className="command-palette-footer">
           <Text size="xs" tone="muted">
-            <Kbd>↑↓</Kbd> navigate
+            <Kbd>↑↓</Kbd> {t('palette.hint.navigate')}
           </Text>
           <Text size="xs" tone="muted">
-            <Kbd>Enter</Kbd> select
+            <Kbd>Enter</Kbd> {t('palette.hint.select')}
           </Text>
           <Text size="xs" tone="muted">
-            <Kbd>Esc</Kbd> close
+            <Kbd>Esc</Kbd> {t('palette.hint.close')}
           </Text>
         </div>
       </Dialog.Content>

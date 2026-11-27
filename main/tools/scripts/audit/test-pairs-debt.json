@@ -1,18 +1,1 @@
-[
-  "main/apps/server/src/http/router.ts",
-  "main/apps/web/public/sw.js",
-  "main/apps/web/public/theme-init.js",
-  "main/kernel/comms/src/email/smtp.client.ts",
-  "main/kernel/comms/src/email/smtp.ts",
-  "main/kernel/comms/src/sms/twilio.ts",
-  "main/kernel/db/src/queue/types/queue-types.ts",
-  "main/kernel/db/src/schema/system.ts",
-  "main/kernel/db/src/testing/mocks.ts",
-  "main/kernel/db/src/utils/pagination.helpers.ts",
-  "main/kernel/db/src/utils/transaction.ts",
-  "main/kernel/react/src/query/debug.ts",
-  "main/kernel/react/src/utils/createFormHandler.ts",
-  "main/kernel/server/src/http/route.registry.ts",
-  "main/kernel/server/src/runtime/health.ts",
-  "main/kernel/ui/src/components/AuthForm.tsx"
-]
+["main/apps/web/public/sw.js", "main/apps/web/public/theme-init.js"]

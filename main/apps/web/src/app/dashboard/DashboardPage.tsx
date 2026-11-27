@@ -33,29 +33,36 @@ import './DashboardPage.css';
 import type { Locale } from '#app/i18n';
 import type { JSX } from 'react';
 
-import { formatDate, useLocale } from '#app/i18n';
+import { formatDate } from '#app/i18n';
+import { useChromeTranslation } from '#app/i18n/chromeLabels';
 
 const getGreetingName = ({
   displayName,
   email,
+  fallback,
   firstName,
 }: {
   displayName: string;
   email: string | undefined;
+  fallback: string;
   firstName: string;
 }): string => {
   if (firstName.trim().length > 0) return firstName.trim();
   if (displayName.length > 0) return displayName;
   const emailPrefix = email?.split('@')[0];
-  return emailPrefix !== undefined && emailPrefix.length > 0 ? emailPrefix : 'there';
+  return emailPrefix !== undefined && emailPrefix.length > 0 ? emailPrefix : fallback;
 };
 
 const formatPercentage = (value: number): string => `${String(Math.round(value))}%`;
 
-const formatDateShort = (value: string | null | undefined, locale: Locale): string => {
-  if (typeof value !== 'string' || value.length === 0) return 'Not available';
+const formatDateShort = (
+  value: string | null | undefined,
+  locale: Locale,
+  fallback: string,
+): string => {
+  if (typeof value !== 'string' || value.length === 0) return fallback;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Not available';
+  if (Number.isNaN(date.getTime())) return fallback;
   return formatDate(date, locale, { month: 'short', day: 'numeric' });
 };
 
@@ -77,6 +84,7 @@ interface DashboardMetricCardProps {
   label: string;
   value: string;
   description: string;
+  statusLabel: string;
   tone?: BadgeTone;
   loading?: boolean;
   href: string;
@@ -94,6 +102,7 @@ const DashboardMetricCard = ({
   label,
   value,
   description,
+  statusLabel,
   tone = 'info',
   loading = false,
   href,
@@ -105,7 +114,7 @@ const DashboardMetricCard = ({
         <Text tone="muted" size="sm" className="dashboard-card__label">
           {label}
         </Text>
-        <Badge tone={tone}>{loading ? 'Loading' : 'Ready'}</Badge>
+        <Badge tone={tone}>{statusLabel}</Badge>
       </div>
       {loading ? (
         <Skeleton width="7rem" height="2rem" />
@@ -144,7 +153,7 @@ const SurfaceRow = ({ label, value, detail, tone = 'info' }: SurfaceRowProps): J
 
 export const DashboardPage = (): JSX.Element => {
   const { user, isLoading } = useAuth();
-  const locale = useLocale();
+  const { locale, t, translateDashboardAction, translateDashboardTile } = useChromeTranslation();
   const { isFlagEnabled } = useCapabilities();
   const teamsEnabled = hasOrgsModule && isFlagEnabled('orgs.teams');
   const billingEnabled = hasBillingModule && isFlagEnabled('flags.billing');
@@ -155,6 +164,7 @@ export const DashboardPage = (): JSX.Element => {
   const greetingName = getGreetingName({
     displayName,
     email: user?.email,
+    fallback: t('dashboard.greetingFallback'),
     firstName,
   });
   const myAvatar = useOptionalMyAvatar({ enabled: user !== null && !isLoading });
@@ -195,7 +205,7 @@ export const DashboardPage = (): JSX.Element => {
   const activePlanLabel =
     subscription?.status === 'active' || subscription?.status === 'trialing'
       ? subscription.plan.name
-      : 'Free';
+      : t('dashboard.plan.free');
   const showUpgradeCta =
     billingEnabled && subscription?.status !== 'active' && subscription?.status !== 'trialing';
 
@@ -203,27 +213,29 @@ export const DashboardPage = (): JSX.Element => {
     () => [
       {
         id: 'profile',
-        label: 'Complete your profile name',
-        detail: hasName ? 'Profile display name is configured.' : 'Add your first and last name.',
+        label: t('dashboard.checklist.profileLabel'),
+        detail: hasName
+          ? t('dashboard.checklist.profileDone')
+          : t('dashboard.checklist.profileTodo'),
         done: hasName,
         to: '/profile',
       },
       {
         id: 'email',
-        label: 'Verify your email address',
+        label: t('dashboard.checklist.emailLabel'),
         detail:
           user?.emailVerified === true
-            ? 'Email address is verified.'
-            : 'Confirm your email for account recovery and notifications.',
+            ? t('dashboard.checklist.emailDone')
+            : t('dashboard.checklist.emailTodo'),
         done: user?.emailVerified === true,
         to: '/settings/security',
       },
       {
         id: 'onboarding',
-        label: 'Run workspace setup wizard',
+        label: t('dashboard.checklist.onboardingLabel'),
         detail: onboardingDone
-          ? 'Initial workspace setup completed.'
-          : 'Walk through profile, workspace branding, and team invites.',
+          ? t('dashboard.checklist.onboardingDone')
+          : t('dashboard.checklist.onboardingTodo'),
         done: onboardingDone,
         to: '/onboarding',
       },
@@ -231,18 +243,18 @@ export const DashboardPage = (): JSX.Element => {
         ? [
             {
               id: 'workspace',
-              label: 'Configure your team workspace',
+              label: t('dashboard.checklist.workspaceLabel'),
               detail:
                 activeOrg !== null
-                  ? `Active workspace: ${activeOrg.name}`
-                  : 'Create or switch into a shared team workspace.',
+                  ? t('dashboard.checklist.workspaceDone', { name: activeOrg.name })
+                  : t('dashboard.checklist.workspaceTodo'),
               done: activeOrg !== null,
               to: '/workspace',
             },
           ]
         : []),
     ],
-    [activeOrg, hasName, onboardingDone, teamsEnabled, user?.emailVerified],
+    [activeOrg, hasName, onboardingDone, t, teamsEnabled, user?.emailVerified],
   );
   const completedChecklistCount = checklistItems.filter((item) => item.done).length;
   const checklistPercent =
@@ -271,6 +283,9 @@ export const DashboardPage = (): JSX.Element => {
     );
   }
 
+  const readyLabel = t('dashboard.status.ready');
+  const loadingLabel = t('dashboard.status.loading');
+
   return (
     <PageContainer className="dashboard-page" maxWidth={1180}>
       <section className="dashboard-command">
@@ -278,7 +293,7 @@ export const DashboardPage = (): JSX.Element => {
           <div className="dashboard-command__identity">
             <div className="dashboard-command__workspace-row">
               <Heading as="h1" size="xl">
-                Dashboard
+                {t('dashboard.title')}
               </Heading>
               {activeOrg !== null ? <Badge tone="info">{activeOrg.name}</Badge> : null}
               {billingEnabled ? (
@@ -286,28 +301,28 @@ export const DashboardPage = (): JSX.Element => {
               ) : null}
             </div>
             <Text tone="muted" size="sm" className="dashboard-page__subtitle">
-              Welcome back, {greetingName}.
+              {t('dashboard.welcome', { name: greetingName })}
             </Text>
           </div>
           <div className="dashboard-command__actions">
             {showUpgradeCta ? (
               <Link to="/pricing">
                 <Button variant="primary" size="small">
-                  Upgrade plan
+                  {t('dashboard.action.upgradePlan')}
                 </Button>
               </Link>
             ) : null}
             {activeOrg !== null ? (
               <Link to="/workspace">
                 <Button variant="secondary" size="small">
-                  Workspace
+                  {t('dashboard.action.workspace')}
                 </Button>
               </Link>
             ) : null}
             {webApp.dashboardQuickActions.map((action) => (
               <Link key={action.to} to={action.to}>
                 <Button variant="secondary" size="small">
-                  {action.label}
+                  {translateDashboardAction(action.to, action.label)}
                 </Button>
               </Link>
             ))}
@@ -317,13 +332,13 @@ export const DashboardPage = (): JSX.Element => {
           <div className="dashboard-command__score">
             <div className="dashboard-command__score-header">
               <Text size="sm" tone="muted">
-                Account readiness
+                {t('dashboard.readiness.label')}
               </Text>
               <Text size="sm" className="font-medium">
                 {formatPercentage(profilePercent)}
               </Text>
             </div>
-            <Progress value={profilePercent} aria-label="Account readiness" />
+            <Progress value={profilePercent} aria-label={t('dashboard.readiness.label')} />
           </div>
           <div className="dashboard-command__issue">
             <Badge
@@ -335,10 +350,12 @@ export const DashboardPage = (): JSX.Element => {
                     : 'info'
               }
             >
-              {profileCompletenessError || sessionsError ? 'Review' : 'Active'}
+              {profileCompletenessError || sessionsError
+                ? t('dashboard.status.review')
+                : t('dashboard.status.active')}
             </Badge>
             <Text tone="muted" size="sm">
-              Profile and session basics are available.
+              {t('dashboard.readiness.summary')}
             </Text>
           </div>
         </div>
@@ -347,83 +364,105 @@ export const DashboardPage = (): JSX.Element => {
       <div className="dashboard-metrics">
         {teamsEnabled ? (
           <DashboardMetricCard
-            label="Workspace"
-            value={activeOrg !== null ? activeOrg.name : 'Personal'}
+            label={t('dashboard.metric.workspace.label')}
+            value={activeOrg !== null ? activeOrg.name : t('dashboard.metric.workspace.personal')}
             description={
-              organizations.length > 0
-                ? `${String(organizations.length)} active workspace${organizations.length === 1 ? '' : 's'} available.`
-                : 'Create a shared workspace to collaborate with teammates.'
+              organizations.length === 1
+                ? t('dashboard.metric.workspace.activeOne', { count: 1 })
+                : organizations.length > 1
+                  ? t('dashboard.metric.workspace.activeMany', { count: organizations.length })
+                  : t('dashboard.metric.workspace.empty')
             }
+            statusLabel={readyLabel}
             tone={activeOrg !== null ? 'success' : 'info'}
             href="/workspace"
-            actionLabel="Manage workspace"
+            actionLabel={t('dashboard.metric.workspace.action')}
           />
         ) : null}
 
         {billingEnabled ? (
           <DashboardMetricCard
-            label="Plan & Billing"
+            label={t('dashboard.metric.billing.label')}
             value={activePlanLabel}
             description={
               subscription?.status === 'active'
-                ? 'Subscription is active and synced to your workspace.'
+                ? t('dashboard.metric.billing.active')
                 : subscription?.status === 'trialing'
-                  ? 'Free trial active — review billing before renewal.'
-                  : 'Starter tier active. Upgrade anytime for higher quotas.'
+                  ? t('dashboard.metric.billing.trialing')
+                  : t('dashboard.metric.billing.starter')
             }
+            statusLabel={readyLabel}
             tone={showUpgradeCta ? 'info' : 'success'}
             href={showUpgradeCta ? '/pricing' : '/workspace/billing'}
-            actionLabel={showUpgradeCta ? 'Compare plans' : 'Manage billing'}
+            actionLabel={
+              showUpgradeCta
+                ? t('dashboard.metric.billing.compareAction')
+                : t('dashboard.metric.billing.manageAction')
+            }
           />
         ) : null}
 
         <DashboardMetricCard
-          label="Profile"
+          label={t('dashboard.metric.profile.label')}
           value={formatPercentage(profilePercent)}
           description={
             missingProfileFields === 0
-              ? 'Profile details are complete.'
-              : `${String(missingProfileFields)} profile field${
-                  missingProfileFields === 1 ? '' : 's'
-                } still ${missingProfileFields === 1 ? 'needs' : 'need'} attention.`
+              ? t('dashboard.metric.profile.complete')
+              : missingProfileFields === 1
+                ? t('dashboard.metric.profile.missingOne', { count: 1 })
+                : t('dashboard.metric.profile.missingMany', { count: missingProfileFields })
           }
+          statusLabel={profileCompletenessLoading ? loadingLabel : readyLabel}
           tone={profilePercent >= 85 ? 'success' : profilePercent >= 60 ? 'warning' : 'danger'}
           loading={profileCompletenessLoading}
           href="/profile"
-          actionLabel="View profile"
+          actionLabel={t('dashboard.metric.profile.action')}
         />
 
         <DashboardMetricCard
-          label="Sessions"
+          label={t('dashboard.metric.sessions.label')}
           value={
             sessionsError
-              ? 'Review'
+              ? t('dashboard.status.review')
               : sessionsLoading
-                ? 'Checking'
-                : `${String(sessions.length)} session${sessions.length === 1 ? '' : 's'}`
+                ? t('dashboard.status.checking')
+                : sessions.length === 1
+                  ? t('dashboard.metric.sessions.countOne', { count: 1 })
+                  : t('dashboard.metric.sessions.countMany', { count: sessions.length })
           }
           description={
             currentSession !== null
-              ? `Current session last used ${formatDateShort(currentSession.lastUsedAt, locale)}.`
-              : 'Session details are not available yet.'
+              ? t('dashboard.metric.sessions.lastUsed', {
+                  date: formatDateShort(
+                    currentSession.lastUsedAt,
+                    locale,
+                    t('dashboard.notAvailable'),
+                  ),
+                })
+              : t('dashboard.metric.sessions.unavailable')
           }
+          statusLabel={sessionsLoading ? loadingLabel : readyLabel}
           tone={sessionsError ? 'warning' : 'success'}
           loading={sessionsLoading}
           href="/settings/sessions"
-          actionLabel="Manage sessions"
+          actionLabel={t('dashboard.metric.sessions.action')}
         />
 
-        {webApp.dashboardTiles.map((tile) => (
-          <DashboardMetricCard
-            key={tile.id}
-            label={tile.label}
-            value={tile.value}
-            description={tile.description}
-            tone="info"
-            href={tile.href}
-            actionLabel={tile.actionLabel}
-          />
-        ))}
+        {webApp.dashboardTiles.map((tile) => {
+          const translatedTile = translateDashboardTile(tile);
+          return (
+            <DashboardMetricCard
+              key={tile.id}
+              label={translatedTile.label}
+              value={translatedTile.value}
+              description={translatedTile.description}
+              statusLabel={readyLabel}
+              tone="info"
+              href={tile.href}
+              actionLabel={translatedTile.actionLabel}
+            />
+          );
+        })}
       </div>
 
       {!checklistDismissed && completedChecklistCount < checklistItems.length ? (
@@ -431,18 +470,21 @@ export const DashboardPage = (): JSX.Element => {
           <div className="dashboard-checklist__header">
             <div>
               <Heading as="h2" size="sm">
-                Workspace Setup Checklist
+                {t('dashboard.checklist.title')}
               </Heading>
               <Text tone="muted" size="sm">
-                {String(completedChecklistCount)} of {String(checklistItems.length)} steps complete.
+                {t('dashboard.checklist.progress', {
+                  completed: completedChecklistCount,
+                  total: checklistItems.length,
+                })}
               </Text>
             </div>
             <Button type="button" variant="text" size="small" onClick={handleDismissChecklist}>
-              Dismiss
+              {t('dashboard.checklist.dismiss')}
             </Button>
           </div>
           <div className="dashboard-checklist__progress">
-            <Progress value={checklistPercent} aria-label="Setup checklist progress" />
+            <Progress value={checklistPercent} aria-label={t('dashboard.checklist.progressAria')} />
           </div>
           <div className="dashboard-checklist__list">
             {checklistItems.map((item) => (
@@ -455,7 +497,9 @@ export const DashboardPage = (): JSX.Element => {
                     {item.detail}
                   </Text>
                 </div>
-                <Badge tone={item.done ? 'success' : 'info'}>{item.done ? 'Done' : 'Start'}</Badge>
+                <Badge tone={item.done ? 'success' : 'info'}>
+                  {item.done ? t('dashboard.checklist.done') : t('dashboard.checklist.start')}
+                </Badge>
               </Link>
             ))}
           </div>
@@ -467,41 +511,51 @@ export const DashboardPage = (): JSX.Element => {
           <div className="dashboard-panel__header">
             <div>
               <Heading as="h2" size="sm">
-                Account
+                {t('dashboard.account.title')}
               </Heading>
               <Text tone="muted" size="sm">
-                Profile and access details for the signed-in user.
+                {t('dashboard.account.subtitle')}
               </Text>
             </div>
             <Link to="/settings">
               <Button variant="text" size="small">
-                Settings
+                {t('nav.settings')}
               </Button>
             </Link>
           </div>
           <div className="dashboard-profile-list">
             <SurfaceRow
-              label="Email"
-              value={user?.emailVerified === true ? 'Verified' : 'Check'}
-              detail={user?.email ?? 'No email on file'}
+              label={t('dashboard.account.emailLabel')}
+              value={
+                user?.emailVerified === true
+                  ? t('dashboard.account.emailVerified')
+                  : t('dashboard.account.emailCheck')
+              }
+              detail={user?.email ?? t('dashboard.account.emailEmpty')}
               tone={user?.emailVerified === true ? 'success' : 'warning'}
             />
             <SurfaceRow
-              label="Name"
-              value={hasName ? 'Set' : 'Missing'}
-              detail={hasName ? displayName : 'Not provided'}
+              label={t('dashboard.account.nameLabel')}
+              value={
+                hasName ? t('dashboard.account.statusSet') : t('dashboard.account.statusMissing')
+              }
+              detail={hasName ? displayName : t('dashboard.account.notProvided')}
               tone={hasName ? 'success' : 'warning'}
             />
             <SurfaceRow
-              label="Username"
-              value={hasUsername ? 'Set' : 'Missing'}
-              detail={hasUsername ? `@${username}` : 'Not provided'}
+              label={t('dashboard.account.usernameLabel')}
+              value={
+                hasUsername
+                  ? t('dashboard.account.statusSet')
+                  : t('dashboard.account.statusMissing')
+              }
+              detail={hasUsername ? `@${username}` : t('dashboard.account.notProvided')}
               tone={hasUsername ? 'success' : 'warning'}
             />
             <SurfaceRow
-              label="User ID"
-              value="Linked"
-              detail={user?.id ?? 'No user id available'}
+              label={t('dashboard.account.userIdLabel')}
+              value={t('dashboard.account.statusLinked')}
+              detail={user?.id ?? t('dashboard.account.noUserId')}
               tone="info"
             />
           </div>
@@ -511,20 +565,20 @@ export const DashboardPage = (): JSX.Element => {
           <div className="dashboard-panel__header">
             <div>
               <Heading as="h2" size="sm">
-                Security &amp; Shortcuts
+                {t('dashboard.shortcuts.title')}
               </Heading>
               <Text tone="muted" size="sm">
-                Jump directly to account controls or open the command palette.
+                {t('dashboard.shortcuts.subtitle')}
               </Text>
             </div>
             <Button
               type="button"
               variant="secondary"
               size="small"
-              title="Open command palette (⌘K)"
+              title={t('header.jumpToTitle')}
               onClick={openCommandPalette}
             >
-              <span>Jump to…</span>
+              <span>{t('header.jumpTo')}</span>
               <Kbd aria-hidden="true">⌘K</Kbd>
             </Button>
           </div>
@@ -532,57 +586,57 @@ export const DashboardPage = (): JSX.Element => {
             <Link to="/settings/security" className="dashboard-shortcut-row">
               <div className="dashboard-surface-row__copy">
                 <Text as="span" size="sm" className="dashboard-surface-row__label">
-                  Security &amp; Sign-in
+                  {t('dashboard.shortcuts.securityTitle')}
                 </Text>
                 <Text as="span" tone="muted" size="sm">
-                  Password, passkeys, 2FA, and connected sign-in methods.
+                  {t('dashboard.shortcuts.securityDesc')}
                 </Text>
               </div>
-              <Badge tone="info">Manage</Badge>
+              <Badge tone="info">{t('dashboard.shortcuts.securityBadge')}</Badge>
             </Link>
             <Link to="/settings/api-keys" className="dashboard-shortcut-row">
               <div className="dashboard-surface-row__copy">
                 <Text as="span" size="sm" className="dashboard-surface-row__label">
-                  Personal API Keys
+                  {t('dashboard.shortcuts.apiKeysTitle')}
                 </Text>
                 <Text as="span" tone="muted" size="sm">
-                  Create, inspect, and revoke programmatic access tokens.
+                  {t('dashboard.shortcuts.apiKeysDesc')}
                 </Text>
               </div>
-              <Badge tone="info">Keys</Badge>
+              <Badge tone="info">{t('dashboard.shortcuts.apiKeysBadge')}</Badge>
             </Link>
             <Link to="/settings/data-controls" className="dashboard-shortcut-row">
               <div className="dashboard-surface-row__copy">
                 <Text as="span" size="sm" className="dashboard-surface-row__label">
-                  Data Controls &amp; Privacy
+                  {t('dashboard.shortcuts.privacyTitle')}
                 </Text>
                 <Text as="span" tone="muted" size="sm">
-                  Consent preferences, GDPR exports, and age assurance.
+                  {t('dashboard.shortcuts.privacyDesc')}
                 </Text>
               </div>
-              <Badge tone="info">Privacy</Badge>
+              <Badge tone="info">{t('dashboard.shortcuts.privacyBadge')}</Badge>
             </Link>
             <Link to="/settings/preferences" className="dashboard-shortcut-row">
               <div className="dashboard-surface-row__copy">
                 <Text as="span" size="sm" className="dashboard-surface-row__label">
-                  Preferences
+                  {t('dashboard.shortcuts.preferencesTitle')}
                 </Text>
                 <Text as="span" tone="muted" size="sm">
-                  Appearance theme, timezone, and display language.
+                  {t('dashboard.shortcuts.preferencesDesc')}
                 </Text>
               </div>
-              <Badge tone="info">Theme</Badge>
+              <Badge tone="info">{t('dashboard.shortcuts.preferencesBadge')}</Badge>
             </Link>
             <Link to="/docs" className="dashboard-shortcut-row">
               <div className="dashboard-surface-row__copy">
                 <Text as="span" size="sm" className="dashboard-surface-row__label">
-                  App Guide &amp; Docs
+                  {t('dashboard.shortcuts.docsTitle')}
                 </Text>
                 <Text as="span" tone="muted" size="sm">
-                  Tour every space, module, and live route inside this app.
+                  {t('dashboard.shortcuts.docsDesc')}
                 </Text>
               </div>
-              <Badge tone="info">Guide</Badge>
+              <Badge tone="info">{t('dashboard.shortcuts.docsBadge')}</Badge>
             </Link>
           </div>
         </Card>

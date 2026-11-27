@@ -60,6 +60,53 @@ function NavGlyph({ to }: { readonly to: string }): ReactElement {
           <rect x="14" y="14" width="7" height="7" rx="1.5" />
         </svg>
       );
+    case '/projects':
+      return (
+        <svg
+          className="shell-nav-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          aria-hidden="true"
+        >
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <line x1="9" y1="4" x2="9" y2="20" />
+          <line x1="15" y1="4" x2="15" y2="20" />
+          <line x1="3" y1="9" x2="21" y2="9" />
+        </svg>
+      );
+    case '/ai':
+      return (
+        <svg
+          className="shell-nav-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          aria-hidden="true"
+        >
+          <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
+          <path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z" />
+        </svg>
+      );
+    case '/referrals':
+      return (
+        <svg
+          className="shell-nav-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          aria-hidden="true"
+        >
+          <circle cx="18" cy="5" r="3" />
+          <circle cx="6" cy="12" r="3" />
+          <circle cx="18" cy="19" r="3" />
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+        </svg>
+      );
     case '/tasks':
       return (
         <svg

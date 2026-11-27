@@ -3,6 +3,7 @@ import { screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { renderWithProviders } from '../../__tests__/utils';
+import { I18nProvider } from '../../i18n';
 
 import { CommandPalette } from './CommandPalette';
 
@@ -180,5 +181,18 @@ describe('CommandPalette', () => {
     mockResult = { ...defaultMockResult, isOpen: true };
     renderWithProviders(<CommandPalette />);
     expect(screen.getByRole('combobox')).toBeInTheDocument();
+  });
+
+  it('should render Korean chrome labels under ko-KR', () => {
+    mockResult = { ...defaultMockResult, isOpen: true };
+    renderWithProviders(
+      <I18nProvider initialLocale="ko-KR">
+        <CommandPalette />
+      </I18nProvider>,
+    );
+
+    expect(screen.getByLabelText('명령 검색')).toBeInTheDocument();
+    expect(screen.getByRole('listbox', { name: '명령 목록' })).toBeInTheDocument();
+    expect(screen.getByText('작업')).toBeInTheDocument();
   });
 });

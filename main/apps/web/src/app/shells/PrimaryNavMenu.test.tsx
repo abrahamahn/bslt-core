@@ -51,4 +51,18 @@ describe('PrimaryNavMenu & MobilePrimaryBar', () => {
     );
     expect(mobileNav.queryByRole('link', { name: 'Home' })).toBeNull();
   });
+
+  it('renders bespoke non-dot SVG icons for installed projects, ai, and referrals links', () => {
+    const environment = createMockEnvironment({ user: mockUser, isAuthenticated: true });
+    renderWithProviders(<PrimaryNavMenu />, { environment, route: '/dashboard' });
+
+    const nav = within(screen.getByRole('navigation', { name: 'Primary' }));
+    for (const href of ['/projects', '/ai', '/referrals']) {
+      const link = nav.queryAllByRole('link').find((el) => el.getAttribute('href') === href);
+      if (link === undefined) continue;
+      const svg = link.querySelector('svg.shell-nav-icon');
+      expect(svg).not.toBeNull();
+      expect(svg?.querySelector('circle[cx="12"][cy="12"][r="4"]')).toBeNull();
+    }
+  });
 });
