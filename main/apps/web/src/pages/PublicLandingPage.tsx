@@ -9,6 +9,8 @@
 import { Link } from '@bslt/react/router';
 import { Card, Heading, PageContainer, Text } from '@bslt/ui';
 
+import { installedPublicSsrModules } from '../generated/public-modules';
+
 import type { ReactElement } from 'react';
 
 import { PRODUCT_TAGLINE } from '#app/app/productMeta';
@@ -16,33 +18,69 @@ import { clientConfig } from '#app/config';
 
 import './PublicPages.css';
 
+const PUBLIC_SSR_MODULE_IDS: ReadonlySet<string> = new Set(
+  installedPublicSsrModules.map((mod) => mod.id),
+);
+const HAS_GROWTH_PUBLIC = PUBLIC_SSR_MODULE_IDS.has('growth');
+
 const CAPABILITIES = [
   {
-    eyebrow: '01 / IDENTITY',
-    title: 'Accounts & access',
+    eyebrow: '01 / IDENTITY & SSO',
+    title: 'Accounts, passkeys & OIDC SSO',
     description:
-      'Email/password auth, verification, password reset, passkeys, 2FA, sessions, and unified profile settings ship working out of the box.',
+      'Email/password, Email OTP, Google/GitHub/Apple OAuth, TOTP/SMS MFA, owned WebAuthn passkeys, API keys, and Enterprise OIDC SSO with PKCE & JIT provisioning.',
   },
   {
-    eyebrow: '02 / MONETIZATION',
-    title: 'Billing & subscriptions',
+    eyebrow: '02 / COLLABORATION',
+    title: 'Multi-tenant workspaces & boards',
     description:
-      'Stripe and PayPal, plans, entitlements, metered usage, and dunning are wired behind a provider-agnostic interface.',
+      'Organizations, custom RBAC roles, invitations, verified domains, collaborative project Kanban boards with forced owner_org RLS, and live WebSocket team sync.',
   },
   {
-    eyebrow: '03 / FOUNDATION',
-    title: 'Production platform',
+    eyebrow: '03 / AI & METERING',
+    title: 'Zero-dep AI SSE streaming',
     description:
-      'PostgreSQL 17 forced RLS, CSRF protection, append-only audit logs, background jobs, and owned wire protocols come pre-assembled.',
+      'Built-in AI Assistant streaming OpenAI, Anthropic, Gemini, or Mock replies over native Server-Sent Events with org-scoped history and monthly token metering.',
+  },
+  {
+    eyebrow: '04 / MONETIZATION',
+    title: 'Billing, seats & entitlements',
+    description:
+      'Provider-agnostic Stripe and PayPal billing, hosted Checkout, per-seat licensing, invoices, metered usage, dunning workflows, and entitlement guards.',
+  },
+  {
+    eyebrow: '05 / GROWTH & API',
+    title: 'Blog, waitlist, referrals & OpenAPI',
+    description:
+      'Statically prerendered SSR blog, invite-wave waitlist with branded emails, personal referral links, announcement banners, and an interactive OpenAPI 3.1 playground.',
+  },
+  {
+    eyebrow: '06 / FOUNDATION',
+    title: 'Owned stack & live bilingual UI',
+    description:
+      'Zero third-party runtime deps outside React, PostgreSQL 17 forced RLS, append-only audit logs, background jobs, en-US / ko-KR locale switching, and 50 merge gates.',
   },
 ] as const;
 
 const HIGHLIGHTS = [
   { label: 'Runtime stack', value: 'React 19 + Node.js + PostgreSQL 17' },
   { label: 'Database isolation', value: 'Forced Row-Level Security' },
-  { label: 'Rendering model', value: 'Public SSR + Authenticated SPA' },
+  { label: 'Internationalization', value: 'Live en-US ↔ ko-KR i18n' },
   { label: 'Third-party runtime deps', value: 'Zero outside React' },
 ] as const;
+
+const EXPLORE_LINKS: readonly { readonly label: string; readonly to: `/${string}` }[] = [
+  { label: 'App Guide', to: '/docs' },
+  { label: 'API Playground', to: '/docs/api' },
+  { label: 'Changelog', to: '/changelog' },
+  ...(HAS_GROWTH_PUBLIC
+    ? [
+        { label: 'Engineering Blog', to: '/blog' as const },
+        { label: 'Early Access Waitlist', to: '/waitlist' as const },
+      ]
+    : []),
+  { label: 'System Status', to: '/status' },
+];
 
 export function LandingPageContent({
   isAuthenticated,
@@ -108,6 +146,19 @@ export function LandingPageContent({
             </Text>
           </Card>
         ))}
+      </section>
+
+      <section aria-label="Explore live surfaces" className="landing-explore">
+        <Text as="span" size="xs" tone="muted" className="landing-highlight__label">
+          Explore live surfaces
+        </Text>
+        <div className="landing-explore__links">
+          {EXPLORE_LINKS.map((item) => (
+            <Link key={item.to} to={item.to} className="btn btn-secondary btn-small no-underline">
+              {item.label}
+            </Link>
+          ))}
+        </div>
       </section>
     </PageContainer>
   );

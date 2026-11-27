@@ -16,27 +16,31 @@ import './PublicPages.css';
 
 import type { ReactElement } from 'react';
 
-export const UnavailablePage = (): ReactElement => (
-  <PageContainer>
-    <section className="unavailable-section flex-col gap-4 p-4" aria-labelledby="unavailable-title">
-      <Heading as="h1" size="xl" id="unavailable-title">
-        This service isn&rsquo;t available where you are
-      </Heading>
+import { useChromeTranslation } from '#app/i18n/chromeLabels';
 
-      <Text>
-        We are not offered in your location, so we can&rsquo;t serve you from here. This is about
-        the rules that apply where you are — not about you, and not about anything you did.
-      </Text>
+export const UnavailablePage = (): ReactElement => {
+  const { t } = useChromeTranslation();
 
-      <Text>
-        If you already hold an account, or you believe you are seeing this page by mistake, contact
-        us and we will look at it properly.
-      </Text>
+  return (
+    <PageContainer>
+      <section
+        className="unavailable-section flex-col gap-4 p-4"
+        aria-labelledby="unavailable-title"
+      >
+        <Heading as="h1" size="xl" id="unavailable-title">
+          {t('error.unavailableTitle')}
+        </Heading>
 
-      <Text tone="muted" size="sm">
-        <Link to="/support">Contact support</Link> · Read the{' '}
-        <Link to="/terms">Terms of Service</Link>
-      </Text>
-    </section>
-  </PageContainer>
-);
+        <Text>{t('error.unavailableBodyOne')}</Text>
+
+        <Text>{t('error.unavailableBodyTwo')}</Text>
+
+        <Text tone="muted" size="sm">
+          <Link to="/support">{t('error.unavailableContactSupport')}</Link> ·{' '}
+          {t('error.unavailableReadTermsPrefix')}
+          <Link to="/terms">{t('error.unavailableTermsLink')}</Link>
+        </Text>
+      </section>
+    </PageContainer>
+  );
+};

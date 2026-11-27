@@ -4,6 +4,7 @@ import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createMockEnvironment, mockUser, renderWithProviders } from '../../__tests__/utils';
+import { I18nProvider } from '../../i18n';
 
 import { OnboardingPage } from './OnboardingPage';
 import { isOnboardingCompleted } from './onboardingState';
@@ -164,5 +165,26 @@ describe('OnboardingPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Finish setup/i }));
     expect(isOnboardingCompleted(mockUser.id)).toBe(true);
     expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
+  });
+
+  it('renders localized Korean onboarding copy under ko-KR', () => {
+    const environment = createMockEnvironment({ user: mockUser, isAuthenticated: true });
+    renderWithProviders(
+      <CapabilityProvider
+        initialContext={{
+          ...EMPTY_CAPABILITY_CONTEXT,
+          flags: { 'orgs.teams': true, 'flags.billing': true },
+        }}
+      >
+        <I18nProvider initialLocale="ko-KR">
+          <OnboardingPage />
+        </I18nProvider>
+      </CapabilityProvider>,
+      { environment },
+    );
+
+    expect(screen.getByText('워크스페이스 설정')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '1. 프로필 확인' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '저장 후 계속' })).toBeInTheDocument();
   });
 });

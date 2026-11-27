@@ -83,8 +83,27 @@
 .landing-grid {
   display: grid;
   gap: var(--ui-gap-lg);
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-  padding-bottom: var(--ui-gap-3xl);
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+}
+
+.landing-explore {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ui-gap-md);
+  padding: var(--ui-gap-xl);
+  margin-bottom: var(--ui-gap-3xl);
+  border: var(--ui-border-width) solid var(--ui-color-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-color-surface);
+  text-align: center;
+}
+
+.landing-explore__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--ui-gap-sm);
 }
 
 .landing-card {

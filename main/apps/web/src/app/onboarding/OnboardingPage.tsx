@@ -21,20 +21,23 @@ import { setOnboardingCompleted } from './onboardingState';
 
 import './OnboardingPage.css';
 
+import { useChromeTranslation } from '#app/i18n/chromeLabels';
+
 type OnboardingStep = 1 | 2 | 3;
 
 const STEPS: readonly {
   readonly id: OnboardingStep;
-  readonly title: string;
-  readonly subtitle: string;
+  readonly titleKey: string;
+  readonly subtitleKey: string;
 }[] = [
-  { id: 1, title: 'Your profile', subtitle: 'Set how teammates recognize you' },
-  { id: 2, title: 'Workspace identity', subtitle: 'Name your shared workspace' },
-  { id: 3, title: 'Team & plan', subtitle: 'Invite teammates or launch' },
+  { id: 1, titleKey: 'onboarding.stepOne.title', subtitleKey: 'onboarding.stepOne.subtitle' },
+  { id: 2, titleKey: 'onboarding.stepTwo.title', subtitleKey: 'onboarding.stepTwo.subtitle' },
+  { id: 3, titleKey: 'onboarding.stepThree.title', subtitleKey: 'onboarding.stepThree.subtitle' },
 ];
 
 export function OnboardingPage(): ReactElement {
   const navigate = useNavigate();
+  const { t } = useChromeTranslation();
   const { user } = useAuth();
   const { isFlagEnabled } = useCapabilities();
   const teamsEnabled = hasOrgsModule && isFlagEnabled('orgs.teams');
@@ -80,7 +83,7 @@ export function OnboardingPage(): ReactElement {
 
   const profileUpdate = useProfileUpdate({
     onSuccess: () => {
-      setStatusMessage('Profile details saved.');
+      setStatusMessage(t('onboarding.stepOne.saved'));
       setErrorMessage(null);
       setStep(2);
     },
@@ -93,7 +96,7 @@ export function OnboardingPage(): ReactElement {
   const orgUpdate = useOptionalUpdateOrganization({
     onSuccess: () => {
       void refreshOrgs();
-      setStatusMessage('Workspace name updated.');
+      setStatusMessage(t('onboarding.stepTwo.updated'));
       setErrorMessage(null);
       setStep(3);
     },
@@ -103,7 +106,7 @@ export function OnboardingPage(): ReactElement {
     onSuccess: () => {
       setInvitedCount((count) => count + 1);
       setInviteEmail('');
-      setStatusMessage('Invitation sent.');
+      setStatusMessage(t('onboarding.stepThree.inviteSent'));
       setErrorMessage(null);
     },
   });
@@ -118,7 +121,7 @@ export function OnboardingPage(): ReactElement {
     const trimmedFirst = firstName.trim();
     const trimmedLast = lastName.trim();
     if (trimmedFirst.length === 0) {
-      setErrorMessage('Please enter your first name to continue, or skip this step.');
+      setErrorMessage(t('onboarding.stepOne.firstNameRequired'));
       return;
     }
     setErrorMessage(null);
@@ -136,7 +139,7 @@ export function OnboardingPage(): ReactElement {
     }
     const trimmedName = workspaceName.trim();
     if (trimmedName.length < 2) {
-      setErrorMessage('Workspace name must be at least 2 characters.');
+      setErrorMessage(t('onboarding.stepTwo.nameTooShort'));
       return;
     }
     if (trimmedName === activeOrg.name) {
@@ -152,7 +155,7 @@ export function OnboardingPage(): ReactElement {
     if (!teamsEnabled || activeOrg === null) return;
     const trimmedEmail = inviteEmail.trim();
     if (trimmedEmail.length === 0 || !trimmedEmail.includes('@')) {
-      setErrorMessage('Enter a valid teammate email address.');
+      setErrorMessage(t('onboarding.stepThree.invalidEmail'));
       return;
     }
     setErrorMessage(null);
@@ -168,20 +171,20 @@ export function OnboardingPage(): ReactElement {
     <PageContainer className="onboarding-page" maxWidth={820}>
       <header className="onboarding-header">
         <div className="onboarding-header__copy">
-          <Badge tone="info">Workspace Setup</Badge>
+          <Badge tone="info">{t('onboarding.badge')}</Badge>
           <Heading as="h1" size="xl">
-            Set up {BRAND.name}
+            {t('onboarding.heading', { brand: BRAND.name })}
           </Heading>
           <Text tone="muted" size="sm">
-            Finish these quick steps to personalize your profile, workspace, and team access.
+            {t('onboarding.subtitle')}
           </Text>
         </div>
         <Button type="button" variant="text" onClick={handleFinish}>
-          Skip for now
+          {t('onboarding.skipForNow')}
         </Button>
       </header>
 
-      <nav className="onboarding-stepper" aria-label="Onboarding steps">
+      <nav className="onboarding-stepper" aria-label={t('onboarding.stepsAria')}>
         {STEPS.map((item) => {
           const isActive = item.id === step;
           const isCompleted = item.id < step;
@@ -204,10 +207,10 @@ export function OnboardingPage(): ReactElement {
               </Badge>
               <div>
                 <Text size="sm" className="onboarding-field__label">
-                  {item.title}
+                  {t(item.titleKey)}
                 </Text>
                 <Text size="xs" tone="muted">
-                  {item.subtitle}
+                  {t(item.subtitleKey)}
                 </Text>
               </div>
             </Button>
@@ -226,10 +229,10 @@ export function OnboardingPage(): ReactElement {
         <Card className="onboarding-card">
           <div>
             <Heading as="h2" size="md">
-              1. Confirm your profile
+              {t('onboarding.stepOne.heading')}
             </Heading>
             <Text tone="muted" size="sm">
-              Your name appears across workspace activity, comments, and team invitations.
+              {t('onboarding.stepOne.description')}
             </Text>
           </div>
 
@@ -239,7 +242,7 @@ export function OnboardingPage(): ReactElement {
             <div className="onboarding-form__row">
               <div className="onboarding-field">
                 <label htmlFor="onboarding-first-name" className="onboarding-field__label">
-                  First name
+                  {t('onboarding.stepOne.firstName')}
                 </label>
                 <Input
                   id="onboarding-first-name"
@@ -247,13 +250,13 @@ export function OnboardingPage(): ReactElement {
                   onChange={(event) => {
                     setFirstName(event.target.value);
                   }}
-                  placeholder="Alex"
+                  placeholder={t('onboarding.stepOne.firstNamePlaceholder')}
                   autoComplete="given-name"
                 />
               </div>
               <div className="onboarding-field">
                 <label htmlFor="onboarding-last-name" className="onboarding-field__label">
-                  Last name
+                  {t('onboarding.stepOne.lastName')}
                 </label>
                 <Input
                   id="onboarding-last-name"
@@ -261,7 +264,7 @@ export function OnboardingPage(): ReactElement {
                   onChange={(event) => {
                     setLastName(event.target.value);
                   }}
-                  placeholder="Rivera"
+                  placeholder={t('onboarding.stepOne.lastNamePlaceholder')}
                   autoComplete="family-name"
                 />
               </div>
@@ -276,10 +279,12 @@ export function OnboardingPage(): ReactElement {
                   setStep(2);
                 }}
               >
-                Skip step
+                {t('onboarding.skipStep')}
               </Button>
               <Button type="submit" disabled={profileUpdate.isLoading}>
-                {profileUpdate.isLoading ? 'Saving…' : 'Save & continue'}
+                {profileUpdate.isLoading
+                  ? t('onboarding.stepOne.saving')
+                  : t('onboarding.stepOne.submit')}
               </Button>
             </div>
           </form>
@@ -290,12 +295,12 @@ export function OnboardingPage(): ReactElement {
         <Card className="onboarding-card">
           <div>
             <Heading as="h2" size="md">
-              2. Name your workspace
+              {t('onboarding.stepTwo.heading')}
             </Heading>
             <Text tone="muted" size="sm">
               {teamsEnabled && activeOrg !== null
-                ? 'Choose a recognizable name for your shared team workspace.'
-                : 'Your account is currently configured for solo use. You can enable team workspaces anytime.'}
+                ? t('onboarding.stepTwo.teamDescription')
+                : t('onboarding.stepTwo.soloDescription')}
             </Text>
           </div>
 
@@ -303,7 +308,7 @@ export function OnboardingPage(): ReactElement {
             {teamsEnabled && activeOrg !== null ? (
               <div className="onboarding-field">
                 <label htmlFor="onboarding-workspace-name" className="onboarding-field__label">
-                  Workspace name
+                  {t('onboarding.stepTwo.workspaceName')}
                 </label>
                 <Input
                   id="onboarding-workspace-name"
@@ -311,10 +316,10 @@ export function OnboardingPage(): ReactElement {
                   onChange={(event) => {
                     setWorkspaceName(event.target.value);
                   }}
-                  placeholder="Acme Studio"
+                  placeholder={t('onboarding.stepTwo.workspacePlaceholder')}
                 />
                 <Text size="xs" tone="muted">
-                  Current slug: /{activeOrg.slug}
+                  {t('onboarding.stepTwo.currentSlug', { slug: activeOrg.slug })}
                 </Text>
               </div>
             ) : null}
@@ -328,7 +333,7 @@ export function OnboardingPage(): ReactElement {
                   setStep(1);
                 }}
               >
-                Back
+                {t('common.back')}
               </Button>
               <div className="onboarding-actions__group">
                 <Button
@@ -339,10 +344,12 @@ export function OnboardingPage(): ReactElement {
                     setStep(3);
                   }}
                 >
-                  Skip step
+                  {t('onboarding.skipStep')}
                 </Button>
                 <Button type="submit" disabled={orgUpdate.isLoading}>
-                  {orgUpdate.isLoading ? 'Updating…' : 'Continue'}
+                  {orgUpdate.isLoading
+                    ? t('onboarding.stepTwo.updating')
+                    : t('onboarding.stepTwo.submit')}
                 </Button>
               </div>
             </div>
@@ -354,11 +361,10 @@ export function OnboardingPage(): ReactElement {
         <Card className="onboarding-card">
           <div>
             <Heading as="h2" size="md">
-              3. Invite teammates &amp; explore plans
+              {t('onboarding.stepThree.heading')}
             </Heading>
             <Text tone="muted" size="sm">
-              Bring collaborators into your workspace now or finish setup and head to your
-              dashboard.
+              {t('onboarding.stepThree.description')}
             </Text>
           </div>
 
@@ -366,7 +372,7 @@ export function OnboardingPage(): ReactElement {
             <form className="onboarding-form" onSubmit={handleInviteSubmit}>
               <div className="onboarding-field">
                 <label htmlFor="onboarding-invite-email" className="onboarding-field__label">
-                  Teammate email
+                  {t('onboarding.stepThree.inviteEmail')}
                 </label>
                 <Input
                   id="onboarding-invite-email"
@@ -375,16 +381,20 @@ export function OnboardingPage(): ReactElement {
                   onChange={(event) => {
                     setInviteEmail(event.target.value);
                   }}
-                  placeholder="teammate@company.com"
+                  placeholder={t('onboarding.stepThree.invitePlaceholder')}
                 />
               </div>
               <div className="onboarding-actions__group">
                 <Button type="submit" variant="secondary" disabled={inviteMutation.isLoading}>
-                  {inviteMutation.isLoading ? 'Sending…' : 'Send invitation'}
+                  {inviteMutation.isLoading
+                    ? t('onboarding.stepThree.sending')
+                    : t('onboarding.stepThree.sendInvite')}
                 </Button>
                 {invitedCount > 0 ? (
                   <Badge tone="success">
-                    {String(invitedCount)} invitation{invitedCount === 1 ? '' : 's'} sent
+                    {invitedCount === 1
+                      ? t('onboarding.stepThree.sentOne', { count: 1 })
+                      : t('onboarding.stepThree.sentMany', { count: invitedCount })}
                   </Badge>
                 ) : null}
               </div>
@@ -395,15 +405,15 @@ export function OnboardingPage(): ReactElement {
             <div className="onboarding-plan-callout">
               <div>
                 <Text size="sm" className="onboarding-field__label">
-                  Ready for higher limits and team features?
+                  {t('onboarding.stepThree.planHeading')}
                 </Text>
                 <Text size="xs" tone="muted">
-                  Compare starter and team plans with instant entitlement activation.
+                  {t('onboarding.stepThree.planDescription')}
                 </Text>
               </div>
               <Link to="/pricing">
                 <Button variant="secondary" size="small">
-                  Explore plans
+                  {t('onboarding.stepThree.explorePlans')}
                 </Button>
               </Link>
             </div>
@@ -418,10 +428,10 @@ export function OnboardingPage(): ReactElement {
                 setStep(2);
               }}
             >
-              Back
+              {t('common.back')}
             </Button>
             <Button type="button" onClick={handleFinish}>
-              Finish setup &amp; open Dashboard
+              {t('onboarding.stepThree.finish')}
             </Button>
           </div>
         </Card>

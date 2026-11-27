@@ -57,8 +57,21 @@ describe('LandingPage', () => {
     authState.isAuthenticated = false;
     render(<LandingPage />);
 
-    expect(screen.getByRole('heading', { name: 'Accounts & access' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Billing & subscriptions' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Production platform' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Accounts, passkeys & OIDC SSO' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Multi-tenant workspaces & boards' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Zero-dep AI SSE streaming' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Billing, seats & entitlements' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Blog, waitlist, referrals & OpenAPI' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Owned stack & live bilingual UI' }),
+    ).toBeInTheDocument();
   });
 });

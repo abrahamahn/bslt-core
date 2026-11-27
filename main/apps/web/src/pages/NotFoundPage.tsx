@@ -4,17 +4,20 @@ import { EmptyState, Icon, PageContainer } from '@bslt/ui';
 
 import type { ReactElement } from 'react';
 
+import { useChromeTranslation } from '#app/i18n/chromeLabels';
+
 export const NotFoundPage = (): ReactElement => {
   const navigate = useNavigate();
+  const { t } = useChromeTranslation();
 
   return (
     <PageContainer>
       <EmptyState
         icon={<Icon name="search-x" size="lg" className="text-muted" />}
-        title="Page not found"
-        description="The page you're looking for doesn't exist or has been moved."
+        title={t('error.notFoundTitle')}
+        description={t('error.notFoundDescription')}
         action={{
-          label: 'Go to Home',
+          label: t('error.goToHome'),
           onClick: () => {
             navigate('/');
           },

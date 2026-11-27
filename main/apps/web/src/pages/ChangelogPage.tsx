@@ -28,6 +28,21 @@ interface ChangelogEntry {
 
 const CHANGELOG_ENTRIES: readonly ChangelogEntry[] = [
   {
+    version: 'v1.1.0',
+    date: '2026-11-27',
+    tone: 'success',
+    title: 'Complete SaaS Starter: Projects, AI Streaming, Enterprise SSO, Growth Kit & Live i18n',
+    summary:
+      'Expanded the platform into a complete multi-tenant TypeScript SaaS starter with collaborative boards, zero-dep AI streaming, Enterprise OIDC SSO, growth & SEO surfaces, OpenAPI 3.1 playground, and full en-US / ko-KR localization.',
+    highlights: [
+      'Multi-tenant Projects & Kanban boards (/projects) with forced owner_org RLS, custom RBAC, quotas, and WebSocket team sync.',
+      'Zero-dependency AI Assistant (/ai) streaming OpenAI, Anthropic, Gemini, or Mock completions over SSE with token metering.',
+      'Enterprise OIDC SSO (discovery, PKCE, JIT provisioning, verified domain enforcement), org-scoped API keys, and per-seat billing.',
+      'Growth & SEO Kit: prerendered SSR /blog, invite-wave /waitlist with branded emails, personal /referrals, /sitemap.xml, raster Open Graph preview, and interactive OpenAPI 3.1 API playground (/docs/api).',
+      'End-to-end live en-US ↔ ko-KR localization across shell chrome, dashboard, workspace, onboarding, and all 21 modules, backed by 100% colocated TypeScript test coverage.',
+    ],
+  },
+  {
     version: 'v1.0.0',
     date: '2026-11-24',
     tone: 'success',
@@ -104,6 +119,9 @@ export const ChangelogPage = (): ReactElement => {
       <div className="landing-actions">
         <Link to="/register" className="btn btn-primary btn-medium no-underline">
           Get started
+        </Link>
+        <Link to="/docs/api" className="btn btn-secondary btn-medium no-underline">
+          API Playground
         </Link>
         <Link to="/status" className="btn btn-secondary btn-medium no-underline">
           System status

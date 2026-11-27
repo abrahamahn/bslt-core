@@ -15,6 +15,14 @@ describe('PublicLandingPage', () => {
 
     expect(screen.getByRole('link', { name: 'Get started' })).toHaveAttribute('href', '/register');
     expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login');
+    expect(screen.getByRole('link', { name: 'API Playground' })).toHaveAttribute(
+      'href',
+      '/docs/api',
+    );
+    expect(screen.getByRole('heading', { name: /Zero-dep AI SSE streaming/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /Accounts, passkeys & OIDC SSO/i }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Open dashboard' })).not.toBeInTheDocument();
   });
 

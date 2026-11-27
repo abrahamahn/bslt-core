@@ -2,6 +2,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
+import { I18nProvider } from '../i18n';
+
 import { UnavailablePage } from './UnavailablePage';
 
 import type { ReactElement, ReactNode } from 'react';
@@ -38,5 +40,18 @@ describe('UnavailablePage', () => {
       'href',
       '/terms',
     );
+  });
+
+  it('renders localized Korean availability notice under ko-KR', () => {
+    render(
+      <I18nProvider initialLocale="ko-KR">
+        <UnavailablePage />
+      </I18nProvider>,
+    );
+
+    expect(
+      screen.getByRole('heading', { name: '현재 지역에서는 이 서비스를 이용할 수 없습니다' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '고객지원 문의' })).toHaveAttribute('href', '/support');
   });
 });

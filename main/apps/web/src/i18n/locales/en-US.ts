@@ -289,9 +289,77 @@ export const enUS: FlatTranslationMap = {
   'footer.section.legal': 'Legal',
   'footer.section.support': 'Support',
 
+  // Onboarding Wizard
+  'onboarding.badge': 'Workspace Setup',
+  'onboarding.heading': 'Set up {brand}',
+  'onboarding.subtitle':
+    'Finish these quick steps to personalize your profile, workspace, and team access.',
+  'onboarding.skipForNow': 'Skip for now',
+  'onboarding.stepsAria': 'Onboarding steps',
+  'onboarding.stepOne.title': 'Your profile',
+  'onboarding.stepOne.subtitle': 'Set how teammates recognize you',
+  'onboarding.stepOne.heading': '1. Confirm your profile',
+  'onboarding.stepOne.description':
+    'Your name appears across workspace activity, comments, and team invitations.',
+  'onboarding.stepOne.firstName': 'First name',
+  'onboarding.stepOne.firstNamePlaceholder': 'Alex',
+  'onboarding.stepOne.lastName': 'Last name',
+  'onboarding.stepOne.lastNamePlaceholder': 'Rivera',
+  'onboarding.stepOne.firstNameRequired':
+    'Please enter your first name to continue, or skip this step.',
+  'onboarding.stepOne.saved': 'Profile details saved.',
+  'onboarding.stepOne.saving': 'Saving…',
+  'onboarding.stepOne.submit': 'Save & continue',
+  'onboarding.stepTwo.title': 'Workspace identity',
+  'onboarding.stepTwo.subtitle': 'Name your shared workspace',
+  'onboarding.stepTwo.heading': '2. Name your workspace',
+  'onboarding.stepTwo.teamDescription':
+    'Choose a recognizable name for your shared team workspace.',
+  'onboarding.stepTwo.soloDescription':
+    'Your account is currently configured for solo use. You can enable team workspaces anytime.',
+  'onboarding.stepTwo.workspaceName': 'Workspace name',
+  'onboarding.stepTwo.workspacePlaceholder': 'Acme Studio',
+  'onboarding.stepTwo.currentSlug': 'Current slug: /{slug}',
+  'onboarding.stepTwo.nameTooShort': 'Workspace name must be at least 2 characters.',
+  'onboarding.stepTwo.updated': 'Workspace name updated.',
+  'onboarding.stepTwo.updating': 'Updating…',
+  'onboarding.stepTwo.submit': 'Continue',
+  'onboarding.stepThree.title': 'Team & plan',
+  'onboarding.stepThree.subtitle': 'Invite teammates or launch',
+  'onboarding.stepThree.heading': '3. Invite teammates & explore plans',
+  'onboarding.stepThree.description':
+    'Bring collaborators into your workspace now or finish setup and head to your dashboard.',
+  'onboarding.stepThree.inviteEmail': 'Teammate email',
+  'onboarding.stepThree.invitePlaceholder': 'teammate@company.com',
+  'onboarding.stepThree.invalidEmail': 'Enter a valid teammate email address.',
+  'onboarding.stepThree.sending': 'Sending…',
+  'onboarding.stepThree.sendInvite': 'Send invitation',
+  'onboarding.stepThree.inviteSent': 'Invitation sent.',
+  'onboarding.stepThree.sentOne': '{count} invitation sent',
+  'onboarding.stepThree.sentMany': '{count} invitations sent',
+  'onboarding.stepThree.planHeading': 'Ready for higher limits and team features?',
+  'onboarding.stepThree.planDescription':
+    'Compare starter and team plans with instant entitlement activation.',
+  'onboarding.stepThree.explorePlans': 'Explore plans',
+  'onboarding.stepThree.finish': 'Finish setup & open Dashboard',
+  'onboarding.skipStep': 'Skip step',
+
   // Errors
   'error.unauthorized': 'You need to sign in to access this page',
   'error.forbidden': 'You do not have permission to access this resource',
   'error.notFound': 'Page not found',
   'error.serverError': 'An unexpected error occurred. Please try again.',
+  'error.notFoundTitle': 'Page not found',
+  'error.notFoundDescription': "The page you're looking for doesn't exist or has been moved.",
+  'error.forbiddenTitle': 'Access denied',
+  'error.forbiddenDescription': "You don't have permission to view this page.",
+  'error.goToHome': 'Go to Home',
+  'error.unavailableTitle': 'This service isn\u2019t available where you are',
+  'error.unavailableBodyOne':
+    'We are not offered in your location, so we can\u2019t serve you from here. This is about the rules that apply where you are \u2014 not about you, and not about anything you did.',
+  'error.unavailableBodyTwo':
+    'If you already hold an account, or you believe you are seeing this page by mistake, contact us and we will look at it properly.',
+  'error.unavailableContactSupport': 'Contact support',
+  'error.unavailableReadTermsPrefix': 'Read the ',
+  'error.unavailableTermsLink': 'Terms of Service',
 };

@@ -3,6 +3,8 @@ import { MemoryRouter, useLocation } from '@bslt/react/router';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
+import { I18nProvider } from '../i18n';
+
 import { NotFoundPage } from './NotFoundPage';
 
 import type { ReactElement } from 'react';
@@ -29,5 +31,18 @@ describe('NotFoundPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Go to Home' }));
     expect(screen.getByTestId('path')).toHaveTextContent('/');
+  });
+
+  it('renders localized Korean copy under ko-KR', () => {
+    render(
+      <I18nProvider initialLocale="ko-KR">
+        <MemoryRouter initialEntries={['/missing']}>
+          <NotFoundPage />
+        </MemoryRouter>
+      </I18nProvider>,
+    );
+
+    expect(screen.getByText('페이지를 찾을 수 없습니다')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '홈으로 이동' })).toBeInTheDocument();
   });
 });

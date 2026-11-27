@@ -4,17 +4,20 @@ import { EmptyState, Icon, PageContainer } from '@bslt/ui';
 
 import type { ReactElement } from 'react';
 
+import { useChromeTranslation } from '#app/i18n/chromeLabels';
+
 export const ForbiddenPage = (): ReactElement => {
   const navigate = useNavigate();
+  const { t } = useChromeTranslation();
 
   return (
     <PageContainer>
       <EmptyState
         icon={<Icon name="lock" size="lg" className="text-muted" />}
-        title="Access denied"
-        description="You don't have permission to view this page."
+        title={t('error.forbiddenTitle')}
+        description={t('error.forbiddenDescription')}
         action={{
-          label: 'Go to Home',
+          label: t('error.goToHome'),
           onClick: () => {
             navigate('/');
           },

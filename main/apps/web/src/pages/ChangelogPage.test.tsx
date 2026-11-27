@@ -14,10 +14,15 @@ describe('ChangelogPage', () => {
     );
 
     expect(screen.getByRole('heading', { level: 1, name: /BSLT Changelog/i })).toBeInTheDocument();
+    expect(screen.getByText('v1.1.0')).toBeInTheDocument();
     expect(screen.getByText('v1.0.0')).toBeInTheDocument();
     expect(screen.getByText('Unified SaaS Starter Platform')).toBeInTheDocument();
     expect(screen.getByText('foundation-v1')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Get started' })).toHaveAttribute('href', '/register');
+    expect(screen.getByRole('link', { name: 'API Playground' })).toHaveAttribute(
+      'href',
+      '/docs/api',
+    );
     expect(screen.getByRole('link', { name: 'System status' })).toHaveAttribute('href', '/status');
   });
 });
