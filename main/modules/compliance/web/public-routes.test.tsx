@@ -43,7 +43,7 @@ describe('compliancePublicRoutes', () => {
 
     expect(rendered).not.toBeNull();
     expect(rendered?.cacheControl).toContain('max-age=60');
-    expect(rendered?.headHtml).toContain('<title>Terms of Service</title>');
+    expect(rendered?.headHtml).toContain('<title>Terms of Service · BSLT</title>');
     expect(rendered?.bodyHtml).toContain('Binding Terms');
     expect(rendered?.bodyHtml).toContain('Version 3');
   });
@@ -90,7 +90,7 @@ describe('compliancePublicRoutes', () => {
       );
 
       expect(rendered).not.toBeNull();
-      expect(rendered?.headHtml).toContain(`<title>${title}</title>`);
+      expect(rendered?.headHtml).toContain(`<title>${title} · BSLT</title>`);
       expect(rendered?.bodyHtml).toContain(phrase);
       expect(rendered?.bodyHtml).not.toContain('[[');
     },

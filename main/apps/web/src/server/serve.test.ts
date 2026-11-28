@@ -26,14 +26,30 @@ function createTempClientDist(): string {
   mkdirSync(path.join(dir, 'assets'), { recursive: true });
   mkdirSync(path.join(dir, '.vite'), { recursive: true });
 
-  writeFileSync(
-    path.join(dir, 'index.html'),
-    REAL_INDEX_HTML.replace('./src/main.tsx', '/assets/main-111111.js'),
-    'utf8',
+  const spaIndexHtml = REAL_INDEX_HTML.replace(
+    '<script type="module" src="./src/main.tsx"></script>',
+    [
+      '<script type="module" crossorigin src="/assets/main-111111.js"></script>',
+      '    <link rel="modulepreload" crossorigin href="/assets/AuthPages-888888.js">',
+      '    <link rel="modulepreload" crossorigin href="/assets/DocsPage-999999.js">',
+      '    <link rel="stylesheet" crossorigin href="/assets/main-111111.css">',
+      '    <link rel="stylesheet" crossorigin href="/assets/DocsPage-999999.css">',
+      '    <link rel="stylesheet" crossorigin href="/assets/public-222222.css">',
+    ].join('\n'),
   );
+
+  writeFileSync(path.join(dir, 'index.html'), spaIndexHtml, 'utf8');
   writeFileSync(path.join(dir, 'assets/main-111111.js'), 'console.log("spa");\n', 'utf8');
   writeFileSync(path.join(dir, 'assets/public-222222.js'), 'console.log("public");\n', 'utf8');
   writeFileSync(path.join(dir, 'assets/public-222222.css'), 'body{margin:0}\n', 'utf8');
+  writeFileSync(path.join(dir, 'assets/vendor-react-000000.js'), 'console.log("react");\n', 'utf8');
+  writeFileSync(
+    path.join(dir, 'assets/public-routes-docs-333333.js'),
+    'console.log("docs-routes");\n',
+    'utf8',
+  );
+  writeFileSync(path.join(dir, 'assets/DocsPage-999999.js'), 'console.log("docs");\n', 'utf8');
+  writeFileSync(path.join(dir, 'assets/DocsPage-999999.css'), '.docs{display:block}\n', 'utf8');
   writeFileSync(path.join(dir, 'theme-init.js'), '// theme init\n', 'utf8');
   writeFileSync(
     path.join(dir, '.vite/manifest.json'),
@@ -44,10 +60,25 @@ function createTempClientDist(): string {
           src: 'index.html',
           isEntry: true,
         },
+        '_vendor-react.js': {
+          file: 'assets/vendor-react-000000.js',
+        },
+        '_DocsPage.js': {
+          file: 'assets/DocsPage-999999.js',
+          css: ['assets/DocsPage-999999.css'],
+        },
+        'src/ssr/public-routes-docs.tsx': {
+          file: 'assets/public-routes-docs-333333.js',
+          src: 'src/ssr/public-routes-docs.tsx',
+          isDynamicEntry: true,
+          imports: ['_vendor-react.js', '_DocsPage.js'],
+        },
         'src/entry-public.tsx': {
           file: 'assets/public-222222.js',
           src: 'src/entry-public.tsx',
           isEntry: true,
+          imports: ['_vendor-react.js'],
+          dynamicImports: ['src/ssr/public-routes-docs.tsx'],
           css: ['assets/public-222222.css'],
         },
       },
@@ -217,11 +248,27 @@ describe('PROCESS_ROLE=web server (serve.ts)', () => {
       expect(termsRes.headers.get('cache-control')).toContain('public, max-age=60');
       expect(termsRes.headers.get('content-security-policy')).toContain("default-src 'self'");
       const termsHtml = await termsRes.text();
-      expect(termsHtml).toContain('<title>Terms of Service</title>');
+      expect(termsHtml).toContain('<title>Terms of Service · BSLT</title>');
       expect(termsHtml).toContain('id="__BSLT_STATE__"');
       expect(termsHtml).toContain('src="/assets/public-222222.js"');
-      expect(termsHtml).toContain('href="/assets/public-222222.css"');
+      expect(termsHtml).toContain('href="/assets/vendor-react-000000.js"');
+      expect(termsHtml.match(/\/assets\/public-222222\.css/gu)).toHaveLength(1);
       expect(termsHtml).not.toContain('src="/assets/main-111111.js"');
+      expect(termsHtml).not.toContain('/assets/AuthPages-888888.js');
+      expect(termsHtml).not.toContain('/assets/main-111111.css');
+      expect(termsHtml).not.toContain('/assets/DocsPage-999999.js');
+      expect(termsHtml).not.toContain('/assets/DocsPage-999999.css');
+
+      // 3b. Docs SSR route (/docs) includes DocsPage CSS & modulepreload but never SPA AuthPages/main.css
+      const docsRes = await fetch(`${baseUrl}/docs`);
+      expect(docsRes.status).toBe(200);
+      const docsHtml = await docsRes.text();
+      expect(docsHtml).toContain('src="/assets/public-222222.js"');
+      expect(docsHtml).toContain('href="/assets/public-routes-docs-333333.js"');
+      expect(docsHtml).toContain('href="/assets/DocsPage-999999.js"');
+      expect(docsHtml).toContain('href="/assets/DocsPage-999999.css"');
+      expect(docsHtml).not.toContain('/assets/AuthPages-888888.js');
+      expect(docsHtml).not.toContain('/assets/main-111111.css');
 
       expect(upstreamReceivedHeaders).toHaveLength(1);
       expect(upstreamReceivedHeaders[0]?.cookie).toBeUndefined();
@@ -281,9 +328,18 @@ describe('PROCESS_ROLE=web server (serve.ts)', () => {
     expect(landingHtml).toContain('Clone-and-own SaaS starter');
     expect(landingHtml).toContain('data-ssr-public="true"');
     expect(landingHtml).toContain('src="/assets/public-222222.js"');
+    expect(landingHtml).not.toContain('/assets/AuthPages-888888.js');
+    expect(landingHtml).not.toContain('/assets/DocsPage-999999.js');
+    expect(landingHtml).not.toContain('/assets/main-111111.css');
+
+    const docsPrerendered = readFileSync(path.join(clientDir, 'docs/index.html'), 'utf8');
+    expect(docsPrerendered).toContain('href="/assets/DocsPage-999999.css"');
+    expect(docsPrerendered).toContain('href="/assets/public-routes-docs-333333.js"');
+    expect(docsPrerendered).not.toContain('/assets/AuthPages-888888.js');
 
     const spaTemplate = readFileSync(path.join(clientDir, '_spa.html'), 'utf8');
     expect(spaTemplate).not.toContain('data-ssr-public="true"');
     expect(spaTemplate).toContain('src="/assets/main-111111.js"');
+    expect(spaTemplate).toContain('/assets/AuthPages-888888.js');
   });
 });

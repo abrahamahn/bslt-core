@@ -140,6 +140,7 @@ export interface SsrEnv<Sdk = AnonymousSdk> {
   readonly fetchImpl?: typeof fetch | undefined;
   readonly Shell?: ComponentType<{ readonly children?: ReactNode }> | undefined;
   readonly publicEntryScripts?: readonly string[] | undefined;
+  readonly publicEntryModulePreloads?: readonly string[] | undefined;
   readonly publicEntryStyles?: readonly string[] | undefined;
 }
 
@@ -502,6 +503,17 @@ function resolveAbsoluteCanonical(
   return `${origin}${normalized}`;
 }
 
+function formatDocumentTitle(rawTitle: string, appName: string): string {
+  const trimmedTitle = rawTitle.trim();
+  const trimmedApp = appName.trim();
+  if (trimmedTitle === '') return trimmedApp;
+  if (trimmedApp === '') return trimmedTitle;
+  if (trimmedTitle.toLowerCase().includes(trimmedApp.toLowerCase())) {
+    return trimmedTitle;
+  }
+  return `${trimmedTitle} · ${trimmedApp}`;
+}
+
 export function formatHeadTags(
   tags: HeadTags,
   options: {
@@ -510,7 +522,7 @@ export function formatHeadTags(
     readonly appName: string;
   },
 ): string {
-  const title = tags.title.trim() === '' ? options.appName : tags.title;
+  const title = formatDocumentTitle(tags.title, options.appName);
   const description = tags.description?.trim() ?? '';
   const ogTitle = tags.ogTitle?.trim() ?? title;
   const ogDescription = tags.ogDescription?.trim() ?? description;
@@ -621,7 +633,7 @@ export function applyClientHeadTags(
     readonly pathname?: string | undefined;
   },
 ): void {
-  const title = tags.title.trim() === '' ? options.appName : tags.title.trim();
+  const title = formatDocumentTitle(tags.title, options.appName);
   const description = tags.description?.trim() ?? '';
   const ogTitle = tags.ogTitle?.trim() ?? title;
   const ogDescription = tags.ogDescription?.trim() ?? description;
@@ -665,6 +677,16 @@ function cacheControlForSeconds(cacheSeconds: number): string {
   return `public, max-age=${String(cacheSeconds)}, s-maxage=${String(cacheSeconds)}, stale-while-revalidate=${String(stale)}`;
 }
 
+function stripSpaAssetLinks(html: string): string {
+  return html.replace(/\s*<link\b[^>]*>/giu, (tag) => {
+    const isAssetHref = /\bhref=["']\/assets\/[^"']+["']/iu.test(tag);
+    if (!isAssetHref) return tag;
+    const isModulePreload = /\brel=["']modulepreload["']/iu.test(tag);
+    const isStylesheet = /\brel=["']stylesheet["']/iu.test(tag);
+    return isModulePreload || isStylesheet ? '' : tag;
+  });
+}
+
 export function injectPublicSsrHtml(
   template: string,
   parts: {
@@ -672,6 +694,7 @@ export function injectPublicSsrHtml(
     readonly bodyHtml: string;
     readonly stateScriptHtml: string;
     readonly publicEntryScripts?: readonly string[] | undefined;
+    readonly publicEntryModulePreloads?: readonly string[] | undefined;
     readonly publicEntryStyles?: readonly string[] | undefined;
   },
 ): string {
@@ -681,19 +704,42 @@ export function injectPublicSsrHtml(
     }
   }
 
-  const styleLinks = (parts.publicEntryStyles ?? [])
-    .map((href) => `<link rel="stylesheet" crossorigin href=${escapeHtmlAttr(href)}>`)
-    .join('\n    ');
-  const combinedHead = styleLinks !== '' ? `${parts.headHtml}\n    ${styleLinks}` : parts.headHtml;
+  const entryScripts = [
+    ...new Set((parts.publicEntryScripts ?? []).filter((src) => src.trim() !== '')),
+  ];
+  const entryScriptSet = new Set(entryScripts);
+  const uniqueStyles = [
+    ...new Set((parts.publicEntryStyles ?? []).filter((href) => href.trim() !== '')),
+  ];
+  const uniqueModulePreloads = [
+    ...new Set(
+      (parts.publicEntryModulePreloads ?? []).filter(
+        (href) => href.trim() !== '' && !entryScriptSet.has(href),
+      ),
+    ),
+  ];
 
-  let doc = template
+  const baseTemplate = entryScripts.length > 0 ? stripSpaAssetLinks(template) : template;
+
+  const headAssetLinks = [
+    ...uniqueStyles.map(
+      (href) => `<link rel="stylesheet" crossorigin href=${escapeHtmlAttr(href)}>`,
+    ),
+    ...uniqueModulePreloads.map(
+      (href) => `<link rel="modulepreload" crossorigin href=${escapeHtmlAttr(href)}>`,
+    ),
+  ].join('\n    ');
+  const combinedHead =
+    headAssetLinks !== '' ? `${parts.headHtml}\n    ${headAssetLinks}` : parts.headHtml;
+
+  let doc = baseTemplate
     .replace(DEFAULT_TITLE_PATTERN, '')
     .replace(HEAD_MARKER, combinedHead)
     .replace(ROOT_OPEN, '<div id="root" data-ssr-public="true">')
     .replace(`${OUTLET_MARKER}</div>`, `${parts.bodyHtml}</div>\n    ${parts.stateScriptHtml}`);
 
-  if (parts.publicEntryScripts !== undefined && parts.publicEntryScripts.length > 0) {
-    const scriptTags = parts.publicEntryScripts
+  if (entryScripts.length > 0) {
+    const scriptTags = entryScripts
       .map((src) => `<script type="module" crossorigin src=${escapeHtmlAttr(src)}></script>`)
       .join('\n    ');
     doc = doc.replace(MAIN_SCRIPT_PATTERN, scriptTags);
@@ -808,6 +854,7 @@ export async function renderPublic<Sdk = AnonymousSdk>(
             bodyHtml,
             stateScriptHtml,
             publicEntryScripts: env.publicEntryScripts,
+            publicEntryModulePreloads: env.publicEntryModulePreloads,
             publicEntryStyles: env.publicEntryStyles,
           })
         : `<!doctype html><html><head>${headHtml}</head><body><div id="root" data-ssr-public="true">${bodyHtml}</div>${stateScriptHtml}</body></html>`;

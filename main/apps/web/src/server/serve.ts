@@ -135,54 +135,113 @@ export function validateWebServerEnv(
   };
 }
 
-function readPublicEntryAssets(clientDir: string): {
+interface PublicEntryAssets {
   readonly scripts: readonly string[];
+  readonly modulePreloads: readonly string[];
   readonly styles: readonly string[];
-} {
+}
+
+interface PublicEntryAssetBundles {
+  readonly core: PublicEntryAssets;
+  readonly docs: PublicEntryAssets;
+}
+
+const EMPTY_PUBLIC_ASSETS: PublicEntryAssets = {
+  scripts: [],
+  modulePreloads: [],
+  styles: [],
+};
+
+function normalizeAssetUrl(file: string): string {
+  return file.startsWith('/') ? file : `/${file}`;
+}
+
+function collectPublicAssetClosure(
+  manifest: ViteManifest,
+  entryScriptUrl: string | null,
+  rootKeys: readonly string[],
+): PublicEntryAssets {
+  const scripts = entryScriptUrl !== null ? [entryScriptUrl] : [];
+  const modulePreloads = new Set<string>();
+  const styles = new Set<string>();
+  const visited = new Set<string>();
+
+  const walk = (key: string): void => {
+    if (visited.has(key)) return;
+    visited.add(key);
+    const chunk = manifest[key];
+    if (chunk === undefined) return;
+    if (chunk.file !== undefined && chunk.file !== '') {
+      const url = normalizeAssetUrl(chunk.file);
+      if (url !== entryScriptUrl) {
+        modulePreloads.add(url);
+      }
+    }
+    for (const cssFile of chunk.css ?? []) {
+      if (cssFile !== '') {
+        styles.add(normalizeAssetUrl(cssFile));
+      }
+    }
+    for (const importedKey of chunk.imports ?? []) {
+      walk(importedKey);
+    }
+  };
+
+  for (const key of rootKeys) {
+    walk(key);
+  }
+
+  return {
+    scripts,
+    modulePreloads: [...modulePreloads],
+    styles: [...styles],
+  };
+}
+
+function readPublicEntryAssets(clientDir: string): PublicEntryAssetBundles {
   const candidates = [
     path.join(clientDir, '.vite/manifest.json'),
     path.join(clientDir, 'manifest.vite.json'),
   ];
   const manifestPath = candidates.find((candidate) => existsSync(candidate));
   if (manifestPath === undefined) {
-    return { scripts: [], styles: [] };
+    return { core: EMPTY_PUBLIC_ASSETS, docs: EMPTY_PUBLIC_ASSETS };
   }
 
   const parsed = JSON.parse(readFileSync(manifestPath, 'utf8')) as ViteManifest;
-  const entryKey = Object.keys(parsed).find(
+  const manifestKeys = Object.keys(parsed);
+  const entryKey = manifestKeys.find(
     (key) => key === 'src/entry-public.tsx' || key.endsWith('/src/entry-public.tsx'),
   );
   if (entryKey === undefined) {
-    return { scripts: [], styles: [] };
+    return { core: EMPTY_PUBLIC_ASSETS, docs: EMPTY_PUBLIC_ASSETS };
   }
-
-  const scripts: string[] = [];
-  const styles = new Set<string>();
-  const visited = new Set<string>();
-
-  const collectCss = (key: string): void => {
-    if (visited.has(key)) return;
-    visited.add(key);
-    const chunk = parsed[key];
-    if (chunk === undefined) return;
-    for (const cssFile of chunk.css ?? []) {
-      styles.add(cssFile.startsWith('/') ? cssFile : `/${cssFile}`);
-    }
-    for (const importedKey of chunk.imports ?? []) {
-      collectCss(importedKey);
-    }
-  };
 
   const entryChunk = parsed[entryKey];
-  if (entryChunk?.file !== undefined && entryChunk.file !== '') {
-    scripts.push(entryChunk.file.startsWith('/') ? entryChunk.file : `/${entryChunk.file}`);
-  }
-  collectCss(entryKey);
+  const entryScriptUrl =
+    entryChunk?.file !== undefined && entryChunk.file !== ''
+      ? normalizeAssetUrl(entryChunk.file)
+      : null;
 
-  return {
-    scripts,
-    styles: [...styles],
-  };
+  const docsEntryKey = manifestKeys.find(
+    (key) =>
+      key === 'src/ssr/public-routes-docs.tsx' || key.endsWith('/src/ssr/public-routes-docs.tsx'),
+  );
+
+  const core = collectPublicAssetClosure(parsed, entryScriptUrl, [entryKey]);
+  const docs =
+    docsEntryKey !== undefined
+      ? collectPublicAssetClosure(parsed, entryScriptUrl, [entryKey, docsEntryKey])
+      : core;
+
+  return { core, docs };
+}
+
+function selectPublicAssetsForPathname(
+  bundles: PublicEntryAssetBundles,
+  pathname: string,
+): PublicEntryAssets {
+  return pathname === '/docs' || pathname.startsWith('/docs/') ? bundles.docs : bundles.core;
 }
 
 function loadSpaTemplate(clientDir: string): string {
@@ -346,6 +405,7 @@ export function createWebServer(options: CreateWebServerOptions): WebServerHandl
       }
 
       // Attempt PublicRoute SSR (never receives request headers/cookies!)
+      const routeAssets = selectPublicAssetsForPathname(publicAssets, pathname);
       const rendered = await renderPublic(requestUrl, publicRoutes, {
         apiInternalUrl: options.apiInternalUrl,
         siteUrl: options.siteUrl,
@@ -354,8 +414,9 @@ export function createWebServer(options: CreateWebServerOptions): WebServerHandl
         modules: PUBLIC_SSR_MODULES,
         fetchImpl: options.fetchImpl,
         Shell: PublicDocumentShell,
-        publicEntryScripts: publicAssets.scripts,
-        publicEntryStyles: publicAssets.styles,
+        publicEntryScripts: routeAssets.scripts,
+        publicEntryModulePreloads: routeAssets.modulePreloads,
+        publicEntryStyles: routeAssets.styles,
       });
 
       if (rendered !== null) {
@@ -457,6 +518,7 @@ export async function prerenderStaticPublicRoutes(options: {
 
   for (const route of staticRoutes) {
     const origin = normalizedSiteUrl ?? 'http://localhost';
+    const routeAssets = selectPublicAssetsForPathname(publicAssets, route.path);
     const rendered = await renderPublic(new URL(route.path, origin), [route], {
       apiInternalUrl: 'http://127.0.0.1:8080',
       siteUrl: normalizedSiteUrl,
@@ -464,8 +526,9 @@ export async function prerenderStaticPublicRoutes(options: {
       template: spaTemplate,
       modules: PUBLIC_SSR_MODULES,
       Shell: PublicDocumentShell,
-      publicEntryScripts: publicAssets.scripts,
-      publicEntryStyles: publicAssets.styles,
+      publicEntryScripts: routeAssets.scripts,
+      publicEntryModulePreloads: routeAssets.modulePreloads,
+      publicEntryStyles: routeAssets.styles,
     });
     if (rendered === null) {
       throw new Error(`Failed to prerender static PublicRoute "${route.path}"`);

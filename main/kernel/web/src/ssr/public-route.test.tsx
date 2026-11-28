@@ -256,11 +256,24 @@ describe('public-route SSR seam', () => {
         },
         { siteUrl: null, pathname: '/terms', appName: 'BSLT' },
       );
-      expect(headWithoutOrigin).toContain('<title>Terms &lt;Draft&gt;</title>');
+      expect(headWithoutOrigin).toContain('<title>Terms &lt;Draft&gt; · BSLT</title>');
       expect(headWithoutOrigin).toContain('property="og:site_name" content="BSLT"');
       expect(headWithoutOrigin).toContain('name="twitter:card" content="summary"');
       expect(headWithoutOrigin).not.toContain('rel="canonical"');
       expect(headWithoutOrigin).not.toContain('og:url');
+
+      // Does not duplicate appName when title already matches or contains it
+      const exactAppHead = formatHeadTags(
+        { title: 'BSLT', description: 'Root landing' },
+        { siteUrl: null, pathname: '/', appName: 'BSLT' },
+      );
+      expect(exactAppHead).toContain('<title>BSLT</title>');
+
+      const customAppHead = formatHeadTags(
+        { title: 'Status' },
+        { siteUrl: null, pathname: '/status', appName: 'Acme' },
+      );
+      expect(customAppHead).toContain('<title>Status · Acme</title>');
 
       const statusHeadWithOrigin = formatHeadTags(
         {
@@ -269,6 +282,7 @@ describe('public-route SSR seam', () => {
         },
         { siteUrl: 'https://app.bslt.dev', pathname: '/status', appName: 'BSLT' },
       );
+      expect(statusHeadWithOrigin).toContain('<title>System Status · BSLT</title>');
       expect(statusHeadWithOrigin).toContain(
         'property="og:image" content="https://app.bslt.dev/brand/og-image.png"',
       );
@@ -278,7 +292,7 @@ describe('public-route SSR seam', () => {
       applyClientHeadTags(
         document,
         {
-          title: 'Dashboard · BSLT',
+          title: 'Dashboard',
           description: 'Workspace overview',
           robots: 'noindex, nofollow',
         },
@@ -465,7 +479,7 @@ describe('public-route SSR seam', () => {
       expect(rendered?.cacheControl).toBe(
         'public, max-age=30, s-maxage=30, stale-while-revalidate=60',
       );
-      expect(rendered?.html).toContain('<title>System: healthy</title>');
+      expect(rendered?.html).toContain('<title>System: healthy · BSLT</title>');
       expect(rendered?.html).not.toContain('data-default-title');
       expect(rendered?.html).toContain('<link rel="canonical" href="https://app.bslt.dev/status">');
       expect(rendered?.html).toContain(`id="${SSR_STATE_ELEMENT_ID}"`);
@@ -525,6 +539,61 @@ describe('public-route SSR seam', () => {
       act(() => {
         handle?.unmount();
       });
+    });
+
+    it('strips Vite-emitted SPA modulepreload and stylesheet asset links while preserving icons/manifest and deduplicating public assets', async () => {
+      const spaTemplateWithViteAssets = `<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <!--ssr-head-->
+    <title data-default-title>BSLT</title>
+    <script type="module" crossorigin src="/assets/main-abc123.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/AuthPages-leak.js">
+    <link rel="modulepreload" crossorigin href="/assets/DocsPage-leak.js">
+    <link rel="stylesheet" crossorigin href="/assets/main-leak.css">
+    <link href="/assets/reverse-order-leak.css" rel="stylesheet">
+    <link rel="stylesheet" crossorigin href="/assets/entry-public-xyz987.css">
+  </head>
+  <body>
+    <div id="root"><!--ssr-outlet--></div>
+  </body>
+</html>`;
+
+      const rendered = await renderPublic(new URL('https://app.bslt.dev/status'), [statusRoute], {
+        apiInternalUrl: 'http://api.internal:8080',
+        siteUrl: 'https://app.bslt.dev',
+        modules: TEST_MODULES,
+        fetchImpl: () =>
+          Promise.resolve(
+            new Response(JSON.stringify({ status: 'healthy', headline: 'All green' }), {
+              status: 200,
+              headers: { 'content-type': 'application/json' },
+            }),
+          ),
+        template: spaTemplateWithViteAssets,
+        publicEntryScripts: ['/assets/entry-public-xyz987.js'],
+        publicEntryModulePreloads: ['/assets/vendor-react-123.js', '/assets/vendor-react-123.js'],
+        publicEntryStyles: ['/assets/entry-public-xyz987.css', '/assets/entry-public-xyz987.css'],
+      });
+
+      expect(rendered).not.toBeNull();
+      const html = rendered?.html ?? '';
+      // Leaked SPA JS/CSS links are completely stripped
+      expect(html).not.toContain('/assets/main-abc123.js');
+      expect(html).not.toContain('/assets/AuthPages-leak.js');
+      expect(html).not.toContain('/assets/DocsPage-leak.js');
+      expect(html).not.toContain('/assets/main-leak.css');
+      expect(html).not.toContain('/assets/reverse-order-leak.css');
+      // Non-asset document links survive untouched
+      expect(html).toContain('href="/icons/favicon.svg"');
+      expect(html).toContain('href="/manifest.json"');
+      // Public entry script, preloads, and stylesheets are emitted once each
+      expect(html).toContain('src="/assets/entry-public-xyz987.js"');
+      expect(html.match(/\/assets\/vendor-react-123\.js/gu)).toHaveLength(1);
+      expect(html.match(/\/assets\/entry-public-xyz987\.css/gu)).toHaveLength(1);
     });
   });
 
